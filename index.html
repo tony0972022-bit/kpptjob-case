@@ -78,6 +78,9 @@
     .subCard{border:1px solid var(--b);border-radius:16px;padding:12px;background:#fff}
     .right{margin-left:auto}
     .small{font-size:12px}
+    #qrVideo{display:block;border:2px solid var(--b);background:#000;}
+    .grid3{display:grid;gap:10px;grid-template-columns:1fr 1fr 1fr}
+    @media(max-width:700px){.grid3{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -335,7 +338,13 @@
           <div class="subCard">
             <h2 style="margin-bottom:6px;">借用 / 歸還</h2>
             <div class="grid2">
-              <div><label>設備代碼 / QR（建議就是 deviceId）</label><input id="devScan" placeholder="DEV-001" /></div>
+              <div>
+                <label>設備代碼 / QR（建議就是 deviceId）</label>
+                <div class="row">
+                  <input id="devScan" placeholder="DEV-001" style="flex:1;" />
+                  <button id="btnDevCamera" title="用相機掃QR碼" style="white-space:nowrap;">📷 掃QR</button>
+                </div>
+              </div>
               <div>
                 <label>操作</label>
                 <div class="row">
@@ -345,9 +354,23 @@
                 </div>
               </div>
             </div>
-            <div style="margin-top:10px;">
-              <label>借用者</label>
-              <select id="devBorrower"></select>
+            <!-- QR camera area -->
+            <div id="qrScanArea" style="display:none;margin-top:10px;">
+              <video id="qrVideo" playsinline muted style="width:100%;max-width:420px;border-radius:8px;background:#000;"></video>
+              <div class="row" style="margin-top:6px;gap:8px;">
+                <span class="muted" style="flex:1;">對準 QR 碼，自動讀取…</span>
+                <button id="btnStopCamera">停止掃描</button>
+              </div>
+            </div>
+            <div class="grid2" style="margin-top:10px;">
+              <div>
+                <label>借用者</label>
+                <select id="devBorrower"></select>
+              </div>
+              <div>
+                <label>連結個案（借出時自動記錄試用）</label>
+                <select id="devLinkCase"><option value="">不連結個案</option></select>
+              </div>
             </div>
             <div class="hr"></div>
             <div class="hint" id="devInfo">尚未載入設備。</div>
@@ -694,13 +717,13 @@
     function defaultSettings(){
       return {
         caseCodeRules: {
-          caseTypes: ["身障","中高齡","單側","關稅"],
+          caseTypes: ["身障個人","中高齡大宗","ECFA","單側聽損","職訓案"],
           prefixes: [
-            { code:"JA", label:"JA", caseType:"身障", enabled:true, sort:10 },
-            { code:"AG", label:"AG", caseType:"中高齡", enabled:true, sort:20 },
-            { code:"EC", label:"EC", caseType:"單側", enabled:true, sort:30 },
-            { code:"UH", label:"UH", caseType:"關稅", enabled:true, sort:40 },
-            { code:"TA", label:"TA", caseType:"關稅", enabled:true, sort:50 }
+            { code:"JA", label:"JA", caseType:"身障個人",   enabled:true, sort:10 },
+            { code:"AG", label:"AG", caseType:"中高齡大宗", enabled:true, sort:20 },
+            { code:"EC", label:"EC", caseType:"ECFA",       enabled:true, sort:30 },
+            { code:"UH", label:"UH", caseType:"單側聽損",   enabled:true, sort:40 },
+            { code:"TA", label:"TA", caseType:"職訓案",     enabled:true, sort:50 }
           ]
         },
         options: {
@@ -709,7 +732,9 @@
           caseStatuses: ["進行中","退回","中途結案","結案"],
           casePhases: ["新案","舊案成效","新案成效"],
           genders: ["男","女","其他/未填"],
-          disabilityTypes: ["肢體","視覺","聽覺","智能","精神","多重","其他/未填"]
+          disabilityTypes: ["肢體","視覺","聽覺","智能","精神","多重","其他/未填"],
+          disabilityDegrees: ["輕度","中度","重度","極重度","未填"],
+          referralSources: ["勞動力發展署","社會局","醫院","雇主","個案自行申請","其他"]
         }
       };
     }
@@ -739,6 +764,8 @@
       o.casePhases = o.casePhases || d.options.casePhases;
       o.genders = o.genders || d.options.genders;
       o.disabilityTypes = o.disabilityTypes || d.options.disabilityTypes;
+      o.disabilityDegrees = o.disabilityDegrees || d.options.disabilityDegrees;
+      o.referralSources = o.referralSources || d.options.referralSources;
     }
     function detectCaseTypeFromCaseNo(caseNo){
       const code = parseCaseCode(caseNo);
@@ -1378,13 +1405,11 @@
               orgName: r.orgName || "",
               clientName: r.clientName || "",
               basic: { orgName: r.orgName || "", clientName: r.clientName || "" },
-              progress: {},
-              report: {},
-              recommendMain: {},
-              recommendOther: {},
-              caseDevices: [],
-              trainings: [],
-              consults: [],
+              employment: {}, timeline: {},
+              deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
+              progress: {}, report: {},
+              remarks: "",
+              caseDevices: [], consults: [],
               createdAt: new Date(),
               updatedAt: new Date()
             }, { merge:true });
@@ -1544,6 +1569,76 @@
     $("btnDevLoad").addEventListener("click", loadDeviceFromScan);
     $("btnDevBorrow").addEventListener("click", borrowDevice);
     $("btnDevReturn").addEventListener("click", returnDevice);
+    $("btnDevCamera").addEventListener("click", startQrCamera);
+    $("btnStopCamera").addEventListener("click", stopQrCamera);
+
+    // ── QR Camera ────────────────────────────────────────────────────
+    let _qrStream = null;
+    let _jsqrLoaded = false;
+
+    async function loadJsQR(){
+      if(_jsqrLoaded || window.jsQR){ _jsqrLoaded=true; return; }
+      await new Promise((res,rej)=>{
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      _jsqrLoaded = true;
+    }
+
+    async function startQrCamera(){
+      try{
+        await loadJsQR();
+        $("qrScanArea").style.display = "block";
+        const video = $("qrVideo");
+        _qrStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
+        video.srcObject = _qrStream;
+        await video.play();
+        _scanQrLoop();
+      }catch(e){
+        toast("無法開啟相機：" + (e?.message||e));
+        stopQrCamera();
+      }
+    }
+
+    function stopQrCamera(){
+      if(_qrStream){ _qrStream.getTracks().forEach(t=>t.stop()); _qrStream=null; }
+      $("qrScanArea").style.display = "none";
+    }
+
+    function _scanQrLoop(){
+      if(!_qrStream) return;
+      const video = $("qrVideo");
+      if(video.readyState < video.HAVE_ENOUGH_DATA){ requestAnimationFrame(_scanQrLoop); return; }
+      const c = document.createElement("canvas");
+      c.width = video.videoWidth; c.height = video.videoHeight;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(video, 0, 0, c.width, c.height);
+      const img = ctx.getImageData(0, 0, c.width, c.height);
+      const code = window.jsQR(img.data, img.width, img.height, { inversionAttempts:"dontInvert" });
+      if(code){
+        $("devScan").value = code.data;
+        stopQrCamera();
+        loadDeviceFromScan();
+        return;
+      }
+      requestAnimationFrame(_scanQrLoop);
+    }
+
+    // ── Populate devLinkCase from current year's cases ──
+    async function populateDevLinkCase(){
+      const sel = $("devLinkCase");
+      sel.innerHTML = `<option value="">不連結個案</option>`;
+      try{
+        const year = new Date().getFullYear() - 1911; // ROC year
+        const cases = await loadCasesYear(String(year));
+        for(const c of cases){
+          const label = `${c.caseNo} ${c.clientName||c.orgName||""}`.trim();
+          sel.innerHTML += `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
+        }
+      }catch(e){ console.warn("devLinkCase load failed:", e?.message||e); }
+    }
 
     $("btnDevNew").addEventListener("click", ()=> $("deviceModal").classList.add("show"));
     $("btnCloseDeviceModal").addEventListener("click", ()=> $("deviceModal").classList.remove("show"));
@@ -1616,6 +1711,7 @@
       try{
         $("btnDevRefresh").disabled = true;
         await initBorrowers();
+        await populateDevLinkCase();
         cacheDevices = await loadDevices(force);
         cacheLoans = await loadLoans(force);
         renderDevices();
@@ -1656,6 +1752,9 @@
       }catch{}
 
       const loanId = `${devCurrent.id}_${Date.now()}`;
+      const linkedCaseId = $("devLinkCase").value || "";
+      const today = new Date().toISOString().slice(0,10);
+
       try{
         await setDoc(doc(db,"deviceLoans", loanId), {
           deviceId: devCurrent.id,
@@ -1663,6 +1762,7 @@
           category: devCurrent.category || "",
           borrowerUid,
           borrowerName,
+          linkedCaseId,
           borrowAt: new Date(),
           returnAt: null,
           status: "借出"
@@ -1675,12 +1775,55 @@
           updatedAt: new Date()
         });
 
+        // Auto-record trial in linked case (fill first empty trial slot)
+        if(linkedCaseId){
+          try{
+            const caseSnap = await getDoc(doc(db,"cases", linkedCaseId));
+            if(caseSnap.exists()){
+              const caseData = caseSnap.data();
+              const dt = caseData.deviceTrial || {};
+              let slot = "";
+              if(!dt.trialDate1){ slot = "1"; }
+              else if(!dt.trialDate2){ slot = "2"; }
+              else if(!dt.trialDate3){ slot = "3"; }
+
+              if(slot){
+                const update = {};
+                update[`deviceTrial.trialDate${slot}`] = today;
+                update[`deviceTrial.trialItem${slot}`] = devCurrent.name || devCurrent.id;
+                // auto-categorize: increment totalCount
+                const cur = parseInt(dt.totalCount||"0")||0;
+                update["deviceTrial.totalCount"] = String(cur+1);
+                // auto-categorize category by device category
+                const cat = (devCurrent.category||"").toUpperCase();
+                if(cat && /^[A-J]$/.test(cat)){
+                  const catKey = `deviceTrial.cat${cat}`;
+                  update[catKey] = devCurrent.name || devCurrent.id;
+                }
+                await updateDoc(doc(db,"cases", linkedCaseId), update);
+                toast(`已借出，並自動記錄至個案 ${linkedCaseId} 試用欄位 ${slot}。`);
+              }else{
+                toast("已借出（個案試用欄位已滿，請手動補充）。");
+              }
+              cacheCasesByYear.clear();
+            }else{
+              toast("已借出（找不到連結個案，請確認）。");
+            }
+          }catch(e){
+            console.warn("case link failed:", e?.message||e);
+            toast("已借出（個案連結記錄失敗，請手動補充）。");
+          }
+        }else{
+          toast("已借出。");
+        }
+
         // optional usage log
         try{
           await setDoc(doc(db,"users", borrowerUid, "usage", loanId), {
             deviceId: devCurrent.id,
             deviceName: devCurrent.name || "",
             category: devCurrent.category || "",
+            linkedCaseId,
             borrowAt: new Date(),
             returnAt: null,
             loanId
@@ -1689,7 +1832,6 @@
           console.warn("usage skipped:", e?.message || e);
         }
 
-        toast("已借出。");
         cacheDevices = [];
         cacheLoans = [];
         await refreshDevices(true);
@@ -1752,14 +1894,15 @@
 
     // ===== Views: Case Detail =====
     const CD_TABS = [
-      { key:"basic", label:"案件基本資料" },
-      { key:"progress", label:"進度管理" },
-      { key:"report", label:"報告管理" },
-      { key:"recommendMain", label:"職務再設計建議" },
-      { key:"recommendOther", label:"其他建議" },
-      { key:"caseDevices", label:"輔具管理" },
-      { key:"trainings", label:"輔具訓練日期" },
-      { key:"consults", label:"諮詢紀錄" }
+      { key:"basic",          label:"基本資料" },
+      { key:"employment",     label:"就業資料" },
+      { key:"timeline",       label:"案件時程" },
+      { key:"deviceTrial",    label:"輔具試用" },
+      { key:"deviceTraining", label:"輔具訓練" },
+      { key:"jobRedesign",    label:"職再設計" },
+      { key:"progress",       label:"進度管理" },
+      { key:"report",         label:"報告管理" },
+      { key:"remarks",        label:"備註" }
     ];
     let cdActiveTab = "basic";
     let cdId = null;
@@ -1795,16 +1938,20 @@
       }
     }
 
+    function selOpts(arr, val){
+      return (arr||[]).map(x=>`<option value="${escapeHtml(x)}"${x===val?" selected":""}>${escapeHtml(x)}</option>`).join("");
+    }
+
     function renderCasePanels(){
       const d = cdDoc || {};
-      const basic = d.basic || {};
-      const progress = d.progress || {};
-      const report = d.report || {};
-      const recommendMain = d.recommendMain || {};
-      const recommendOther = d.recommendOther || {};
-      const caseDevices = d.caseDevices || [];
-      const trainings = d.trainings || [];
-      const consults = d.consults || [];
+      const basic        = d.basic        || {};
+      const employment   = d.employment   || {};
+      const timeline     = d.timeline     || {};
+      const deviceTrial  = d.deviceTrial  || {};
+      const deviceTraining = d.deviceTraining || {};
+      const jobRedesign  = d.jobRedesign  || {};
+      const progress     = d.progress     || {};
+      const report       = d.report       || {};
 
       const panels = $("cdPanels");
       panels.innerHTML = "";
@@ -1818,37 +1965,168 @@
         return wrap;
       }
 
-      // basic
-      const pBasic = showPanel("basic", `
+      // ── 1. 基本資料（XLS Col 0-2,5,7-18,21,23,26） ───────────────
+      showPanel("basic", `
         <div class="grid2">
-          <div><label>單位名稱</label><input id="cdb_orgName" value="${escapeHtml(basic.orgName || d.orgName || "")}" /></div>
-          <div><label>個案姓名</label><input id="cdb_clientName" value="${escapeHtml(basic.clientName || d.clientName || "")}" /></div>
-          <div><label>性別</label><select id="cdb_gender"></select></div>
-          <div><label>障礙類別</label><select id="cdb_disability"></select></div>
-          <div><label>聯絡電話</label><input id="cdb_phone" value="${escapeHtml(basic.phone||"")}" /></div>
-          <div><label>備註</label><input id="cdb_note" value="${escapeHtml(basic.note||"")}" /></div>
+          <div><label>單位名稱</label><input id="cdb_orgName" value="${escapeHtml(basic.orgName||d.orgName||"")}" /></div>
+          <div><label>個案姓名</label><input id="cdb_clientName" value="${escapeHtml(basic.clientName||d.clientName||"")}" /></div>
+          <div><label>性別</label><select id="cdb_gender">${selOpts(settings.options.genders, basic.gender||"其他/未填")}</select></div>
+          <div><label>年齡</label><input id="cdb_age" type="number" value="${escapeHtml(basic.age||"")}" /></div>
+          <div><label>生日</label><input id="cdb_birthDate" type="date" value="${escapeHtml(basic.birthDate||"")}" /></div>
+          <div><label>障礙類別</label><select id="cdb_disabilityType">${selOpts(settings.options.disabilityTypes, basic.disabilityType||"其他/未填")}</select></div>
+          <div><label>障礙程度</label><select id="cdb_disabilityDegree">${selOpts(settings.options.disabilityDegrees||[], basic.disabilityDegree||"")}</select></div>
+          <div><label>轉介來源</label><select id="cdb_referralSource"><option value="">請選擇</option>${selOpts(settings.options.referralSources||[], basic.referralSource||"")}</select></div>
+          <div><label>接案人員</label><input id="cdb_assignedStaff" value="${escapeHtml(basic.assignedStaff||"")}" list="staffList" /></div>
+          <div><label>訪視委員</label><input id="cdb_visitCommittee" value="${escapeHtml(basic.visitCommittee||"")}" /></div>
+          <datalist id="staffList"><option value="蔡凱宇"/><option value="黃國裕"/><option value="高湘怡"/><option value="方姿云"/><option value="陳秋媚"/><option value="盧怡倫"/></datalist>
+        </div>
+        <div class="hr"></div>
+        <div class="grid2">
+          <div><label>聯絡人1</label><input id="cdb_contactPerson1" value="${escapeHtml(basic.contactPerson1||"")}" /></div>
+          <div><label>聯絡電話1</label><input id="cdb_contactPhone1" value="${escapeHtml(basic.contactPhone1||"")}" /></div>
+          <div><label>聯絡人2</label><input id="cdb_contactPerson2" value="${escapeHtml(basic.contactPerson2||"")}" /></div>
+          <div><label>聯絡電話2</label><input id="cdb_contactPhone2" value="${escapeHtml(basic.contactPhone2||"")}" /></div>
+        </div>
+        <div class="hr"></div>
+        <div class="grid2">
+          <div><label>報告審閱狀態</label><input id="cdb_reviewStatus" value="${escapeHtml(basic.reviewStatus||"")}" placeholder="例：已審閱" /></div>
+          <div><label>審閱者</label><input id="cdb_reviewer" value="${escapeHtml(basic.reviewer||"")}" /></div>
         </div>
       `);
-      if(cdActiveTab==="basic"){
-        const gSel = pBasic.querySelector("#cdb_gender");
-        gSel.innerHTML = (settings.options.genders||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
-        gSel.value = basic.gender || "其他/未填";
 
-        const dSel = pBasic.querySelector("#cdb_disability");
-        dSel.innerHTML = (settings.options.disabilityTypes||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
-        dSel.value = basic.disabilityType || "其他/未填";
-      }
+      // ── 2. 就業資料（XLS Col 16-17,22-25,82） ─────────────────────
+      showPanel("employment", `
+        <div class="grid2">
+          <div><label>職稱</label><input id="cde_jobTitle" value="${escapeHtml(employment.jobTitle||"")}" /></div>
+          <div><label>部門</label><input id="cde_department" value="${escapeHtml(employment.department||"")}" /></div>
+          <div><label>行業類別</label><input id="cde_industryType" value="${escapeHtml(employment.industryType||"")}" /></div>
+          <div><label>職業類別</label><input id="cde_occupationType" value="${escapeHtml(employment.occupationType||"")}" /></div>
+          <div><label>到職日</label><input id="cde_startDate" type="date" value="${escapeHtml(employment.startDate||"")}" /></div>
+          <div><label>月薪（元）</label><input id="cde_salary" type="number" value="${escapeHtml(employment.salary||"")}" /></div>
+        </div>
+      `);
 
-      // progress
+      // ── 3. 案件時程（XLS Col 27-32） ──────────────────────────────
+      showPanel("timeline", `
+        <div class="grid2">
+          <div><label>開案日期</label><input id="cdt_openDate" type="date" value="${escapeHtml(timeline.openDate||"")}" /></div>
+          <div><label>總訪視次數</label><input id="cdt_totalVisitCount" type="number" value="${escapeHtml(timeline.totalVisitCount||"")}" /></div>
+          <div><label>訪視評估日期 1</label><input id="cdt_visitDate1" type="date" value="${escapeHtml(timeline.visitDate1||"")}" /></div>
+          <div><label>訪視評估日期 2</label><input id="cdt_visitDate2" type="date" value="${escapeHtml(timeline.visitDate2||"")}" /></div>
+          <div><label>審查會日期 1</label><input id="cdt_reviewDate1" type="date" value="${escapeHtml(timeline.reviewDate1||"")}" /></div>
+          <div><label>審查會日期 2</label><input id="cdt_reviewDate2" type="date" value="${escapeHtml(timeline.reviewDate2||"")}" /></div>
+        </div>
+      `);
+
+      // ── 4. 輔具試用（XLS Col 33-50） ──────────────────────────────
+      showPanel("deviceTrial", `
+        <div class="grid2">
+          <div><label>試用日期 1</label><input id="cddt_trialDate1" type="date" value="${escapeHtml(deviceTrial.trialDate1||"")}" /></div>
+          <div><label>試用項目 1</label><input id="cddt_trialItem1" value="${escapeHtml(deviceTrial.trialItem1||"")}" /></div>
+          <div><label>試用日期 2</label><input id="cddt_trialDate2" type="date" value="${escapeHtml(deviceTrial.trialDate2||"")}" /></div>
+          <div><label>試用項目 2</label><input id="cddt_trialItem2" value="${escapeHtml(deviceTrial.trialItem2||"")}" /></div>
+          <div><label>試用日期 3</label><input id="cddt_trialDate3" type="date" value="${escapeHtml(deviceTrial.trialDate3||"")}" /></div>
+          <div><label>試用項目 3</label><input id="cddt_trialItem3" value="${escapeHtml(deviceTrial.trialItem3||"")}" /></div>
+          <div><label>試用總次數</label><input id="cddt_totalCount" type="number" value="${escapeHtml(deviceTrial.totalCount||"")}" /></div>
+          <div><label>試用總件數</label><input id="cddt_totalItems" type="number" value="${escapeHtml(deviceTrial.totalItems||"")}" /></div>
+        </div>
+        <div class="hr"></div>
+        <div style="font-weight:700;margin-bottom:8px;">輔具試用分類（對照 XLS A-J）</div>
+        <div class="grid2">
+          <div><label>A 類（聽覺輔具）</label><input id="cddt_catA" value="${escapeHtml(deviceTrial.catA||"")}" /></div>
+          <div><label>B 類（視覺輔具）</label><input id="cddt_catB" value="${escapeHtml(deviceTrial.catB||"")}" /></div>
+          <div><label>C 類（肢體輔具）</label><input id="cddt_catC" value="${escapeHtml(deviceTrial.catC||"")}" /></div>
+          <div><label>D 類（溝通輔具）</label><input id="cddt_catD" value="${escapeHtml(deviceTrial.catD||"")}" /></div>
+          <div><label>E 類（環境控制）</label><input id="cddt_catE" value="${escapeHtml(deviceTrial.catE||"")}" /></div>
+          <div><label>F 類（工具改裝）</label><input id="cddt_catF" value="${escapeHtml(deviceTrial.catF||"")}" /></div>
+          <div><label>G 類（其他輔具）</label><input id="cddt_catG" value="${escapeHtml(deviceTrial.catG||"")}" /></div>
+          <div><label>H 類</label><input id="cddt_catH" value="${escapeHtml(deviceTrial.catH||"")}" /></div>
+          <div><label>I 類</label><input id="cddt_catI" value="${escapeHtml(deviceTrial.catI||"")}" /></div>
+          <div><label>J 類</label><input id="cddt_catJ" value="${escapeHtml(deviceTrial.catJ||"")}" /></div>
+        </div>
+      `);
+
+      // ── 5. 輔具訓練（XLS Col 51-68） ──────────────────────────────
+      showPanel("deviceTraining", `
+        <div class="grid2">
+          <div><label>訓練日期 1</label><input id="cdtr_trainDate1" type="date" value="${escapeHtml(deviceTraining.trainDate1||"")}" /></div>
+          <div><label>訓練項目 1</label><input id="cdtr_trainItem1" value="${escapeHtml(deviceTraining.trainItem1||"")}" /></div>
+          <div><label>訓練日期 2</label><input id="cdtr_trainDate2" type="date" value="${escapeHtml(deviceTraining.trainDate2||"")}" /></div>
+          <div><label>訓練項目 2</label><input id="cdtr_trainItem2" value="${escapeHtml(deviceTraining.trainItem2||"")}" /></div>
+          <div><label>訓練日期 3</label><input id="cdtr_trainDate3" type="date" value="${escapeHtml(deviceTraining.trainDate3||"")}" /></div>
+          <div><label>訓練項目 3</label><input id="cdtr_trainItem3" value="${escapeHtml(deviceTraining.trainItem3||"")}" /></div>
+          <div><label>訓練總次數</label><input id="cdtr_totalCount" type="number" value="${escapeHtml(deviceTraining.totalCount||"")}" /></div>
+          <div><label>訓練總件數</label><input id="cdtr_totalItems" type="number" value="${escapeHtml(deviceTraining.totalItems||"")}" /></div>
+        </div>
+        <div class="hr"></div>
+        <div style="font-weight:700;margin-bottom:8px;">輔具訓練分類（對照 XLS A-J）</div>
+        <div class="grid2">
+          <div><label>A 類（聽覺輔具）</label><input id="cdtr_catA" value="${escapeHtml(deviceTraining.catA||"")}" /></div>
+          <div><label>B 類（視覺輔具）</label><input id="cdtr_catB" value="${escapeHtml(deviceTraining.catB||"")}" /></div>
+          <div><label>C 類（肢體輔具）</label><input id="cdtr_catC" value="${escapeHtml(deviceTraining.catC||"")}" /></div>
+          <div><label>D 類（溝通輔具）</label><input id="cdtr_catD" value="${escapeHtml(deviceTraining.catD||"")}" /></div>
+          <div><label>E 類（環境控制）</label><input id="cdtr_catE" value="${escapeHtml(deviceTraining.catE||"")}" /></div>
+          <div><label>F 類（工具改裝）</label><input id="cdtr_catF" value="${escapeHtml(deviceTraining.catF||"")}" /></div>
+          <div><label>G 類（其他輔具）</label><input id="cdtr_catG" value="${escapeHtml(deviceTraining.catG||"")}" /></div>
+          <div><label>H 類</label><input id="cdtr_catH" value="${escapeHtml(deviceTraining.catH||"")}" /></div>
+          <div><label>I 類</label><input id="cdtr_catI" value="${escapeHtml(deviceTraining.catI||"")}" /></div>
+          <div><label>J 類</label><input id="cdtr_catJ" value="${escapeHtml(deviceTraining.catJ||"")}" /></div>
+        </div>
+      `);
+
+      // ── 6. 職再設計（XLS Col 69-85） ──────────────────────────────
+      showPanel("jobRedesign", `
+        <div class="grid2">
+          <div><label>是否改裝</label>
+            <select id="cdjr_isRenovation">
+              <option value="">未填</option>
+              <option value="是"${jobRedesign.isRenovation==="是"?" selected":""}>是</option>
+              <option value="否"${jobRedesign.isRenovation==="否"?" selected":""}>否</option>
+            </select>
+          </div>
+          <div><label>改裝內容</label><input id="cdjr_renovationContent" value="${escapeHtml(jobRedesign.renovationContent||"")}" /></div>
+          <div><label>是否回收</label>
+            <select id="cdjr_isRecycled">
+              <option value="">未填</option>
+              <option value="是"${jobRedesign.isRecycled==="是"?" selected":""}>是</option>
+              <option value="否"${jobRedesign.isRecycled==="否"?" selected":""}>否</option>
+            </select>
+          </div>
+          <div><label>回收內容</label><input id="cdjr_recycledContent" value="${escapeHtml(jobRedesign.recycledContent||"")}" /></div>
+        </div>
+        <div class="grid2" style="margin-top:10px;">
+          <div style="grid-column:1/-1;"><label>職再建議細目</label><textarea id="cdjr_recommendDetail">${escapeHtml(jobRedesign.recommendDetail||"")}</textarea></div>
+          <div><label>職再策略總次數</label><input id="cdjr_strategyCount" type="number" value="${escapeHtml(jobRedesign.strategyCount||"")}" /></div>
+          <div><label>資源連結</label><input id="cdjr_resourceLink" value="${escapeHtml(jobRedesign.resourceLink||"")}" /></div>
+          <div><label>個人護具</label><input id="cdjr_personalPPE" value="${escapeHtml(jobRedesign.personalPPE||"")}" /></div>
+        </div>
+        <div class="hr"></div>
+        <div style="font-weight:700;margin-bottom:8px;">職再需求分類 1-5</div>
+        <div class="grid2">
+          <div><label>需求分類 1</label><input id="cdjr_need1" value="${escapeHtml(jobRedesign.need1||"")}" /></div>
+          <div><label>需求分類 2</label><input id="cdjr_need2" value="${escapeHtml(jobRedesign.need2||"")}" /></div>
+          <div><label>需求分類 3</label><input id="cdjr_need3" value="${escapeHtml(jobRedesign.need3||"")}" /></div>
+          <div><label>需求分類 4</label><input id="cdjr_need4" value="${escapeHtml(jobRedesign.need4||"")}" /></div>
+          <div><label>需求分類 5</label><input id="cdjr_need5" value="${escapeHtml(jobRedesign.need5||"")}" /></div>
+        </div>
+        <div class="hr"></div>
+        <div style="font-weight:700;margin-bottom:8px;">職訓案時間（TA 類）</div>
+        <div class="grid2">
+          <div><label>職訓開始日期</label><input id="cdjr_vocTrainStart" type="date" value="${escapeHtml(jobRedesign.vocTrainStart||"")}" /></div>
+          <div><label>職訓結束日期</label><input id="cdjr_vocTrainEnd" type="date" value="${escapeHtml(jobRedesign.vocTrainEnd||"")}" /></div>
+        </div>
+      `);
+
+      // ── 7. 進度管理 ────────────────────────────────────────────────
       showPanel("progress", `
         <div class="grid2">
-          <div><label>下一步</label><input id="cdp_nextAction" value="${escapeHtml(progress.nextAction||"")}" placeholder="例如：安排訪視、補資料…" /></div>
+          <div><label>下一步行動</label><input id="cdp_nextAction" value="${escapeHtml(progress.nextAction||"")}" placeholder="例如：安排訪視、補資料…" /></div>
           <div><label>期限</label><input id="cdp_nextDue" type="date" value="${escapeHtml(progress.nextDue||"")}" /></div>
           <div style="grid-column:1/-1;"><label>進度摘要</label><textarea id="cdp_summary">${escapeHtml(progress.summary||"")}</textarea></div>
         </div>
       `);
 
-      // report
+      // ── 8. 報告管理 ────────────────────────────────────────────────
       const pReport = showPanel("report", `
         <div class="grid2">
           <div><label>報告狀態</label><select id="cdr_status"></select></div>
@@ -1866,148 +2144,12 @@
         sSel.value = report.status || (settings.options.reportStatuses||[])[0] || "未開始";
       }
 
-      // recommend main
-      showPanel("recommendMain", `
+      // ── 9. 備註 ────────────────────────────────────────────────────
+      showPanel("remarks", `
         <div class="grid2">
-          <div style="grid-column:1/-1;"><label>職務再設計建議（主要）</label><textarea id="cdm_text">${escapeHtml(recommendMain.text||"")}</textarea></div>
-          <div style="grid-column:1/-1;"><label>預期效益</label><textarea id="cdm_effect">${escapeHtml(recommendMain.effect||"")}</textarea></div>
+          <div style="grid-column:1/-1;"><label>備註（XLS Col85）</label><textarea id="cdrm_remarks">${escapeHtml(d.remarks||"")}</textarea></div>
         </div>
       `);
-
-      // recommend other
-      showPanel("recommendOther", `
-        <div class="grid2">
-          <div style="grid-column:1/-1;"><label>其他建議</label><textarea id="cdo_text">${escapeHtml(recommendOther.text||"")}</textarea></div>
-        </div>
-      `);
-
-      // case devices (simple array)
-      const pDevs = showPanel("caseDevices", `
-        <div class="row" style="justify-content:space-between;">
-          <div class="muted">本案輔具使用/試用（簡易記錄）。更完整借用請至「輔具中心」。</div>
-          <button id="btnAddCaseDev">新增一筆</button>
-        </div>
-        <div class="hr"></div>
-        <div class="tableWrap" style="max-height:42vh;">
-          <table>
-            <thead><tr><th>輔具名稱</th><th style="width:140px;">狀態</th><th style="width:140px;">日期</th><th style="width:90px;">操作</th></tr></thead>
-            <tbody id="caseDevTbody"></tbody>
-          </table>
-        </div>
-      `);
-      if(cdActiveTab==="caseDevices"){
-        const tb = pDevs.querySelector("#caseDevTbody");
-        function rerender(){
-          tb.innerHTML = "";
-          (cdDoc.caseDevices||[]).forEach((x, idx)=>{
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${escapeHtml(x.name||"")}</td>
-              <td>${escapeHtml(x.status||"")}</td>
-              <td>${escapeHtml(x.date||"")}</td>
-              <td><button class="danger">刪除</button></td>
-            `;
-            tr.querySelector("button").addEventListener("click", ()=>{
-              if(!confirm("確定刪除？")) return;
-              cdDoc.caseDevices.splice(idx,1);
-              rerender();
-            });
-            tb.appendChild(tr);
-          });
-          if(!(cdDoc.caseDevices||[]).length) tb.innerHTML = `<tr><td colspan="4" class="muted">尚無資料。</td></tr>`;
-        }
-        rerender();
-        pDevs.querySelector("#btnAddCaseDev").addEventListener("click", ()=>{
-          const name = prompt("輔具名稱");
-          if(!name) return;
-          const status = prompt("狀態（例如：評估中/已借出/已歸還）", "評估中") || "評估中";
-          const date = prompt("日期（YYYY-MM-DD）", "") || "";
-          cdDoc.caseDevices = cdDoc.caseDevices || [];
-          cdDoc.caseDevices.push({ name, status, date });
-          rerender();
-        });
-      }
-
-      // trainings
-      const pTrain = showPanel("trainings", `
-        <div class="row" style="justify-content:space-between;">
-          <div class="muted">訓練紀錄（可多筆）。</div>
-          <button id="btnAddTraining">新增一筆</button>
-        </div>
-        <div class="hr"></div>
-        <div class="tableWrap" style="max-height:42vh;">
-          <table>
-            <thead><tr><th style="width:140px;">日期</th><th>內容</th><th style="width:90px;">操作</th></tr></thead>
-            <tbody id="trainTbody"></tbody>
-          </table>
-        </div>
-      `);
-      if(cdActiveTab==="trainings"){
-        const tb = pTrain.querySelector("#trainTbody");
-        function rerender(){
-          tb.innerHTML = "";
-          (cdDoc.trainings||[]).forEach((x, idx)=>{
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${escapeHtml(x.date||"")}</td><td>${escapeHtml(x.note||"")}</td><td><button class="danger">刪除</button></td>`;
-            tr.querySelector("button").addEventListener("click", ()=>{
-              if(!confirm("確定刪除？")) return;
-              cdDoc.trainings.splice(idx,1);
-              rerender();
-            });
-            tb.appendChild(tr);
-          });
-          if(!(cdDoc.trainings||[]).length) tb.innerHTML = `<tr><td colspan="3" class="muted">尚無資料。</td></tr>`;
-        }
-        rerender();
-        pTrain.querySelector("#btnAddTraining").addEventListener("click", ()=>{
-          const date = prompt("日期（YYYY-MM-DD）", "") || "";
-          const note = prompt("內容", "") || "";
-          cdDoc.trainings = cdDoc.trainings || [];
-          cdDoc.trainings.push({ date, note });
-          rerender();
-        });
-      }
-
-      // consults
-      const pCon = showPanel("consults", `
-        <div class="row" style="justify-content:space-between;">
-          <div class="muted">諮詢/訪視紀錄（可多筆）。</div>
-          <button id="btnAddConsult">新增一筆</button>
-        </div>
-        <div class="hr"></div>
-        <div class="tableWrap" style="max-height:42vh;">
-          <table>
-            <thead><tr><th style="width:140px;">日期</th><th style="width:140px;">形式</th><th>重點</th><th style="width:90px;">操作</th></tr></thead>
-            <tbody id="consultTbody"></tbody>
-          </table>
-        </div>
-      `);
-      if(cdActiveTab==="consults"){
-        const tb = pCon.querySelector("#consultTbody");
-        function rerender(){
-          tb.innerHTML = "";
-          (cdDoc.consults||[]).forEach((x, idx)=>{
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${escapeHtml(x.date||"")}</td><td>${escapeHtml(x.type||"")}</td><td>${escapeHtml(x.note||"")}</td><td><button class="danger">刪除</button></td>`;
-            tr.querySelector("button").addEventListener("click", ()=>{
-              if(!confirm("確定刪除？")) return;
-              cdDoc.consults.splice(idx,1);
-              rerender();
-            });
-            tb.appendChild(tr);
-          });
-          if(!(cdDoc.consults||[]).length) tb.innerHTML = `<tr><td colspan="4" class="muted">尚無資料。</td></tr>`;
-        }
-        rerender();
-        pCon.querySelector("#btnAddConsult").addEventListener("click", ()=>{
-          const date = prompt("日期（YYYY-MM-DD）", "") || "";
-          const type = prompt("形式（到場/電話/線上/會議）", "到場") || "到場";
-          const note = prompt("重點摘要", "") || "";
-          cdDoc.consults = cdDoc.consults || [];
-          cdDoc.consults.push({ date, type, note });
-          rerender();
-        });
-      }
     }
 
     async function loadCaseDetail(id){
@@ -2025,14 +2167,11 @@
           caseStatus: $("cdStatus").value,
           ownerUid: currentUser.uid,
           ownerName: currentName,
-          basic: {},
-          progress: {},
-          report: {},
-          recommendMain: {},
-          recommendOther: {},
-          caseDevices: [],
-          trainings: [],
-          consults: []
+          basic: {}, employment: {}, timeline: {},
+          deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
+          progress: {}, report: {},
+          remarks: "",
+          caseDevices: [], consults: []
         };
         $("cdTitle").textContent = "案件｜新增";
         $("cdSubtitle").textContent = "請填年度與編號後儲存建立。";
@@ -2062,6 +2201,9 @@
       renderCasePanels();
     }
 
+    function gv(id){ return document.getElementById(id)?.value ?? undefined; }
+    function gvt(id){ const v = document.getElementById(id)?.value; return v !== undefined ? v.trim() : undefined; }
+
     function buildCasePayloadFromUI(){
       const year = $("cdYear").value;
       const caseNo = $("cdCaseNo").value.trim();
@@ -2080,82 +2222,161 @@
         caseStatus: $("cdStatus").value || "進行中",
         ownerUid: cdDoc?.ownerUid || currentUser.uid,
         ownerName: cdDoc?.ownerName || currentName,
-        // derived for lists
-        orgName: cdDoc?.basic?.orgName || cdDoc?.orgName || "",
-        clientName: cdDoc?.basic?.clientName || cdDoc?.clientName || "",
-        basic: cdDoc.basic || {},
-        progress: cdDoc.progress || {},
-        report: cdDoc.report || {},
-        recommendMain: cdDoc.recommendMain || {},
-        recommendOther: cdDoc.recommendOther || {},
-        caseDevices: cdDoc.caseDevices || [],
-        trainings: cdDoc.trainings || [],
-        consults: cdDoc.consults || [],
+        orgName:     cdDoc?.basic?.orgName     || cdDoc?.orgName     || "",
+        clientName:  cdDoc?.basic?.clientName  || cdDoc?.clientName  || "",
+        basic:          cdDoc.basic          || {},
+        employment:     cdDoc.employment     || {},
+        timeline:       cdDoc.timeline       || {},
+        deviceTrial:    cdDoc.deviceTrial    || {},
+        deviceTraining: cdDoc.deviceTraining || {},
+        jobRedesign:    cdDoc.jobRedesign    || {},
+        progress:       cdDoc.progress       || {},
+        report:         cdDoc.report         || {},
+        remarks:        cdDoc.remarks        || "",
+        caseDevices:    cdDoc.caseDevices    || [],
+        consults:       cdDoc.consults       || [],
         updatedAt: new Date()
       };
 
-      // read active tab inputs if present
-      // basic
-      const org = document.getElementById("cdb_orgName")?.value?.trim();
-      const client = document.getElementById("cdb_clientName")?.value?.trim();
-      const gender = document.getElementById("cdb_gender")?.value;
-      const dis = document.getElementById("cdb_disability")?.value;
-      const phone = document.getElementById("cdb_phone")?.value?.trim();
-      const note = document.getElementById("cdb_note")?.value?.trim();
-      if(org !== undefined){
-        payload.basic = payload.basic || {};
-        payload.basic.orgName = org || "";
-        payload.basic.clientName = client || "";
-        payload.basic.gender = gender || "";
-        payload.basic.disabilityType = dis || "";
-        payload.basic.phone = phone || "";
-        payload.basic.note = note || "";
-        payload.orgName = payload.basic.orgName;
+      // ── Tab: 基本資料 ──
+      const cdb_orgName = gvt("cdb_orgName");
+      if(cdb_orgName !== undefined){
+        payload.basic = {
+          orgName:          cdb_orgName || "",
+          clientName:       gvt("cdb_clientName")       || "",
+          gender:           gv("cdb_gender")             || "",
+          age:              gvt("cdb_age")               || "",
+          birthDate:        gv("cdb_birthDate")          || "",
+          disabilityType:   gv("cdb_disabilityType")     || "",
+          disabilityDegree: gv("cdb_disabilityDegree")   || "",
+          referralSource:   gv("cdb_referralSource")     || "",
+          assignedStaff:    gvt("cdb_assignedStaff")     || "",
+          visitCommittee:   gvt("cdb_visitCommittee")    || "",
+          contactPerson1:   gvt("cdb_contactPerson1")    || "",
+          contactPhone1:    gvt("cdb_contactPhone1")     || "",
+          contactPerson2:   gvt("cdb_contactPerson2")    || "",
+          contactPhone2:    gvt("cdb_contactPhone2")     || "",
+          reviewStatus:     gvt("cdb_reviewStatus")      || "",
+          reviewer:         gvt("cdb_reviewer")          || "",
+        };
+        payload.orgName    = payload.basic.orgName;
         payload.clientName = payload.basic.clientName;
       }
 
-      // progress
-      const nextAction = document.getElementById("cdp_nextAction")?.value?.trim();
-      const nextDue = document.getElementById("cdp_nextDue")?.value;
-      const pSummary = document.getElementById("cdp_summary")?.value;
-      if(nextAction !== undefined){
-        payload.progress = payload.progress || {};
-        payload.progress.nextAction = nextAction || "";
-        payload.progress.nextDue = nextDue || "";
-        payload.progress.summary = pSummary || "";
+      // ── Tab: 就業資料 ──
+      const cde_jobTitle = gvt("cde_jobTitle");
+      if(cde_jobTitle !== undefined){
+        payload.employment = {
+          jobTitle:        cde_jobTitle                 || "",
+          department:      gvt("cde_department")        || "",
+          industryType:    gvt("cde_industryType")      || "",
+          occupationType:  gvt("cde_occupationType")    || "",
+          startDate:       gv("cde_startDate")          || "",
+          salary:          gvt("cde_salary")            || "",
+        };
       }
 
-      // report
-      const rStatus = document.getElementById("cdr_status")?.value;
-      const rDue = document.getElementById("cdr_due")?.value;
-      const rMeeting = document.getElementById("cdr_meeting")?.value;
-      const rEffect = document.getElementById("cdr_effectDue")?.value;
-      const rSys2 = document.getElementById("cdr_sys2Due")?.value;
-      const rNote = document.getElementById("cdr_note")?.value?.trim();
-      const rSummary = document.getElementById("cdr_summary")?.value;
-      if(rStatus !== undefined){
-        payload.report = payload.report || {};
-        payload.report.status = rStatus || "";
-        payload.report.dueDate = rDue || "";
-        payload.report.meetingDate = rMeeting || "";
-        payload.report.effectDue = rEffect || "";
-        payload.report.system2Due = rSys2 || "";
-        payload.report.note = rNote || "";
-        payload.report.summary = rSummary || "";
+      // ── Tab: 案件時程 ──
+      const cdt_openDate = gv("cdt_openDate");
+      if(cdt_openDate !== undefined){
+        payload.timeline = {
+          openDate:        cdt_openDate                 || "",
+          totalVisitCount: gvt("cdt_totalVisitCount")   || "",
+          visitDate1:      gv("cdt_visitDate1")         || "",
+          visitDate2:      gv("cdt_visitDate2")         || "",
+          reviewDate1:     gv("cdt_reviewDate1")        || "",
+          reviewDate2:     gv("cdt_reviewDate2")        || "",
+        };
       }
 
-      // recommend main/other
-      const mText = document.getElementById("cdm_text")?.value;
-      const mEff = document.getElementById("cdm_effect")?.value;
-      if(mText !== undefined){
-        payload.recommendMain = payload.recommendMain || {};
-        payload.recommendMain.text = mText || "";
-        payload.recommendMain.effect = mEff || "";
+      // ── Tab: 輔具試用 ──
+      const cddt_trialDate1 = gv("cddt_trialDate1");
+      if(cddt_trialDate1 !== undefined){
+        payload.deviceTrial = {
+          trialDate1:  cddt_trialDate1              || "",
+          trialDate2:  gv("cddt_trialDate2")        || "",
+          trialDate3:  gv("cddt_trialDate3")        || "",
+          trialItem1:  gvt("cddt_trialItem1")       || "",
+          trialItem2:  gvt("cddt_trialItem2")       || "",
+          trialItem3:  gvt("cddt_trialItem3")       || "",
+          totalCount:  gvt("cddt_totalCount")       || "",
+          totalItems:  gvt("cddt_totalItems")       || "",
+          catA: gvt("cddt_catA")||"", catB: gvt("cddt_catB")||"",
+          catC: gvt("cddt_catC")||"", catD: gvt("cddt_catD")||"",
+          catE: gvt("cddt_catE")||"", catF: gvt("cddt_catF")||"",
+          catG: gvt("cddt_catG")||"", catH: gvt("cddt_catH")||"",
+          catI: gvt("cddt_catI")||"", catJ: gvt("cddt_catJ")||"",
+        };
       }
-      const oText = document.getElementById("cdo_text")?.value;
-      if(oText !== undefined){
-        payload.recommendOther = payload.recommendOther || {};
-        payload.recommendOther.text = oText || "";
+
+      // ── Tab: 輔具訓練 ──
+      const cdtr_trainDate1 = gv("cdtr_trainDate1");
+      if(cdtr_trainDate1 !== undefined){
+        payload.deviceTraining = {
+          trainDate1:  cdtr_trainDate1              || "",
+          trainDate2:  gv("cdtr_trainDate2")        || "",
+          trainDate3:  gv("cdtr_trainDate3")        || "",
+          trainItem1:  gvt("cdtr_trainItem1")       || "",
+          trainItem2:  gvt("cdtr_trainItem2")       || "",
+          trainItem3:  gvt("cdtr_trainItem3")       || "",
+          totalCount:  gvt("cdtr_totalCount")       || "",
+          totalItems:  gvt("cdtr_totalItems")       || "",
+          catA: gvt("cdtr_catA")||"", catB: gvt("cdtr_catB")||"",
+          catC: gvt("cdtr_catC")||"", catD: gvt("cdtr_catD")||"",
+          catE: gvt("cdtr_catE")||"", catF: gvt("cdtr_catF")||"",
+          catG: gvt("cdtr_catG")||"", catH: gvt("cdtr_catH")||"",
+          catI: gvt("cdtr_catI")||"", catJ: gvt("cdtr_catJ")||"",
+        };
+      }
+
+      // ── Tab: 職再設計 ──
+      const cdjr_isRenovation = gv("cdjr_isRenovation");
+      if(cdjr_isRenovation !== undefined){
+        payload.jobRedesign = {
+          isRenovation:      cdjr_isRenovation                  || "",
+          renovationContent: gvt("cdjr_renovationContent")      || "",
+          isRecycled:        gv("cdjr_isRecycled")              || "",
+          recycledContent:   gvt("cdjr_recycledContent")        || "",
+          recommendDetail:   gv("cdjr_recommendDetail")         || "",
+          strategyCount:     gvt("cdjr_strategyCount")          || "",
+          resourceLink:      gvt("cdjr_resourceLink")           || "",
+          personalPPE:       gvt("cdjr_personalPPE")            || "",
+          need1: gvt("cdjr_need1")||"", need2: gvt("cdjr_need2")||"",
+          need3: gvt("cdjr_need3")||"", need4: gvt("cdjr_need4")||"",
+          need5: gvt("cdjr_need5")||"",
+          vocTrainStart:     gv("cdjr_vocTrainStart")           || "",
+          vocTrainEnd:       gv("cdjr_vocTrainEnd")             || "",
+        };
+      }
+
+      // ── Tab: 進度管理 ──
+      const cdp_nextAction = gvt("cdp_nextAction");
+      if(cdp_nextAction !== undefined){
+        payload.progress = {
+          nextAction: cdp_nextAction       || "",
+          nextDue:    gv("cdp_nextDue")    || "",
+          summary:    gv("cdp_summary")    || "",
+        };
+      }
+
+      // ── Tab: 報告管理 ──
+      const cdr_status = gv("cdr_status");
+      if(cdr_status !== undefined){
+        payload.report = {
+          status:     cdr_status               || "",
+          dueDate:    gv("cdr_due")            || "",
+          meetingDate:gv("cdr_meeting")        || "",
+          effectDue:  gv("cdr_effectDue")      || "",
+          system2Due: gv("cdr_sys2Due")        || "",
+          note:       gvt("cdr_note")          || "",
+          summary:    gv("cdr_summary")        || "",
+        };
+      }
+
+      // ── Tab: 備註 ──
+      const cdrm_remarks = gv("cdrm_remarks");
+      if(cdrm_remarks !== undefined){
+        payload.remarks = cdrm_remarks || "";
       }
 
       return payload;
