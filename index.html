@@ -3,273 +3,608 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TCN 職務再設計｜個案登打（Firebase）</title>
+  <title>TCN 職務再設計｜案件平台（單檔版）</title>
   <style>
-    :root { --b:#e5e7eb; --t:#111827; --m:#6b7280; --bg:#f9fafb; --w:#fff; --ok:#16a34a; --warn:#b45309; }
+    :root{
+      --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#64748b;
+      --b:#e2e8f0; --primary:#111827; --primaryText:#fff; --danger:#b91c1c;
+      --chip:#f1f5f9; --ok:#16a34a; --warn:#b45309; --shadow: 0 1px 0 rgba(0,0,0,.02);
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--t)}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--b);background:var(--w);position:sticky;top:0;z-index:10}
-    header .left{display:flex;gap:10px;align-items:center}
-    header h1{font-size:16px;margin:0}
-    .badge{font-size:12px;border:1px solid var(--b);border-radius:999px;padding:4px 10px;color:var(--m);background:#fff}
-    button{border:1px solid var(--b);background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
-    button.primary{background:#111827;color:#fff;border-color:#111827}
-    button.danger{background:#fff;color:#b91c1c;border-color:#fecaca}
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text)}
+    a{color:inherit;text-decoration:none}
+    header{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--b)}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;max-width:1500px;margin:0 auto}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand h1{font-size:15px;margin:0}
+    .badge{font-size:12px;border:1px solid var(--b);border-radius:999px;padding:3px 10px;color:var(--muted);background:#fff}
+    .nav{display:flex;gap:8px;flex-wrap:wrap}
+    .nav button{font-size:13px;border:1px solid var(--b);background:#fff;border-radius:12px;padding:7px 10px}
+    .nav button.active{border-color:#111827;background:#111827;color:#fff}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--b);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted);background:#fff}
+    button{border:1px solid var(--b);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-size:13px}
+    button.primary{background:var(--primary);color:var(--primaryText);border-color:var(--primary)}
+    button.danger{color:var(--danger);border-color:#fecaca}
     button:disabled{opacity:.6;cursor:not-allowed}
-    .wrap{display:grid;grid-template-columns:420px 1fr;gap:14px;padding:14px;max-width:1400px;margin:0 auto}
-    .card{background:var(--w);border:1px solid var(--b);border-radius:16px;padding:14px;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+    .container{max-width:1500px;margin:0 auto;padding:14px}
+    .grid{display:grid;grid-template-columns: 1fr;gap:14px}
+    @media (min-width: 1100px){ .grid.two{grid-template-columns: 420px 1fr} }
+    .card{background:var(--card);border:1px solid var(--b);border-radius:18px;box-shadow:var(--shadow);padding:14px}
     .card h2{font-size:14px;margin:0 0 10px 0}
+    .muted{color:var(--muted);font-size:12px}
+    .hr{height:1px;background:var(--b);margin:10px 0}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    label{font-size:12px;color:var(--m)}
-    input,select,textarea{width:100%;border:1px solid var(--b);border-radius:10px;padding:9px 10px;font-size:14px;background:#fff}
-    textarea{min-height:76px;resize:vertical}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-    .muted{color:var(--m);font-size:12px}
+    .grid2{display:grid;grid-template-columns:1fr;gap:10px}
+    @media (min-width: 900px){ .grid2{grid-template-columns:1fr 1fr} }
+    .grid3{display:grid;grid-template-columns:1fr;gap:10px}
+    @media (min-width: 900px){ .grid3{grid-template-columns:1fr 1fr 1fr} }
+    label{font-size:12px;color:var(--muted)}
+    input,select,textarea{width:100%;border:1px solid var(--b);border-radius:12px;padding:9px 10px;font-size:14px;background:#fff}
+    textarea{min-height:88px;resize:vertical}
+    .tableWrap{overflow:auto;border:1px solid var(--b);border-radius:14px}
     table{width:100%;border-collapse:separate;border-spacing:0}
     th,td{font-size:12px;padding:8px;border-bottom:1px solid var(--b);vertical-align:top}
-    th{color:var(--m);text-align:left;font-weight:600}
+    th{color:var(--muted);text-align:left;font-weight:700;background:#fff;position:sticky;top:0}
     tr:hover td{background:#fafafa}
-    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--b);border-radius:999px;padding:2px 8px;font-size:12px;color:var(--m);background:#fff}
-    .kpi{display:flex;gap:10px;flex-wrap:wrap}
-    .hidden{display:none!important}
-    .sectionTitle{margin:12px 0 6px 0;font-size:12px;color:#374151;font-weight:700}
-    .hr{height:1px;background:var(--b);margin:10px 0}
-    .hint{font-size:12px;color:#374151;background:#f3f4f6;border:1px dashed #d1d5db;border-radius:12px;padding:10px}
-    .small{font-size:12px}
-    .rightActions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
-    .flexBetween{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .toast{position:fixed;right:14px;bottom:14px;background:#111827;color:#fff;padding:10px 12px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);font-size:13px;opacity:0;transform:translateY(6px);transition:.18s;max-width: 420px}
+    .kpiGrid{display:grid;grid-template-columns: 1fr;gap:10px}
+    @media (min-width: 900px){ .kpiGrid{grid-template-columns: 1fr 1fr} }
+    @media (min-width: 1200px){ .kpiGrid{grid-template-columns: 1fr 1fr 1fr} }
+    .kpiCard{border:1px solid var(--b);border-radius:16px;padding:12px;background:#fff;cursor:pointer}
+    .kpiTitle{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .kpiTitle strong{font-size:13px}
+    .kpiTotal{font-size:18px;font-weight:800}
+    .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+    .chip{font-size:12px;background:var(--chip);border:1px solid var(--b);border-radius:999px;padding:4px 8px;cursor:pointer}
+    .chip:hover{filter:brightness(0.98)}
+    .tagOk{color:var(--ok);font-weight:800}
+    .tagWarn{color:var(--warn);font-weight:800}
+    .toast{position:fixed;right:14px;bottom:14px;background:#111827;color:#fff;padding:10px 12px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);font-size:13px;opacity:0;transform:translateY(6px);transition:.18s;max-width:480px;z-index:40}
     .toast.show{opacity:1;transform:translateY(0)}
-    .modalBackdrop{position:fixed;inset:0;background:rgba(17,24,39,.5);display:none;align-items:center;justify-content:center;padding:14px}
-    .modal{background:#fff;border-radius:16px;max-width:860px;width:100%;border:1px solid var(--b);box-shadow:0 20px 60px rgba(0,0,0,.25);padding:14px}
+    .modalBackdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
     .modalBackdrop.show{display:flex}
-    .modal h3{margin:0 0 8px 0;font-size:14px}
+    .modal{background:#fff;border-radius:18px;max-width:1100px;width:100%;border:1px solid var(--b);box-shadow:0 20px 70px rgba(0,0,0,.25);padding:14px}
+    .modal h3{margin:0 0 6px 0;font-size:14px}
+    .modalTabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px 0}
+    .modalTabs button{padding:6px 10px}
+    .modalTabs button.active{background:#111827;color:#fff;border-color:#111827}
+    .hint{font-size:12px;color:#334155;background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:14px;padding:10px}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .tagOk{color:var(--ok);font-weight:700}
-    .tagWarn{color:var(--warn);font-weight:700}
-    .btnLink{border:none;background:transparent;color:#2563eb;padding:0;cursor:pointer}
-    .fieldRow{display:grid;grid-template-columns: 1.2fr 1fr 1fr 0.7fr 0.5fr; gap:8px; align-items:end}
-    @media (max-width: 1100px){ .wrap{grid-template-columns:1fr} }
+    .view{display:none}
+    .view.show{display:block}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tabs button{padding:6px 10px}
+    .tabs button.active{background:#111827;color:#fff;border-color:#111827}
+    .subCard{border:1px solid var(--b);border-radius:16px;padding:12px;background:#fff}
+    .right{margin-left:auto}
+    .small{font-size:12px}
   </style>
 </head>
 <body>
   <header>
-    <div class="left">
-      <h1>TCN 職務再設計｜個案登打</h1>
-      <span class="badge" id="envBadge">Firebase</span>
-      <span class="badge" id="authBadge">Auth: Google</span>
-    </div>
-    <div class="row">
-      <span class="pill" id="userPill"><span class="muted">未登入</span></span>
-      <button id="btnLogin" class="primary">Google 登入</button>
-      <button id="btnLogout" class="hidden">登出</button>
+    <div class="topbar">
+      <div class="brand">
+        <h1>TCN 職務再設計｜案件平台（單檔）</h1>
+        <span class="badge">Firebase</span>
+      </div>
+
+      <nav class="nav">
+        <button id="navDashboard" data-view="dashboard">儀錶板</button>
+        <button id="navCases" data-view="cases">案件總攬</button>
+        <button id="navReports" data-view="reports">統計分析</button>
+        <button id="navDevices" data-view="devices">輔具中心</button>
+      </nav>
+
+      <div class="actions">
+        <button id="btnOpenSettings" hidden>系統設定</button>
+        <span class="pill" id="userPill"><span class="muted">未登入</span></span>
+        <button id="btnLogin" class="primary">Google 登入</button>
+        <button id="btnLogout" hidden>登出</button>
+      </div>
     </div>
   </header>
 
-  <div class="wrap">
-    <section class="card">
-      <div class="flexBetween">
-        <h2>個案清單</h2>
-        <div class="rightActions">
-          <button id="btnNewCase" disabled>新增個案</button>
-          <button id="btnReload" disabled>重新整理</button>
-        </div>
+  <main class="container">
+    <div class="card" id="loginHint">
+      <h2>登入</h2>
+      <div class="muted">
+        請使用 Google 帳號登入後開始使用。<br/>
+        注意：若用 <span class="mono">file://</span> 直接雙擊開啟，瀏覽器可能會擋 ES module 載入；建議 Firebase Hosting 或本機伺服器（例如 VSCode Live Server）。
       </div>
+    </div>
 
-      <div class="grid3">
-        <div>
-          <label>年度</label>
-          <select id="fYear" disabled>
-            <option value="115">115</option>
-            <option value="114">114</option>
-            <option value="113">113</option>
-          </select>
-        </div>
-        <div>
-          <label>狀態</label>
-          <select id="fStatus" disabled>
-            <option value="">全部</option>
-            <option value="進行中">進行中</option>
-            <option value="結案">結案</option>
-            <option value="退回">退回</option>
-            <option value="中途結案">中途結案</option>
-          </select>
-        </div>
-        <div>
-          <label>關鍵字（編號/單位/姓名/備註）</label>
-          <input id="fQ" placeholder="例如：JA-001、某某公司、王小明…" disabled />
-        </div>
-      </div>
+    <!-- Dashboard -->
+    <section class="view" id="viewDashboard">
+      <div class="grid two">
+        <section class="card">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <h2>我的工作台</h2>
+              <div class="muted">KPI 小卡依「案件類別」分布；點卡片或分類數字可直接套用篩選。</div>
+            </div>
+            <div class="row">
+              <div>
+                <label>年度</label>
+                <select id="dashYear">
+                  <option value="115">115</option>
+                  <option value="114">114</option>
+                  <option value="113">113</option>
+                </select>
+              </div>
+              <button id="btnDashRefresh">更新</button>
+            </div>
+          </div>
 
-      <div class="hr"></div>
+          <div class="hr"></div>
+          <div class="kpiGrid" id="dashKpiGrid"></div>
 
-      <div class="kpi" id="kpiBar"></div>
+          <div class="hr"></div>
 
-      <div class="hr"></div>
+          <div class="row" style="justify-content:space-between">
+            <div>
+              <div style="font-weight:800">快速清單</div>
+              <div class="muted">顯示你所選 KPI 狀態的案件（前 50 筆）。</div>
+            </div>
+            <div class="row">
+              <span class="pill" id="dashQuickPill">未選</span>
+              <button id="btnDashToCases">前往案件總攬</button>
+            </div>
+          </div>
 
-      <div class="muted small" id="listHint">登入後會載入資料。</div>
+          <div class="tableWrap" style="max-height:48vh;margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:90px;">編號</th>
+                  <th style="width:90px;">類別</th>
+                  <th>單位/個案</th>
+                  <th style="width:130px;">KPI</th>
+                  <th style="width:130px;">更新</th>
+                </tr>
+              </thead>
+              <tbody id="dashQuickTbody"></tbody>
+            </table>
+          </div>
+        </section>
 
-      <div style="overflow:auto; max-height: 58vh; border:1px solid var(--b); border-radius:12px;">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:110px;">編號</th>
-              <th>單位/對象</th>
-              <th style="width:90px;">狀態</th>
-              <th style="width:120px;">更新</th>
-            </tr>
-          </thead>
-          <tbody id="caseTbody"></tbody>
-        </table>
-      </div>
+        <section class="card">
+          <h2>提醒與摘要</h2>
+          <div class="muted">
+            這區先提供摘要。你要的「報告撰寫/審查/會議/成效/二代登打」提醒，後續會以期限欄位在這裡產生逾期/近期待辦清單。
+          </div>
 
-      <div class="hint" style="margin-top:12px;">
-        <div style="font-weight:700;margin-bottom:6px;">測試用白名單登入</div>
-        <div class="small">
-          只有你指定的 Google 帳號能登入。若不在名單，會立刻登出並顯示提示。<br/>
-          真正上線的保護請用 Firestore Rules 鎖住（前端白名單只是輔助）。
-        </div>
+          <div class="hr"></div>
+
+          <div class="hint">
+            <div style="font-weight:800;margin-bottom:6px;">第一次使用</div>
+            <div class="small">1) 用凱宇帳號登入（admin）後，點右上「系統設定」→「初始化設定」。</div>
+            <div class="small">2) 再到案件總攬匯入 Excel 建案，或手動新增案件。</div>
+          </div>
+
+          <div class="hr"></div>
+          <div class="pill"><span class="tagOk">●</span> 一般同仁只會看到自己的案件（以 Firestore 規則為準）</div>
+        </section>
       </div>
     </section>
 
-    <section class="card">
-      <div class="flexBetween">
-        <h2 id="formTitle">個案表單</h2>
-        <div class="rightActions">
-          <button id="btnManageFields" class="hidden">欄位管理</button>
-          <button id="btnDeleteCase" class="danger hidden">刪除</button>
-          <button id="btnSaveCase" class="primary" disabled>儲存</button>
+    <!-- Cases -->
+    <section class="view" id="viewCases">
+      <section class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <h2>案件總攬</h2>
+            <div class="muted">篩選、匯出、Excel 匯入建立案件。</div>
+          </div>
+          <div class="row">
+            <button id="btnCaseNew">新增案件</button>
+            <button id="btnCaseExport">匯出 CSV</button>
+            <button id="btnCaseImport">Excel 匯入</button>
+            <button id="btnCaseRefresh">更新</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid3">
+          <div><label>年度</label><select id="caseYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select></div>
+          <div><label>KPI 狀態</label><select id="caseKpi"></select></div>
+          <div><label>案件類別</label><select id="caseType"></select></div>
+          <div><label>分群（新案/成效）</label><select id="casePhase"></select></div>
+          <div><label>案件狀態</label><select id="caseStatus"></select></div>
+          <div><label>關鍵字（編號/單位/個案）</label><input id="caseQ" placeholder="例如：JA-001 / 某某公司 / 王小明" /></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row" style="justify-content:space-between;">
+          <div class="muted" id="caseHint">—</div>
+        </div>
+
+        <div class="tableWrap" style="max-height:62vh;margin-top:10px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:80px;">年度</th>
+                <th style="width:90px;">類別</th>
+                <th style="width:110px;">編號</th>
+                <th>單位/個案</th>
+                <th style="width:140px;">KPI</th>
+                <th style="width:110px;">分群</th>
+                <th style="width:120px;">狀態</th>
+                <th style="width:120px;">承辦</th>
+                <th style="width:130px;">更新</th>
+              </tr>
+            </thead>
+            <tbody id="caseTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="hint" style="margin-top:12px;">
+          <div style="font-weight:800;margin-bottom:6px;">Excel 匯入最小欄位</div>
+          <div class="muted">年度、編號、單位（或個案）；系統會依編號前綴（JA/AG/EC/UH/TA）自動判定案件類別。</div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Reports -->
+    <section class="view" id="viewReports">
+      <section class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <h2>統計分析</h2>
+            <div class="muted">執行狀況、輔具借用次數、性別/障礙類別。可匯出。</div>
+          </div>
+          <div class="row">
+            <div>
+              <label>年度</label>
+              <select id="repYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select>
+            </div>
+            <button id="btnRepRefresh">更新</button>
+            <button id="btnRepExport" class="primary">匯出 CSV</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid2">
+          <div class="subCard">
+            <h2 style="margin-bottom:6px;">(A) 執行狀況（分群 × 類別）</h2>
+            <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
+              <table>
+                <thead><tr><th style="width:110px;">分群</th><th style="width:120px;">類別</th><th style="width:90px;">家數</th><th style="width:90px;">案數</th></tr></thead>
+                <tbody id="repPhaseTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subCard">
+            <h2 style="margin-bottom:6px;">(B) 輔具試用（借用次數 Top30）</h2>
+            <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
+              <table>
+                <thead><tr><th>輔具</th><th style="width:110px;">借用次數</th><th style="width:110px;">借用中</th></tr></thead>
+                <tbody id="repLoanTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subCard">
+            <h2 style="margin-bottom:6px;">(C) 性別</h2>
+            <div class="tableWrap" style="max-height:30vh;margin-top:10px;">
+              <table>
+                <thead><tr><th>性別</th><th style="width:120px;">件數</th></tr></thead>
+                <tbody id="repGenderTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subCard">
+            <h2 style="margin-bottom:6px;">(D) 障礙類別</h2>
+            <div class="tableWrap" style="max-height:30vh;margin-top:10px;">
+              <table>
+                <thead><tr><th>障礙類別</th><th style="width:120px;">件數</th></tr></thead>
+                <tbody id="repDisTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="hint" style="margin-top:12px;">
+          <div style="font-weight:800;margin-bottom:6px;">效能提示</div>
+          <div class="muted">目前報表採「前端讀取年度案件 → 前端聚合」。若資料量很大，再改成 aggregates（Cloud Functions）會更快。</div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Devices -->
+    <section class="view" id="viewDevices">
+      <section class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <h2>輔具中心</h2>
+            <div class="muted">庫存、借用/歸還、借用紀錄。</div>
+          </div>
+          <div class="row">
+            <button id="btnDevNew" hidden>新增輔具</button>
+            <button id="btnDevRefresh">更新</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid2">
+          <div class="subCard">
+            <h2 style="margin-bottom:6px;">借用 / 歸還</h2>
+            <div class="grid2">
+              <div><label>設備代碼 / QR（建議就是 deviceId）</label><input id="devScan" placeholder="DEV-001" /></div>
+              <div>
+                <label>操作</label>
+                <div class="row">
+                  <button id="btnDevLoad">載入</button>
+                  <button id="btnDevBorrow" class="primary" disabled>借出</button>
+                  <button id="btnDevReturn" disabled>歸還</button>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:10px;">
+              <label>借用者</label>
+              <select id="devBorrower"></select>
+            </div>
+            <div class="hr"></div>
+            <div class="hint" id="devInfo">尚未載入設備。</div>
+          </div>
+
+          <div class="subCard">
+            <h2 style="margin-bottom:6px;">庫存清單</h2>
+            <div class="grid3">
+              <div><label>關鍵字</label><input id="devQ" placeholder="搜尋..." /></div>
+              <div><label>狀態</label>
+                <select id="devStatus">
+                  <option value="">全部</option>
+                  <option value="可借">可借</option>
+                  <option value="借出">借出</option>
+                  <option value="維修">維修</option>
+                  <option value="停用">停用</option>
+                </select>
+              </div>
+              <div class="row" style="align-items:flex-end;justify-content:flex-end"><span class="muted" id="devHint">—</span></div>
+            </div>
+
+            <div class="tableWrap" style="max-height:46vh;margin-top:10px;">
+              <table>
+                <thead><tr><th style="width:110px;">代碼</th><th>名稱</th><th style="width:110px;">狀態</th><th style="width:170px;">借用者</th></tr></thead>
+                <tbody id="devInvTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="subCard">
+          <h2 style="margin-bottom:6px;">借用紀錄（最近 200 筆）</h2>
+          <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
+            <table>
+              <thead><tr><th>輔具</th><th style="width:140px;">借用者</th><th style="width:170px;">借出</th><th style="width:170px;">歸還</th></tr></thead>
+              <tbody id="devLoanTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Case Detail -->
+    <section class="view" id="viewCase">
+      <section class="card">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h2 id="cdTitle">案件｜新增</h2>
+            <div class="muted" id="cdSubtitle">—</div>
+          </div>
+          <div class="row">
+            <button id="btnCdBack">回案件總攬</button>
+            <button id="btnCdDelete" class="danger" hidden>刪除</button>
+            <button id="btnCdSave" class="primary">儲存</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid3">
+          <div><label>年度</label><select id="cdYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select></div>
+          <div><label>編號（自動判定類別）</label><input id="cdCaseNo" placeholder="JA-001" /></div>
+          <div><label>案件類別（可覆蓋）</label><select id="cdType"></select></div>
+          <div><label>KPI 狀態</label><select id="cdKpi"></select></div>
+          <div><label>分群</label><select id="cdPhase"></select></div>
+          <div><label>案件狀態</label><select id="cdStatus"></select></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="tabs" id="cdTabs"></div>
+
+        <div class="hr"></div>
+
+        <div id="cdPanels"></div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Settings modal -->
+  <div class="modalBackdrop" id="settingsModal">
+    <div class="modal">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3>系統設定（管理員）</h3>
+          <div class="muted">代碼規則（JA/AG/EC/UH/TA）與下拉選單皆可在此維護。</div>
+        </div>
+        <div class="row">
+          <button id="btnInitSettings">初始化設定</button>
+          <button id="btnCloseSettings">關閉</button>
         </div>
       </div>
+
+      <div class="modalTabs">
+        <button id="tabRules" class="active">案件代碼與類別</button>
+        <button id="tabOptions">下拉選單</button>
+      </div>
+
+      <div id="panelRules">
+        <div class="hint">
+          <div><span class="tagOk">●</span> 系統會用「編號」前綴（例如 <span class="mono">JA-001</span> → <span class="mono">JA</span>）自動判定案件類別。</div>
+          <div><span class="tagWarn">●</span> 新增代碼只需在此新增規則即可，無須改程式。</div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div style="font-weight:800;margin-bottom:6px;">案件類別</div>
+            <div id="caseTypeList" class="row"></div>
+          </div>
+          <div class="row">
+            <button id="btnAddCaseType">新增類別</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row" style="justify-content:space-between">
+          <div style="font-weight:800">代碼規則</div>
+          <div class="row">
+            <button id="btnAddPrefix">新增代碼</button>
+            <button id="btnSaveRules" class="primary">儲存代碼規則</button>
+          </div>
+        </div>
+
+        <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:120px;">代碼 code</th>
+                <th style="width:160px;">顯示 label</th>
+                <th style="width:160px;">對應類別</th>
+                <th style="width:110px;">狀態</th>
+                <th style="width:90px;">排序</th>
+                <th style="width:90px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="prefixTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="panelOptions" hidden>
+        <div class="hint">每行一個選項（可調整順序）。會直接影響下拉選單與 KPI 小卡。</div>
+
+        <div class="hr"></div>
+
+        <div class="grid2">
+          <div><label>KPI 小卡狀態（kpiStages）</label><textarea id="opt_kpiStages" class="mono"></textarea></div>
+          <div><label>報告狀態（reportStatuses）</label><textarea id="opt_reportStatuses" class="mono"></textarea></div>
+          <div><label>案件狀態（caseStatuses）</label><textarea id="opt_caseStatuses" class="mono"></textarea></div>
+          <div><label>案件分群（casePhases）</label><textarea id="opt_casePhases" class="mono"></textarea></div>
+          <div><label>性別（genders）</label><textarea id="opt_genders" class="mono"></textarea></div>
+          <div><label>障礙類別（disabilityTypes）</label><textarea id="opt_disabilityTypes" class="mono"></textarea></div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="row" style="justify-content:flex-end">
+          <button id="btnSaveOptions" class="primary">儲存下拉選單</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import modal -->
+  <div class="modalBackdrop" id="importModal">
+    <div class="modal">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3>Excel 匯入建立案件</h3>
+          <div class="muted">預覽→驗證→批次寫入。</div>
+        </div>
+        <div class="row">
+          <button id="btnCloseImport">關閉</button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
 
       <div class="grid2">
         <div>
-          <label>編號（建議唯一）</label>
-          <input id="fixed_caseNo" placeholder="例如：JA-001" disabled />
+          <label>選擇 Excel 檔（.xlsx）</label>
+          <input id="fileInput" type="file" accept=".xlsx,.xls" />
+          <div class="muted" style="margin-top:8px;">第一列建議是欄位名稱。</div>
         </div>
-        <div>
-          <label>狀態</label>
-          <select id="fixed_status" disabled>
-            <option value="進行中">進行中</option>
-            <option value="結案">結案</option>
-            <option value="退回">退回</option>
-            <option value="中途結案">中途結案</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="grid2" style="margin-top:10px;">
-        <div>
-          <label>年度</label>
-          <select id="fixed_year" disabled>
-            <option value="115">115</option>
-            <option value="114">114</option>
-            <option value="113">113</option>
-          </select>
-        </div>
-        <div>
-          <label>承辦（自動帶入）</label>
-          <input id="fixed_owner" disabled />
+        <div class="hint">
+          <div style="font-weight:800;margin-bottom:6px;">欄位對應</div>
+          <div class="muted">會記住在本機（localStorage）。</div>
         </div>
       </div>
 
       <div class="hr"></div>
 
-      <div id="dynamicForm"></div>
+      <div class="grid3" id="mappingArea"></div>
 
       <div class="hr"></div>
 
-      <div class="muted small">
-        <span class="tagOk">●</span> 固定欄位：年度/編號/狀態/承辦　
-        <span class="tagWarn">●</span> 其餘欄位由 <span class="mono">fieldDefs</span> 動態生成
-      </div>
-    </section>
-  </div>
-
-  <div class="modalBackdrop" id="fieldModal">
-    <div class="modal">
-      <div class="flexBetween">
-        <h3>欄位管理（fieldDefs）</h3>
-        <button id="btnCloseFieldModal">關閉</button>
-      </div>
-
-      <div class="hint" style="margin:10px 0;">
-        key 用英數與底線（例如 <span class="mono">orgName</span>、<span class="mono">clientName</span>）。type：text/textarea/number/date/select/multiselect/boolean
-      </div>
-
-      <div class="fieldRow">
-        <div>
-          <label>key（唯一）</label>
-          <input id="fd_key" placeholder="例如：orgName" />
-        </div>
-        <div>
-          <label>顯示名稱 label</label>
-          <input id="fd_label" placeholder="例如：單位名稱" />
-        </div>
-        <div>
-          <label>type</label>
-          <select id="fd_type">
-            <option value="text">text</option>
-            <option value="textarea">textarea</option>
-            <option value="number">number</option>
-            <option value="date">date</option>
-            <option value="select">select</option>
-            <option value="multiselect">multiselect</option>
-            <option value="boolean">boolean</option>
-          </select>
-        </div>
-        <div>
-          <label>group（分區）</label>
-          <input id="fd_group" placeholder="例如：基本資料" />
-        </div>
-        <div>
-          <label>必填</label>
-          <select id="fd_required">
-            <option value="false">否</option>
-            <option value="true">是</option>
-          </select>
+      <div class="row" style="justify-content:space-between;">
+        <div class="muted" id="importHint">尚未載入檔案。</div>
+        <div class="row">
+          <button id="btnImportRun" class="primary" disabled>開始匯入</button>
         </div>
       </div>
 
-      <div style="margin-top:10px;">
-        <label>options（選單/多選用，以逗號分隔）</label>
-        <input id="fd_options" placeholder="例如：進行中,結案,退回" />
-      </div>
-
-      <div class="row" style="margin-top:10px;">
-        <button id="btnAddField" class="primary">新增/更新欄位</button>
-        <button id="btnSeedFields">建立示範欄位</button>
-        <span class="muted small">（示範欄位含：單位名稱、個案姓名、聯絡電話、訪視日期、備註）</span>
-      </div>
-
-      <div class="hr"></div>
-
-      <div style="overflow:auto; max-height: 46vh; border:1px solid var(--b); border-radius:12px;">
+      <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
         <table>
           <thead>
             <tr>
-              <th style="width:140px;">key</th>
-              <th style="width:160px;">label</th>
-              <th style="width:110px;">type</th>
-              <th>group</th>
-              <th style="width:70px;">必填</th>
-              <th style="width:120px;">操作</th>
+              <th style="width:50px;">匯入</th>
+              <th style="width:70px;">年度</th>
+              <th style="width:110px;">編號</th>
+              <th>單位/個案</th>
+              <th style="width:90px;">類別</th>
+              <th style="width:110px;">KPI</th>
+              <th style="width:160px;">驗證</th>
             </tr>
           </thead>
-          <tbody id="fieldTbody"></tbody>
+          <tbody id="importTbody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- New device modal -->
+  <div class="modalBackdrop" id="deviceModal">
+    <div class="modal">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div><h3>新增輔具</h3><div class="muted">deviceId 建議作為 QR 內容。</div></div>
+        <div class="row"><button id="btnCloseDeviceModal">關閉</button></div>
+      </div>
+      <div class="hr"></div>
+      <div class="grid2">
+        <div><label>deviceId</label><input id="d_id" placeholder="DEV-001" /></div>
+        <div><label>名稱</label><input id="d_name" placeholder="升降工作台" /></div>
+        <div><label>分類（選填）</label><input id="d_category" placeholder="搬運/站立輔助" /></div>
+        <div><label>狀態</label><select id="d_status"><option value="可借">可借</option><option value="維修">維修</option><option value="停用">停用</option></select></div>
+      </div>
+      <div class="hr"></div>
+      <div class="row" style="justify-content:flex-end"><button id="btnCreateDevice" class="primary">建立</button></div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script type="module">
+    // ===== Firebase (modular) =====
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+      collection, getDocs, query, where, limit, writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+    // ===== Firebase config (yours) =====
     const firebaseConfig = {
       apiKey: "AIzaSyAn095SDFUIC8V5ExwWNvKiWAn-2pc4upw",
       authDomain: "tcnjob-case.firebaseapp.com",
@@ -280,18 +615,14 @@
       measurementId: "G-CHLNJZSFTS"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
-
+    // ===== Allowlist =====
     const ALLOW_EMAILS = new Set([
       "kaiyu097@gmail.com",
       "n85551@gmail.com",
       "hkkwork@gmail.com",
       "judyfang1226@gmail.com",
       "kppt1110601@gmail.com",
-      "yilun1208@gmail.com",
+      "yilun1208@gmail.com"
     ]);
 
     const ROLE_BY_EMAIL = {
@@ -300,7 +631,7 @@
       "hkkwork@gmail.com": "staff",
       "judyfang1226@gmail.com": "staff",
       "kppt1110601@gmail.com": "staff",
-      "yilun1208@gmail.com": "staff",
+      "yilun1208@gmail.com": "staff"
     };
 
     const NAME_BY_EMAIL = {
@@ -309,10 +640,17 @@
       "hkkwork@gmail.com": "高湘怡",
       "judyfang1226@gmail.com": "方姿云",
       "kppt1110601@gmail.com": "陳秋媚",
-      "yilun1208@gmail.com": "盧怡倫",
+      "yilun1208@gmail.com": "盧怡倫"
     };
 
-    const $ = (id) => document.getElementById(id);
+    // ===== App init =====
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // ===== Helpers =====
+    const $ = (id)=>document.getElementById(id);
     const toastEl = $("toast");
     let toastTimer = null;
     function toast(msg){
@@ -321,46 +659,1612 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(()=>toastEl.classList.remove("show"), 2600);
     }
-
-    function setDisabledAll(disabled){
-      ["btnNewCase","btnReload","fYear","fStatus","fQ","fixed_caseNo","fixed_status","fixed_year"].forEach(id => $(id).disabled = disabled);
-      $("btnSaveCase").disabled = disabled;
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function normalize(s){ return (s||"").toString().trim().toLowerCase(); }
+    function fmtDT(v){
+      if(!v) return "";
+      const d = v?.toDate ? v.toDate() : (v instanceof Date ? v : new Date(v));
+      try { return d.toLocaleString("zh-TW",{hour12:false}); } catch { return ""; }
+    }
+    function parseCaseCode(caseNo){
+      const raw = (caseNo || "").trim();
+      if(!raw) return "";
+      const beforeDash = raw.split("-")[0];
+      return (beforeDash || raw.substring(0,2)).toUpperCase();
+    }
+    async function safeGetDoc(path){
+      const ref = doc(db, ...path.split("/"));
+      const snap = await getDoc(ref);
+      return snap.exists() ? snap.data() : null;
+    }
+    async function safeSetDoc(path, data, merge=true){
+      const ref = doc(db, ...path.split("/"));
+      await setDoc(ref, data, { merge });
     }
 
+    // ===== Settings =====
+    let settings = null;
+    function defaultSettings(){
+      return {
+        caseCodeRules: {
+          caseTypes: ["身障","中高齡","單側","關稅"],
+          prefixes: [
+            { code:"JA", label:"JA", caseType:"身障", enabled:true, sort:10 },
+            { code:"AG", label:"AG", caseType:"中高齡", enabled:true, sort:20 },
+            { code:"EC", label:"EC", caseType:"單側", enabled:true, sort:30 },
+            { code:"UH", label:"UH", caseType:"關稅", enabled:true, sort:40 },
+            { code:"TA", label:"TA", caseType:"關稅", enabled:true, sort:50 }
+          ]
+        },
+        options: {
+          kpiStages: ["待訪視","撰寫報告中","報告審查中","待審查會議","待成效","待二代系統登打","已結案"],
+          reportStatuses: ["未開始","撰寫中","審查中","退回修正","已定稿"],
+          caseStatuses: ["進行中","退回","中途結案","結案"],
+          casePhases: ["新案","舊案成效","新案成效"],
+          genders: ["男","女","其他/未填"],
+          disabilityTypes: ["肢體","視覺","聽覺","智能","精神","多重","其他/未填"]
+        }
+      };
+    }
+    async function loadSettings(){
+      const d = defaultSettings();
+      const r1 = await safeGetDoc("settings/caseCodeRules");
+      const r2 = await safeGetDoc("settings/options");
+      settings = {
+        caseCodeRules: r1 || d.caseCodeRules,
+        options: r2 || d.options
+      };
+
+      settings.caseCodeRules.caseTypes = settings.caseCodeRules.caseTypes || d.caseCodeRules.caseTypes;
+      settings.caseCodeRules.prefixes = settings.caseCodeRules.prefixes || d.caseCodeRules.prefixes;
+      settings.caseCodeRules.prefixes = (settings.caseCodeRules.prefixes || []).map(x=>({
+        code: (x.code||"").toUpperCase(),
+        label: x.label || x.code,
+        caseType: x.caseType || "其他",
+        enabled: x.enabled !== false,
+        sort: x.sort ?? 999
+      })).sort((a,b)=> (a.sort??999)-(b.sort??999) || (a.code||"").localeCompare(b.code||""));
+
+      const o = settings.options;
+      o.kpiStages = o.kpiStages || d.options.kpiStages;
+      o.reportStatuses = o.reportStatuses || d.options.reportStatuses;
+      o.caseStatuses = o.caseStatuses || d.options.caseStatuses;
+      o.casePhases = o.casePhases || d.options.casePhases;
+      o.genders = o.genders || d.options.genders;
+      o.disabilityTypes = o.disabilityTypes || d.options.disabilityTypes;
+    }
+    function detectCaseTypeFromCaseNo(caseNo){
+      const code = parseCaseCode(caseNo);
+      const rule = (settings?.caseCodeRules?.prefixes || []).find(p=>p.enabled && p.code === code);
+      return { caseCode: code, caseType: rule?.caseType || "其他" };
+    }
+
+    // ===== Auth state =====
     let currentUser = null;
+    let currentEmail = null;
     let currentRole = null;
     let currentName = null;
-    let currentCaseId = null;
-    let fieldDefs = [];
-    let casesCache = [];
-    let hasLoaded = false;
 
-    $("btnLogin").addEventListener("click", async () => {
+    async function upsertUserDoc(){
+      try{
+        const ref = doc(db, "users", currentUser.uid);
+        const snap = await getDoc(ref);
+        const payload = { email: currentEmail, displayName: currentName, role: currentRole, updatedAt: new Date() };
+        if(!snap.exists()) await setDoc(ref, { ...payload, createdAt: new Date() });
+        else await updateDoc(ref, payload);
+      }catch(e){
+        console.warn("users upsert skipped:", e?.message || e);
+      }
+    }
+
+    // ===== Router =====
+    function showView(name){
+      const views = ["dashboard","cases","reports","devices","case"];
+      for(const v of views){
+        $("view" + v.charAt(0).toUpperCase() + v.slice(1)).classList.toggle("show", v===name);
+      }
+      // nav active
+      $("navDashboard").classList.toggle("active", name==="dashboard");
+      $("navCases").classList.toggle("active", name==="cases");
+      $("navReports").classList.toggle("active", name==="reports");
+      $("navDevices").classList.toggle("active", name==="devices");
+    }
+
+    function go(view, params={}){
+      const u = new URL(window.location.href);
+      u.hash = "";
+      u.search = "";
+      const q = new URLSearchParams(params);
+      const qs = q.toString();
+      // use hash route: #view?...
+      window.location.hash = view + (qs ? ("?" + qs) : "");
+    }
+
+    function parseHash(){
+      const h = (window.location.hash || "").replace(/^#/, "");
+      if(!h) return { view:"dashboard", params:new URLSearchParams() };
+      const [view, qs] = h.split("?");
+      return { view: view || "dashboard", params: new URLSearchParams(qs || "") };
+    }
+
+    window.addEventListener("hashchange", async ()=>{
+      if(!currentUser) return;
+      await route();
+    });
+
+    $("navDashboard").addEventListener("click", ()=> go("dashboard"));
+    $("navCases").addEventListener("click", ()=> go("cases"));
+    $("navReports").addEventListener("click", ()=> go("reports"));
+    $("navDevices").addEventListener("click", ()=> go("devices"));
+
+    // ===== Settings modal =====
+    function setupSettingsModal(){
+      const backdrop = $("settingsModal");
+      const openBtn = $("btnOpenSettings");
+      const closeBtn = $("btnCloseSettings");
+      const initBtn = $("btnInitSettings");
+      const tabRulesBtn = $("tabRules");
+      const tabOptionsBtn = $("tabOptions");
+      const panelRules = $("panelRules");
+      const panelOptions = $("panelOptions");
+
+      function setTab(which){
+        tabRulesBtn.classList.toggle("active", which==="rules");
+        tabOptionsBtn.classList.toggle("active", which==="options");
+        panelRules.hidden = which!=="rules";
+        panelOptions.hidden = which!=="options";
+      }
+      tabRulesBtn.addEventListener("click", ()=>setTab("rules"));
+      tabOptionsBtn.addEventListener("click", ()=>setTab("options"));
+      setTab("rules");
+
+      if(openBtn) openBtn.addEventListener("click", async ()=>{
+        await renderSettingsModal();
+        backdrop.classList.add("show");
+      });
+      backdrop.addEventListener("click", (e)=>{ if(e.target === backdrop) backdrop.classList.remove("show"); });
+      closeBtn.addEventListener("click", ()=> backdrop.classList.remove("show"));
+
+      $("btnAddCaseType").addEventListener("click", async ()=>{
+        const v = prompt("輸入新的案件類別名稱");
+        if(!v) return;
+        settings.caseCodeRules.caseTypes = Array.from(new Set([...(settings.caseCodeRules.caseTypes||[]), v.trim()]));
+        await renderSettingsModal();
+      });
+
+      $("btnAddPrefix").addEventListener("click", async ()=>{
+        const tbody = $("prefixTbody");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input data-k="code" value="" placeholder="例如 JA" /></td>
+          <td><input data-k="label" value="" placeholder="顯示用" /></td>
+          <td><select data-k="caseType"></select></td>
+          <td>
+            <select data-k="enabled">
+              <option value="true">啟用</option>
+              <option value="false">停用</option>
+            </select>
+          </td>
+          <td><input data-k="sort" type="number" value="999" /></td>
+          <td><button class="danger" data-act="delPrefix">刪除</button></td>
+        `;
+        tr.querySelector('select[data-k="caseType"]').innerHTML = (settings.caseCodeRules.caseTypes||[]).map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+        tr.querySelector("button[data-act=delPrefix]").addEventListener("click", ()=> tr.remove());
+        tbody.appendChild(tr);
+      });
+
+      $("btnSaveRules").addEventListener("click", async ()=>{
+        const tbody = $("prefixTbody");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const prefixes = [];
+        for(const r of rows){
+          const code = (r.querySelector('[data-k="code"]').value || "").trim().toUpperCase();
+          const label = (r.querySelector('[data-k="label"]').value || "").trim();
+          const caseType = r.querySelector('[data-k="caseType"]').value;
+          const enabled = r.querySelector('[data-k="enabled"]').value === "true";
+          const sort = Number(r.querySelector('[data-k="sort"]').value || 999);
+          if(!code) continue;
+          prefixes.push({ code, label: label||code, caseType, enabled, sort });
+        }
+        settings.caseCodeRules.prefixes = prefixes.sort((a,b)=> (a.sort??999)-(b.sort??999) || (a.code||"").localeCompare(b.code||""));
+        try{
+          await safeSetDoc("settings/caseCodeRules", settings.caseCodeRules, true);
+          toast("已儲存代碼規則。");
+          await loadSettings();
+          await renderSettingsModal();
+          refreshAllViewsLight();
+        }catch(e){
+          console.error(e);
+          toast("儲存失敗：" + (e?.message || e));
+        }
+      });
+
+      $("btnSaveOptions").addEventListener("click", async ()=>{
+        function lines(id){ return $(id).value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); }
+        settings.options.kpiStages = lines("opt_kpiStages");
+        settings.options.reportStatuses = lines("opt_reportStatuses");
+        settings.options.caseStatuses = lines("opt_caseStatuses");
+        settings.options.casePhases = lines("opt_casePhases");
+        settings.options.genders = lines("opt_genders");
+        settings.options.disabilityTypes = lines("opt_disabilityTypes");
+        try{
+          await safeSetDoc("settings/options", settings.options, true);
+          toast("已儲存下拉選單。");
+          await loadSettings();
+          refreshAllViewsLight();
+        }catch(e){
+          console.error(e);
+          toast("儲存失敗：" + (e?.message || e));
+        }
+      });
+
+      initBtn.addEventListener("click", async ()=>{
+        if(!confirm("要初始化設定嗎？（若 Firestore 尚未建立 settings 文件）")) return;
+        const d = defaultSettings();
+        try{
+          await safeSetDoc("settings/caseCodeRules", d.caseCodeRules, true);
+          await safeSetDoc("settings/options", d.options, true);
+          await loadSettings();
+          toast("已初始化設定。");
+          await renderSettingsModal();
+          refreshAllViewsLight();
+        }catch(e){
+          console.error(e);
+          toast("初始化失敗：" + (e?.message || e));
+        }
+      });
+    }
+
+    async function renderSettingsModal(){
+      // types list
+      const typeList = $("caseTypeList");
+      typeList.innerHTML = "";
+      for(const t of (settings.caseCodeRules.caseTypes || [])){
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `<span class="pill">${escapeHtml(t)}</span><button class="danger" data-type="${escapeHtml(t)}">刪除</button>`;
+        row.querySelector("button").addEventListener("click", async ()=>{
+          if(!confirm(`確定刪除類別「${t}」？`)) return;
+          settings.caseCodeRules.caseTypes = (settings.caseCodeRules.caseTypes||[]).filter(x=>x!==t);
+          await renderSettingsModal();
+        });
+        typeList.appendChild(row);
+      }
+
+      // prefixes
+      const tbody = $("prefixTbody");
+      tbody.innerHTML = "";
+      const types = settings.caseCodeRules.caseTypes || [];
+      const typeOpts = types.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+      for(const p of (settings.caseCodeRules.prefixes || [])){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input data-k="code" value="${escapeHtml(p.code)}" /></td>
+          <td><input data-k="label" value="${escapeHtml(p.label||p.code)}" /></td>
+          <td><select data-k="caseType">${typeOpts}</select></td>
+          <td>
+            <select data-k="enabled">
+              <option value="true">啟用</option>
+              <option value="false">停用</option>
+            </select>
+          </td>
+          <td><input data-k="sort" type="number" value="${escapeHtml(p.sort ?? 999)}" /></td>
+          <td><button class="danger">刪除</button></td>
+        `;
+        tr.querySelector('select[data-k="caseType"]').value = p.caseType || (types[0]||"其他");
+        tr.querySelector('select[data-k="enabled"]').value = (p.enabled!==false) ? "true" : "false";
+        tr.querySelector("button").addEventListener("click", ()=>{ if(confirm("確定刪除此代碼？")) tr.remove(); });
+        tbody.appendChild(tr);
+      }
+
+      // options
+      $("opt_kpiStages").value = (settings.options.kpiStages||[]).join("\n");
+      $("opt_reportStatuses").value = (settings.options.reportStatuses||[]).join("\n");
+      $("opt_caseStatuses").value = (settings.options.caseStatuses||[]).join("\n");
+      $("opt_casePhases").value = (settings.options.casePhases||[]).join("\n");
+      $("opt_genders").value = (settings.options.genders||[]).join("\n");
+      $("opt_disabilityTypes").value = (settings.options.disabilityTypes||[]).join("\n");
+    }
+
+    // ===== Login buttons =====
+    $("btnLogin").addEventListener("click", async ()=>{
       try{ await signInWithPopup(auth, provider); }
       catch(e){ console.error(e); toast("登入失敗：" + (e?.message || e)); }
     });
-
-    $("btnLogout").addEventListener("click", async () => {
+    $("btnLogout").addEventListener("click", async ()=>{
       try{ await signOut(auth); }
       catch(e){ console.error(e); toast("登出失敗：" + (e?.message || e)); }
     });
 
-    onAuthStateChanged(auth, async (user) => {
+    // ===== Data caches =====
+    let cacheCasesByYear = new Map(); // year -> array
+    let cacheDevices = [];
+    let cacheLoans = [];
+    let dashSelectedStage = null;
+    let dashSelectedType = null;
+
+    // ===== Views: Dashboard =====
+    $("btnDashRefresh").addEventListener("click", ()=> refreshDashboard(true));
+    $("dashYear").addEventListener("change", ()=> refreshDashboard(true));
+    $("btnDashToCases").addEventListener("click", ()=>{
+      const year = $("dashYear").value;
+      go("cases", { year, kpiStage: dashSelectedStage || "", caseType: dashSelectedType || "" });
+    });
+
+    async function loadCasesYear(year, force=false){
+      if(!force && cacheCasesByYear.has(year)) return cacheCasesByYear.get(year);
+      const snap = await getDocs(query(collection(db,"cases"), where("year","==",String(year)), limit(5000)));
+      const items = [];
+      snap.forEach(d=> items.push({ id:d.id, ...d.data() }));
+      // sort by updatedAt desc
+      items.sort((a,b)=> {
+        const ta = (a.updatedAt?.toDate ? a.updatedAt.toDate() : a.updatedAt) || 0;
+        const tb = (b.updatedAt?.toDate ? b.updatedAt.toDate() : b.updatedAt) || 0;
+        return (tb?.getTime?.()||0) - (ta?.getTime?.()||0);
+      });
+      cacheCasesByYear.set(year, items);
+      return items;
+    }
+
+    function dashboardCounts(cases){
+      const stages = settings.options.kpiStages || [];
+      const types = settings.caseCodeRules.caseTypes || [];
+      const map = {};
+      for(const st of stages){
+        map[st] = { _total:0 };
+        for(const t of types) map[st][t] = 0;
+      }
+      for(const c of cases){
+        const st = c.kpiStage || stages[0] || "未設定";
+        const tp = c.caseType || "其他";
+        if(!map[st]) {
+          map[st] = { _total: 0 };
+          for(const t of types) map[st][t] = 0;
+        }
+        if(map[st][tp] === undefined) map[st][tp] = 0;
+        map[st][tp] += 1;
+        map[st]._total += 1;
+      }
+      return { stages, types, map };
+    }
+
+    function renderDashboardKpis(cases){
+      const { stages, types, map } = dashboardCounts(cases);
+      const grid = $("dashKpiGrid");
+      grid.innerHTML = "";
+      if(!stages.length){
+        grid.innerHTML = `<div class="hint">尚未設定 kpiStages。請用管理員「系統設定」初始化。</div>`;
+        return;
+      }
+
+      for(const st of stages){
+        const m = map[st] || { _total:0 };
+        const card = document.createElement("div");
+        card.className = "kpiCard";
+        card.innerHTML = `
+          <div class="kpiTitle">
+            <strong>${escapeHtml(st)}</strong>
+            <div class="kpiTotal">${m._total || 0}</div>
+          </div>
+          <div class="chips"></div>
+        `;
+        const chips = card.querySelector(".chips");
+
+        for(const t of types){
+          const chip = document.createElement("div");
+          chip.className = "chip";
+          chip.textContent = `${t} ${m[t] || 0}`;
+          chip.addEventListener("click", (e)=>{
+            e.stopPropagation();
+            dashSelectedStage = st;
+            dashSelectedType = t;
+            renderDashboardQuick(cases);
+          });
+          chips.appendChild(chip);
+        }
+
+        card.addEventListener("click", ()=>{
+          dashSelectedStage = st;
+          dashSelectedType = null;
+          renderDashboardQuick(cases);
+        });
+
+        grid.appendChild(card);
+      }
+
+      if(!dashSelectedStage) dashSelectedStage = stages[0];
+      renderDashboardQuick(cases);
+    }
+
+    function renderDashboardQuick(cases){
+      $("dashQuickPill").textContent = dashSelectedStage ? `${dashSelectedStage}${dashSelectedType ? "｜"+dashSelectedType : ""}` : "未選";
+      const tbody = $("dashQuickTbody");
+      tbody.innerHTML = "";
+
+      const list = cases.filter(c=>{
+        if(dashSelectedStage && (c.kpiStage||"") !== dashSelectedStage) return false;
+        if(dashSelectedType && (c.caseType||"") !== dashSelectedType) return false;
+        return true;
+      }).slice(0,50);
+
+      for(const c of list){
+        const tr = document.createElement("tr");
+        tr.style.cursor = "pointer";
+        tr.addEventListener("click", ()=> go("case", { id: c.id }));
+        tr.innerHTML = `
+          <td><span class="mono">${escapeHtml(c.caseNo||"")}</span></td>
+          <td>${escapeHtml(c.caseType||"")}</td>
+          <td>${escapeHtml(c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || "")}</td>
+          <td>${escapeHtml(c.kpiStage||"")}</td>
+          <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      if(!list.length){
+        tbody.innerHTML = `<tr><td colspan="5" class="muted">沒有符合條件的案件。</td></tr>`;
+      }
+    }
+
+    async function refreshDashboard(force=false){
+      try{
+        $("btnDashRefresh").disabled = true;
+        const year = $("dashYear").value;
+        const all = await loadCasesYear(year, force);
+        const staffFiltered = (currentRole==="admin") ? all : all.filter(x=>x.ownerUid===currentUser.uid);
+        renderDashboardKpis(staffFiltered);
+      }catch(e){
+        console.error(e);
+        toast("載入失敗：" + (e?.message || e));
+      }finally{
+        $("btnDashRefresh").disabled = false;
+      }
+    }
+
+    // ===== Views: Cases =====
+    let caseAll = [];
+    let caseFiltered = [];
+    $("btnCaseRefresh").addEventListener("click", ()=> refreshCases(true));
+    $("caseYear").addEventListener("change", ()=> refreshCases(true));
+    $("btnCaseExport").addEventListener("click", exportCasesCsv);
+    $("btnCaseNew").addEventListener("click", ()=> go("case"));
+    $("btnCaseImport").addEventListener("click", openImportModal);
+    ["caseKpi","caseType","casePhase","caseStatus"].forEach(id=> $(id).addEventListener("change", renderCases));
+    $("caseQ").addEventListener("input", renderCases);
+
+    function initCasesFilters(){
+      $("caseKpi").innerHTML = `<option value="">全部</option>` + (settings.options.kpiStages||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      $("caseType").innerHTML = `<option value="">全部</option>` + (settings.caseCodeRules.caseTypes||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      $("casePhase").innerHTML = `<option value="">全部</option>` + (settings.options.casePhases||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      $("caseStatus").innerHTML = `<option value="">全部</option>` + (settings.options.caseStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+    }
+
+    function renderCases(){
+      const kpi = $("caseKpi").value;
+      const type = $("caseType").value;
+      const phase = $("casePhase").value;
+      const status = $("caseStatus").value;
+      const q = normalize($("caseQ").value);
+
+      caseFiltered = caseAll.filter(c=>{
+        if(currentRole!=="admin" && c.ownerUid!==currentUser.uid) return false;
+        if(kpi && (c.kpiStage||"")!==kpi) return false;
+        if(type && (c.caseType||"")!==type) return false;
+        if(phase && (c.casePhase||"")!==phase) return false;
+        if(status && (c.caseStatus||"")!==status) return false;
+        if(q){
+          const hay = normalize([c.caseNo,c.caseType,c.orgName,c.basic?.orgName,c.clientName,c.basic?.clientName,c.ownerName].filter(Boolean).join(" "));
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      $("caseHint").textContent = `共 ${caseFiltered.length} 筆`;
+
+      const tbody = $("caseTbody");
+      tbody.innerHTML = "";
+      for(const c of caseFiltered){
+        const tr = document.createElement("tr");
+        tr.style.cursor = "pointer";
+        tr.addEventListener("click", ()=> go("case", { id: c.id }));
+        tr.innerHTML = `
+          <td>${escapeHtml(c.year||"")}</td>
+          <td>${escapeHtml(c.caseType||"")}</td>
+          <td class="mono">${escapeHtml(c.caseNo||"")}</td>
+          <td>${escapeHtml(c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || "")}</td>
+          <td>${escapeHtml(c.kpiStage||"")}</td>
+          <td>${escapeHtml(c.casePhase||"")}</td>
+          <td>${escapeHtml(c.caseStatus||"")}</td>
+          <td>${escapeHtml(c.ownerName||"")}</td>
+          <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      if(!caseFiltered.length){
+        tbody.innerHTML = `<tr><td colspan="9" class="muted">沒有符合條件的資料。</td></tr>`;
+      }
+    }
+
+    async function refreshCases(force=false){
+      try{
+        $("btnCaseRefresh").disabled = true;
+        initCasesFilters();
+        const year = $("caseYear").value;
+        caseAll = await loadCasesYear(year, force);
+        renderCases();
+      }catch(e){
+        console.error(e);
+        toast("載入失敗：" + (e?.message || e));
+      }finally{
+        $("btnCaseRefresh").disabled = false;
+      }
+    }
+
+    function exportCasesCsv(){
+      const head = ["年度","類別","編號","單位/個案","KPI","分群","狀態","承辦","更新"];
+      const rows = [head];
+      for(const c of caseFiltered){
+        rows.push([
+          c.year||"", c.caseType||"", c.caseNo||"",
+          (c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || ""),
+          c.kpiStage||"", c.casePhase||"", c.caseStatus||"", c.ownerName||"", fmtDT(c.updatedAt)||""
+        ]);
+      }
+      const csv = rows.map(r=> r.map(v=> `"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `cases_${$("caseYear").value}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ===== Excel import =====
+    let XLSX = null;
+    let importRows = [];
+    let importPreview = [];
+
+    $("btnCloseImport").addEventListener("click", ()=> $("importModal").classList.remove("show"));
+    $("importModal").addEventListener("click", (e)=>{ if(e.target === $("importModal")) $("importModal").classList.remove("show"); });
+    $("fileInput").addEventListener("change", async ()=>{
+      const f = $("fileInput").files?.[0];
+      if(!f) return;
+      await loadExcelFile(f);
+    });
+    $("btnImportRun").addEventListener("click", runImport);
+
+    async function openImportModal(){
+      $("importModal").classList.add("show");
+      $("mappingArea").innerHTML = "";
+      $("importTbody").innerHTML = "";
+      $("importHint").textContent = "尚未載入檔案。";
+      $("btnImportRun").disabled = true;
+
+      if(!XLSX){
+        await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+        XLSX = window.XLSX;
+      }
+    }
+
+    function mappingDefaults(cols){
+      const saved = localStorage.getItem("tcn_import_mapping_v1");
+      if(saved){
+        try{ return JSON.parse(saved); }catch{}
+      }
+      const guess = (keys)=> cols.find(c=> keys.some(k=>c.includes(k))) || "";
+      return {
+        year: guess(["年度","year"]),
+        caseNo: guess(["編號","案號","caseNo"]),
+        orgName: guess(["單位","公司","org"]),
+        clientName: guess(["姓名","個案","client"]),
+        kpiStage: guess(["KPI","階段"])
+      };
+    }
+
+    function renderMapping(cols, mapping){
+      const area = $("mappingArea");
+      area.innerHTML = "";
+      const fields = [["year","年度(必)"],["caseNo","編號(必)"],["orgName","單位(建議)"],["clientName","個案(選)"],["kpiStage","KPI(選)"]];
+      for(const [k,label] of fields){
+        const div = document.createElement("div");
+        div.innerHTML = `<label>${label}</label><select id="map_${k}"><option value="">（不對應）</option>${cols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}</select>`;
+        area.appendChild(div);
+        const sel = div.querySelector("select");
+        sel.value = mapping[k] || "";
+        sel.addEventListener("change", ()=>{
+          mapping[k] = sel.value;
+          localStorage.setItem("tcn_import_mapping_v1", JSON.stringify(mapping));
+          buildPreview(mapping);
+        });
+      }
+    }
+
+    function rowVal(row, colName){
+      if(!colName) return "";
+      return row[colName] ?? "";
+    }
+
+    function buildPreview(mapping){
+      const kpiDefault = (settings.options.kpiStages||[])[0] || "待訪視";
+      importPreview = importRows.map((r, idx)=>{
+        const year = String(rowVal(r, mapping.year) || "").trim() || $("caseYear").value;
+        const caseNo = String(rowVal(r, mapping.caseNo) || "").trim();
+        const orgName = String(rowVal(r, mapping.orgName) || "").trim();
+        const clientName = String(rowVal(r, mapping.clientName) || "").trim();
+        const kpiStage = String(rowVal(r, mapping.kpiStage) || "").trim() || kpiDefault;
+        const { caseType } = detectCaseTypeFromCaseNo(caseNo);
+
+        const errors = [];
+        if(!year) errors.push("缺年度");
+        if(!caseNo) errors.push("缺編號");
+        if(!orgName && !clientName) errors.push("需單位或個案");
+        if(kpiStage && !(settings.options.kpiStages||[]).includes(kpiStage)) errors.push("KPI 不在選單");
+
+        return { _idx:idx, _ok:errors.length===0, _errors:errors, year, caseNo, orgName, clientName, caseType, kpiStage };
+      });
+      renderPreviewTable();
+    }
+
+    function renderPreviewTable(){
+      const tbody = $("importTbody");
+      tbody.innerHTML = "";
+      let ok = 0;
+      for(const r of importPreview.slice(0, 300)){
+        if(r._ok) ok++;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="checkbox" ${r._ok?"checked":""} ${r._ok?"":"disabled"} data-idx="${r._idx}"/></td>
+          <td>${escapeHtml(r.year)}</td>
+          <td class="mono">${escapeHtml(r.caseNo)}</td>
+          <td>${escapeHtml(r.orgName || r.clientName)}</td>
+          <td>${escapeHtml(r.caseType)}</td>
+          <td>${escapeHtml(r.kpiStage)}</td>
+          <td class="${r._ok?"tagOk":"tagWarn"}">${escapeHtml(r._ok?"OK":r._errors.join("、"))}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      $("importHint").textContent = `可匯入 ${ok} / ${importPreview.length} 筆`;
+      $("btnImportRun").disabled = ok===0;
+    }
+
+    async function loadExcelFile(file){
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type:"array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, { defval:"" });
+      importRows = json;
+      const cols = json.length ? Object.keys(json[0]) : [];
+      if(!cols.length){ toast("讀不到欄位，請確認第一列是欄位名稱。"); return; }
+      const mapping = mappingDefaults(cols);
+      renderMapping(cols, mapping);
+      buildPreview(mapping);
+    }
+
+    async function runImport(){
+      if(!confirm("確定開始匯入？")) return;
+      $("btnImportRun").disabled = true;
+
+      const checked = Array.from($("importTbody").querySelectorAll("input[type=checkbox]:checked")).map(x=>Number(x.dataset.idx));
+      const rows = importPreview.filter(r=>checked.includes(r._idx));
+
+      try{
+        for(let i=0; i<rows.length; i+=450){
+          const chunk = rows.slice(i, i+450);
+          const batch = writeBatch(db);
+          for(const r of chunk){
+            const id = `${r.year}_${r.caseNo}`;
+            const ref = doc(db,"cases", id);
+            const snap = await getDoc(ref);
+            if(snap.exists()) continue;
+
+            const { caseCode, caseType } = detectCaseTypeFromCaseNo(r.caseNo);
+
+            batch.set(ref, {
+              year: String(r.year),
+              caseNo: r.caseNo,
+              caseCode,
+              caseType,
+              kpiStage: r.kpiStage,
+              casePhase: "",
+              caseStatus: "進行中",
+              ownerUid: currentUser.uid,
+              ownerName: currentName,
+              orgName: r.orgName || "",
+              clientName: r.clientName || "",
+              basic: { orgName: r.orgName || "", clientName: r.clientName || "" },
+              progress: {},
+              report: {},
+              recommendMain: {},
+              recommendOther: {},
+              caseDevices: [],
+              trainings: [],
+              consults: [],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }, { merge:true });
+          }
+          await batch.commit();
+        }
+
+        toast("匯入完成。");
+        $("importModal").classList.remove("show");
+        cacheCasesByYear.delete($("caseYear").value);
+        await refreshCases(true);
+      }catch(e){
+        console.error(e);
+        toast("匯入失敗：" + (e?.message || e));
+      }finally{
+        $("btnImportRun").disabled = false;
+      }
+    }
+
+    // ===== Views: Reports =====
+    let repCases = [];
+    let repLoans = [];
+    let repExportRows = [];
+
+    $("btnRepRefresh").addEventListener("click", ()=> refreshReports(true));
+    $("repYear").addEventListener("change", ()=> refreshReports(true));
+    $("btnRepExport").addEventListener("click", exportReportsCsv);
+
+    async function loadLoans(force=false){
+      if(!force && cacheLoans.length) return cacheLoans;
+      const snap = await getDocs(query(collection(db,"deviceLoans"), limit(5000)));
+      const items = [];
+      snap.forEach(d=> items.push({ id:d.id, ...d.data() }));
+      // sort newest first
+      items.sort((a,b)=> {
+        const ta = a.borrowAt?.toDate ? a.borrowAt.toDate() : (a.borrowAt?new Date(a.borrowAt):new Date(0));
+        const tb = b.borrowAt?.toDate ? b.borrowAt.toDate() : (b.borrowAt?new Date(b.borrowAt):new Date(0));
+        return tb-ta;
+      });
+      cacheLoans = items;
+      return items;
+    }
+
+    function renderReports(){
+      repExportRows = [];
+
+      // (A) phase x type
+      const phases = settings.options.casePhases || [];
+      const types = settings.caseCodeRules.caseTypes || [];
+      const map = {};
+      for(const ph of phases){
+        map[ph] = {};
+        for(const t of types){
+          map[ph][t] = { caseCount:0, orgSet:new Set() };
+        }
+      }
+      for(const c of repCases){
+        const ph = c.casePhase || "";
+        const t = c.caseType || "其他";
+        if(!map[ph] || !map[ph][t]) continue;
+        map[ph][t].caseCount += 1;
+        const org = (c.orgName || c.basic?.orgName || "").trim();
+        if(org) map[ph][t].orgSet.add(org);
+      }
+
+      const phaseTb = $("repPhaseTbody");
+      phaseTb.innerHTML = "";
+      repExportRows.push(["報表","分群","類別","家數","案數"]);
+      for(const ph of phases){
+        for(const t of types){
+          const cell = map[ph][t];
+          const orgCount = (t==="中高齡") ? cell.orgSet.size : (cell.caseCount ? 1 : 0);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${escapeHtml(ph)}</td><td>${escapeHtml(t)}</td><td>${orgCount}</td><td>${cell.caseCount}</td>`;
+          phaseTb.appendChild(tr);
+          repExportRows.push(["執行狀況", ph, t, String(orgCount), String(cell.caseCount)]);
+        }
+      }
+
+      // (B) loans top30
+      const by = new Map();
+      for(const l of repLoans){
+        const name = l.deviceName || l.deviceId || "未命名";
+        if(!by.has(name)) by.set(name, { name, count:0, active:0 });
+        const it = by.get(name);
+        it.count += 1;
+        if(!l.returnAt) it.active += 1;
+      }
+      const top = Array.from(by.values()).sort((a,b)=> b.count-a.count).slice(0,30);
+      const loanTb = $("repLoanTbody");
+      loanTb.innerHTML = "";
+      for(const it of top){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${escapeHtml(it.name)}</td><td>${it.count}</td><td>${it.active}</td>`;
+        loanTb.appendChild(tr);
+        repExportRows.push(["輔具試用","", it.name, "", String(it.count)]);
+      }
+      if(!top.length) loanTb.innerHTML = `<tr><td colspan="3" class="muted">尚無借用資料。</td></tr>`;
+
+      // (C) gender
+      const gMap = new Map();
+      for(const c of repCases){
+        const g = (c.basic?.gender || "").trim() || "其他/未填";
+        gMap.set(g, (gMap.get(g)||0)+1);
+      }
+      const gTb = $("repGenderTbody");
+      gTb.innerHTML = "";
+      for(const [g,n] of Array.from(gMap.entries()).sort((a,b)=> b[1]-a[1])){
+        gTb.innerHTML += `<tr><td>${escapeHtml(g)}</td><td>${n}</td></tr>`;
+        repExportRows.push(["性別", "", g, "", String(n)]);
+      }
+
+      // (D) disability
+      const dMap = new Map();
+      for(const c of repCases){
+        const t = (c.basic?.disabilityType || "").trim() || "其他/未填";
+        dMap.set(t, (dMap.get(t)||0)+1);
+      }
+      const dTb = $("repDisTbody");
+      dTb.innerHTML = "";
+      for(const [t,n] of Array.from(dMap.entries()).sort((a,b)=> b[1]-a[1])){
+        dTb.innerHTML += `<tr><td>${escapeHtml(t)}</td><td>${n}</td></tr>`;
+        repExportRows.push(["障礙類別", "", t, "", String(n)]);
+      }
+    }
+
+    async function refreshReports(force=false){
+      try{
+        $("btnRepRefresh").disabled = true;
+        const year = $("repYear").value;
+        repCases = await loadCasesYear(year, force);
+        repLoans = await loadLoans(force);
+        renderReports();
+        toast("已更新。");
+      }catch(e){
+        console.error(e);
+        toast("載入失敗：" + (e?.message || e));
+      }finally{
+        $("btnRepRefresh").disabled = false;
+      }
+    }
+
+    function exportReportsCsv(){
+      const csv = repExportRows.map(r=> r.map(v=> `"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `reports_${$("repYear").value}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ===== Views: Devices =====
+    $("btnDevRefresh").addEventListener("click", ()=> refreshDevices(true));
+    $("devQ").addEventListener("input", renderDevices);
+    $("devStatus").addEventListener("change", renderDevices);
+    $("btnDevLoad").addEventListener("click", loadDeviceFromScan);
+    $("btnDevBorrow").addEventListener("click", borrowDevice);
+    $("btnDevReturn").addEventListener("click", returnDevice);
+
+    $("btnDevNew").addEventListener("click", ()=> $("deviceModal").classList.add("show"));
+    $("btnCloseDeviceModal").addEventListener("click", ()=> $("deviceModal").classList.remove("show"));
+    $("deviceModal").addEventListener("click", (e)=>{ if(e.target === $("deviceModal")) $("deviceModal").classList.remove("show"); });
+    $("btnCreateDevice").addEventListener("click", createDevice);
+
+    let devCurrent = null;
+
+    async function initBorrowers(){
+      const sel = $("devBorrower");
+      sel.innerHTML = "";
+      try{
+        const snap = await getDocs(query(collection(db,"users"), limit(200)));
+        const list = [];
+        snap.forEach(d=> list.push({ uid:d.id, ...d.data() }));
+        list.sort((a,b)=> (a.displayName||"").localeCompare(b.displayName||""));
+        for(const u of list){
+          sel.innerHTML += `<option value="${escapeHtml(u.uid)}">${escapeHtml(u.displayName || u.email || u.uid)}</option>`;
+        }
+      }catch{
+        sel.innerHTML = `<option value="${escapeHtml(currentUser.uid)}">${escapeHtml(currentName)}</option>`;
+      }
+    }
+
+    async function loadDevices(force=false){
+      if(!force && cacheDevices.length) return cacheDevices;
+      const snap = await getDocs(query(collection(db,"devices"), limit(3000)));
+      const items = [];
+      snap.forEach(d=> items.push({ id:d.id, ...d.data() }));
+      items.sort((a,b)=> (a.id||"").localeCompare(b.id||""));
+      cacheDevices = items;
+      return items;
+    }
+
+    function renderDevices(){
+      const q = normalize($("devQ").value);
+      const st = $("devStatus").value;
+      const list = cacheDevices.filter(d=>{
+        if(st && (d.status||"")!==st) return false;
+        if(q){
+          const hay = normalize([d.id,d.name,d.category].filter(Boolean).join(" "));
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      $("devHint").textContent = `共 ${list.length} 筆`;
+      const tb = $("devInvTbody");
+      tb.innerHTML = "";
+      for(const d of list.slice(0,500)){
+        const tr = document.createElement("tr");
+        tr.style.cursor = "pointer";
+        tr.addEventListener("click", ()=>{ $("devScan").value = d.id; loadDeviceFromScan(); });
+        tr.innerHTML = `<td class="mono">${escapeHtml(d.id)}</td><td>${escapeHtml(d.name||"")}</td><td>${escapeHtml(d.status||"")}</td><td>${escapeHtml(d.currentBorrowerName||"")}</td>`;
+        tb.appendChild(tr);
+      }
+      if(!list.length) tb.innerHTML = `<tr><td colspan="4" class="muted">沒有資料。</td></tr>`;
+
+      // loans recent
+      const ltb = $("devLoanTbody");
+      ltb.innerHTML = "";
+      const recent = cacheLoans.slice(0,200);
+      for(const l of recent){
+        ltb.innerHTML += `<tr><td>${escapeHtml(l.deviceName||l.deviceId||"")}</td><td>${escapeHtml(l.borrowerName||"")}</td><td class="muted">${escapeHtml(fmtDT(l.borrowAt))}</td><td class="muted">${escapeHtml(fmtDT(l.returnAt))}</td></tr>`;
+      }
+      if(!recent.length) ltb.innerHTML = `<tr><td colspan="4" class="muted">尚無借用紀錄。</td></tr>`;
+    }
+
+    async function refreshDevices(force=false){
+      try{
+        $("btnDevRefresh").disabled = true;
+        await initBorrowers();
+        cacheDevices = await loadDevices(force);
+        cacheLoans = await loadLoans(force);
+        renderDevices();
+      }catch(e){
+        console.error(e);
+        toast("載入失敗：" + (e?.message || e));
+      }finally{
+        $("btnDevRefresh").disabled = false;
+      }
+    }
+
+    async function loadDeviceFromScan(){
+      const id = $("devScan").value.trim();
+      if(!id){ toast("請輸入設備代碼。"); return; }
+      const snap = await getDoc(doc(db,"devices", id));
+      if(!snap.exists()){
+        devCurrent = null;
+        $("devInfo").innerHTML = `找不到設備：<span class="mono">${escapeHtml(id)}</span>`;
+        $("btnDevBorrow").disabled = true;
+        $("btnDevReturn").disabled = true;
+        return;
+      }
+      devCurrent = { id, ...snap.data() };
+      const st = devCurrent.status || "可借";
+      $("devInfo").innerHTML = `<div><b>${escapeHtml(devCurrent.name||"")}</b> <span class="pill mono">${escapeHtml(devCurrent.id)}</span></div><div class="muted" style="margin-top:6px;">狀態：<b>${escapeHtml(st)}</b>　借用者：${escapeHtml(devCurrent.currentBorrowerName||"")}</div>`;
+      $("btnDevBorrow").disabled = (st!=="可借");
+      $("btnDevReturn").disabled = (st!=="借出");
+    }
+
+    async function borrowDevice(){
+      if(!devCurrent) return;
+      const borrowerUid = $("devBorrower").value;
+      if(!borrowerUid){ toast("請選借用者。"); return; }
+      let borrowerName = borrowerUid;
+      try{
+        const us = await getDoc(doc(db,"users", borrowerUid));
+        if(us.exists()) borrowerName = us.data().displayName || us.data().email || borrowerUid;
+      }catch{}
+
+      const loanId = `${devCurrent.id}_${Date.now()}`;
+      try{
+        await setDoc(doc(db,"deviceLoans", loanId), {
+          deviceId: devCurrent.id,
+          deviceName: devCurrent.name || "",
+          category: devCurrent.category || "",
+          borrowerUid,
+          borrowerName,
+          borrowAt: new Date(),
+          returnAt: null,
+          status: "借出"
+        });
+
+        await updateDoc(doc(db,"devices", devCurrent.id), {
+          status: "借出",
+          currentBorrowerUid: borrowerUid,
+          currentBorrowerName: borrowerName,
+          updatedAt: new Date()
+        });
+
+        // optional usage log
+        try{
+          await setDoc(doc(db,"users", borrowerUid, "usage", loanId), {
+            deviceId: devCurrent.id,
+            deviceName: devCurrent.name || "",
+            category: devCurrent.category || "",
+            borrowAt: new Date(),
+            returnAt: null,
+            loanId
+          }, { merge:true });
+        }catch(e){
+          console.warn("usage skipped:", e?.message || e);
+        }
+
+        toast("已借出。");
+        cacheDevices = [];
+        cacheLoans = [];
+        await refreshDevices(true);
+        await loadDeviceFromScan();
+      }catch(e){
+        console.error(e);
+        toast("借出失敗：" + (e?.message || e));
+      }
+    }
+
+    async function returnDevice(){
+      if(!devCurrent) return;
+      const active = cacheLoans.find(l=> l.deviceId===devCurrent.id && !l.returnAt);
+      if(!active){ toast("找不到未歸還紀錄。"); return; }
+      try{
+        await updateDoc(doc(db,"deviceLoans", active.id), { returnAt:new Date(), status:"歸還" });
+        await updateDoc(doc(db,"devices", devCurrent.id), { status:"可借", currentBorrowerUid:"", currentBorrowerName:"", updatedAt:new Date() });
+
+        try{
+          if(active.borrowerUid){
+            await updateDoc(doc(db,"users", active.borrowerUid, "usage", active.id), { returnAt:new Date() });
+          }
+        }catch(e){
+          console.warn("usage update skipped:", e?.message || e);
+        }
+
+        toast("已歸還。");
+        cacheDevices = [];
+        cacheLoans = [];
+        await refreshDevices(true);
+        await loadDeviceFromScan();
+      }catch(e){
+        console.error(e);
+        toast("歸還失敗：" + (e?.message || e));
+      }
+    }
+
+    async function createDevice(){
+      if(currentRole!=="admin"){ toast("只有管理員可新增。"); return; }
+      const id = $("d_id").value.trim();
+      const name = $("d_name").value.trim();
+      if(!id || !name){ toast("請填 deviceId 與名稱。"); return; }
+      const category = $("d_category").value.trim();
+      const status = $("d_status").value;
+      try{
+        const ref = doc(db,"devices", id);
+        const snap = await getDoc(ref);
+        if(snap.exists()){ toast("此 deviceId 已存在。"); return; }
+        await setDoc(ref, { name, category, status, currentBorrowerUid:"", currentBorrowerName:"", createdAt:new Date(), updatedAt:new Date() });
+        $("deviceModal").classList.remove("show");
+        $("d_id").value=""; $("d_name").value=""; $("d_category").value="";
+        toast("已建立輔具。");
+        cacheDevices = [];
+        await refreshDevices(true);
+      }catch(e){
+        console.error(e);
+        toast("建立失敗：" + (e?.message || e));
+      }
+    }
+
+    // ===== Views: Case Detail =====
+    const CD_TABS = [
+      { key:"basic", label:"案件基本資料" },
+      { key:"progress", label:"進度管理" },
+      { key:"report", label:"報告管理" },
+      { key:"recommendMain", label:"職務再設計建議" },
+      { key:"recommendOther", label:"其他建議" },
+      { key:"caseDevices", label:"輔具管理" },
+      { key:"trainings", label:"輔具訓練日期" },
+      { key:"consults", label:"諮詢紀錄" }
+    ];
+    let cdActiveTab = "basic";
+    let cdId = null;
+    let cdDoc = null;
+
+    $("btnCdBack").addEventListener("click", ()=> go("cases", { year: $("cdYear").value }));
+    $("btnCdSave").addEventListener("click", saveCaseDetail);
+    $("btnCdDelete").addEventListener("click", deleteCaseDetail);
+    $("cdCaseNo").addEventListener("input", ()=>{
+      const { caseType } = detectCaseTypeFromCaseNo($("cdCaseNo").value);
+      if(caseType) $("cdType").value = caseType;
+    });
+
+    function initCaseDetailSelectors(){
+      $("cdKpi").innerHTML = (settings.options.kpiStages||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      $("cdPhase").innerHTML = `<option value="">（未設定）</option>` + (settings.options.casePhases||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      $("cdStatus").innerHTML = (settings.options.caseStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      $("cdType").innerHTML = (settings.caseCodeRules.caseTypes||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+
+      $("cdKpi").value = (settings.options.kpiStages||[])[0] || "待訪視";
+      $("cdStatus").value = (settings.options.caseStatuses||[])[0] || "進行中";
+    }
+
+    function renderCaseTabs(){
+      const tabs = $("cdTabs");
+      tabs.innerHTML = "";
+      for(const t of CD_TABS){
+        const btn = document.createElement("button");
+        btn.textContent = t.label;
+        btn.classList.toggle("active", t.key===cdActiveTab);
+        btn.addEventListener("click", ()=>{ cdActiveTab = t.key; renderCaseTabs(); renderCasePanels(); });
+        tabs.appendChild(btn);
+      }
+    }
+
+    function renderCasePanels(){
+      const d = cdDoc || {};
+      const basic = d.basic || {};
+      const progress = d.progress || {};
+      const report = d.report || {};
+      const recommendMain = d.recommendMain || {};
+      const recommendOther = d.recommendOther || {};
+      const caseDevices = d.caseDevices || [];
+      const trainings = d.trainings || [];
+      const consults = d.consults || [];
+
+      const panels = $("cdPanels");
+      panels.innerHTML = "";
+
+      function showPanel(key, html){
+        const wrap = document.createElement("div");
+        wrap.className = "subCard";
+        wrap.style.display = (cdActiveTab===key) ? "block" : "none";
+        wrap.innerHTML = html;
+        panels.appendChild(wrap);
+        return wrap;
+      }
+
+      // basic
+      const pBasic = showPanel("basic", `
+        <div class="grid2">
+          <div><label>單位名稱</label><input id="cdb_orgName" value="${escapeHtml(basic.orgName || d.orgName || "")}" /></div>
+          <div><label>個案姓名</label><input id="cdb_clientName" value="${escapeHtml(basic.clientName || d.clientName || "")}" /></div>
+          <div><label>性別</label><select id="cdb_gender"></select></div>
+          <div><label>障礙類別</label><select id="cdb_disability"></select></div>
+          <div><label>聯絡電話</label><input id="cdb_phone" value="${escapeHtml(basic.phone||"")}" /></div>
+          <div><label>備註</label><input id="cdb_note" value="${escapeHtml(basic.note||"")}" /></div>
+        </div>
+      `);
+      if(cdActiveTab==="basic"){
+        const gSel = pBasic.querySelector("#cdb_gender");
+        gSel.innerHTML = (settings.options.genders||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+        gSel.value = basic.gender || "其他/未填";
+
+        const dSel = pBasic.querySelector("#cdb_disability");
+        dSel.innerHTML = (settings.options.disabilityTypes||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+        dSel.value = basic.disabilityType || "其他/未填";
+      }
+
+      // progress
+      showPanel("progress", `
+        <div class="grid2">
+          <div><label>下一步</label><input id="cdp_nextAction" value="${escapeHtml(progress.nextAction||"")}" placeholder="例如：安排訪視、補資料…" /></div>
+          <div><label>期限</label><input id="cdp_nextDue" type="date" value="${escapeHtml(progress.nextDue||"")}" /></div>
+          <div style="grid-column:1/-1;"><label>進度摘要</label><textarea id="cdp_summary">${escapeHtml(progress.summary||"")}</textarea></div>
+        </div>
+      `);
+
+      // report
+      const pReport = showPanel("report", `
+        <div class="grid2">
+          <div><label>報告狀態</label><select id="cdr_status"></select></div>
+          <div><label>報告到期/提醒</label><input id="cdr_due" type="date" value="${escapeHtml(report.dueDate||"")}" /></div>
+          <div><label>審查會議日期</label><input id="cdr_meeting" type="date" value="${escapeHtml(report.meetingDate||"")}" /></div>
+          <div><label>成效到期/提醒</label><input id="cdr_effectDue" type="date" value="${escapeHtml(report.effectDue||"")}" /></div>
+          <div><label>二代系統登打到期</label><input id="cdr_sys2Due" type="date" value="${escapeHtml(report.system2Due||"")}" /></div>
+          <div><label>備註</label><input id="cdr_note" value="${escapeHtml(report.note||"")}" /></div>
+          <div style="grid-column:1/-1;"><label>報告內容摘要</label><textarea id="cdr_summary">${escapeHtml(report.summary||"")}</textarea></div>
+        </div>
+      `);
+      if(cdActiveTab==="report"){
+        const sSel = pReport.querySelector("#cdr_status");
+        sSel.innerHTML = (settings.options.reportStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+        sSel.value = report.status || (settings.options.reportStatuses||[])[0] || "未開始";
+      }
+
+      // recommend main
+      showPanel("recommendMain", `
+        <div class="grid2">
+          <div style="grid-column:1/-1;"><label>職務再設計建議（主要）</label><textarea id="cdm_text">${escapeHtml(recommendMain.text||"")}</textarea></div>
+          <div style="grid-column:1/-1;"><label>預期效益</label><textarea id="cdm_effect">${escapeHtml(recommendMain.effect||"")}</textarea></div>
+        </div>
+      `);
+
+      // recommend other
+      showPanel("recommendOther", `
+        <div class="grid2">
+          <div style="grid-column:1/-1;"><label>其他建議</label><textarea id="cdo_text">${escapeHtml(recommendOther.text||"")}</textarea></div>
+        </div>
+      `);
+
+      // case devices (simple array)
+      const pDevs = showPanel("caseDevices", `
+        <div class="row" style="justify-content:space-between;">
+          <div class="muted">本案輔具使用/試用（簡易記錄）。更完整借用請至「輔具中心」。</div>
+          <button id="btnAddCaseDev">新增一筆</button>
+        </div>
+        <div class="hr"></div>
+        <div class="tableWrap" style="max-height:42vh;">
+          <table>
+            <thead><tr><th>輔具名稱</th><th style="width:140px;">狀態</th><th style="width:140px;">日期</th><th style="width:90px;">操作</th></tr></thead>
+            <tbody id="caseDevTbody"></tbody>
+          </table>
+        </div>
+      `);
+      if(cdActiveTab==="caseDevices"){
+        const tb = pDevs.querySelector("#caseDevTbody");
+        function rerender(){
+          tb.innerHTML = "";
+          (cdDoc.caseDevices||[]).forEach((x, idx)=>{
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${escapeHtml(x.name||"")}</td>
+              <td>${escapeHtml(x.status||"")}</td>
+              <td>${escapeHtml(x.date||"")}</td>
+              <td><button class="danger">刪除</button></td>
+            `;
+            tr.querySelector("button").addEventListener("click", ()=>{
+              if(!confirm("確定刪除？")) return;
+              cdDoc.caseDevices.splice(idx,1);
+              rerender();
+            });
+            tb.appendChild(tr);
+          });
+          if(!(cdDoc.caseDevices||[]).length) tb.innerHTML = `<tr><td colspan="4" class="muted">尚無資料。</td></tr>`;
+        }
+        rerender();
+        pDevs.querySelector("#btnAddCaseDev").addEventListener("click", ()=>{
+          const name = prompt("輔具名稱");
+          if(!name) return;
+          const status = prompt("狀態（例如：評估中/已借出/已歸還）", "評估中") || "評估中";
+          const date = prompt("日期（YYYY-MM-DD）", "") || "";
+          cdDoc.caseDevices = cdDoc.caseDevices || [];
+          cdDoc.caseDevices.push({ name, status, date });
+          rerender();
+        });
+      }
+
+      // trainings
+      const pTrain = showPanel("trainings", `
+        <div class="row" style="justify-content:space-between;">
+          <div class="muted">訓練紀錄（可多筆）。</div>
+          <button id="btnAddTraining">新增一筆</button>
+        </div>
+        <div class="hr"></div>
+        <div class="tableWrap" style="max-height:42vh;">
+          <table>
+            <thead><tr><th style="width:140px;">日期</th><th>內容</th><th style="width:90px;">操作</th></tr></thead>
+            <tbody id="trainTbody"></tbody>
+          </table>
+        </div>
+      `);
+      if(cdActiveTab==="trainings"){
+        const tb = pTrain.querySelector("#trainTbody");
+        function rerender(){
+          tb.innerHTML = "";
+          (cdDoc.trainings||[]).forEach((x, idx)=>{
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${escapeHtml(x.date||"")}</td><td>${escapeHtml(x.note||"")}</td><td><button class="danger">刪除</button></td>`;
+            tr.querySelector("button").addEventListener("click", ()=>{
+              if(!confirm("確定刪除？")) return;
+              cdDoc.trainings.splice(idx,1);
+              rerender();
+            });
+            tb.appendChild(tr);
+          });
+          if(!(cdDoc.trainings||[]).length) tb.innerHTML = `<tr><td colspan="3" class="muted">尚無資料。</td></tr>`;
+        }
+        rerender();
+        pTrain.querySelector("#btnAddTraining").addEventListener("click", ()=>{
+          const date = prompt("日期（YYYY-MM-DD）", "") || "";
+          const note = prompt("內容", "") || "";
+          cdDoc.trainings = cdDoc.trainings || [];
+          cdDoc.trainings.push({ date, note });
+          rerender();
+        });
+      }
+
+      // consults
+      const pCon = showPanel("consults", `
+        <div class="row" style="justify-content:space-between;">
+          <div class="muted">諮詢/訪視紀錄（可多筆）。</div>
+          <button id="btnAddConsult">新增一筆</button>
+        </div>
+        <div class="hr"></div>
+        <div class="tableWrap" style="max-height:42vh;">
+          <table>
+            <thead><tr><th style="width:140px;">日期</th><th style="width:140px;">形式</th><th>重點</th><th style="width:90px;">操作</th></tr></thead>
+            <tbody id="consultTbody"></tbody>
+          </table>
+        </div>
+      `);
+      if(cdActiveTab==="consults"){
+        const tb = pCon.querySelector("#consultTbody");
+        function rerender(){
+          tb.innerHTML = "";
+          (cdDoc.consults||[]).forEach((x, idx)=>{
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${escapeHtml(x.date||"")}</td><td>${escapeHtml(x.type||"")}</td><td>${escapeHtml(x.note||"")}</td><td><button class="danger">刪除</button></td>`;
+            tr.querySelector("button").addEventListener("click", ()=>{
+              if(!confirm("確定刪除？")) return;
+              cdDoc.consults.splice(idx,1);
+              rerender();
+            });
+            tb.appendChild(tr);
+          });
+          if(!(cdDoc.consults||[]).length) tb.innerHTML = `<tr><td colspan="4" class="muted">尚無資料。</td></tr>`;
+        }
+        rerender();
+        pCon.querySelector("#btnAddConsult").addEventListener("click", ()=>{
+          const date = prompt("日期（YYYY-MM-DD）", "") || "";
+          const type = prompt("形式（到場/電話/線上/會議）", "到場") || "到場";
+          const note = prompt("重點摘要", "") || "";
+          cdDoc.consults = cdDoc.consults || [];
+          cdDoc.consults.push({ date, type, note });
+          rerender();
+        });
+      }
+    }
+
+    async function loadCaseDetail(id){
+      initCaseDetailSelectors();
+      cdActiveTab = "basic";
+      renderCaseTabs();
+
+      cdId = id || null;
+      $("btnCdDelete").hidden = !cdId;
+
+      if(!cdId){
+        cdDoc = {
+          year: $("cdYear").value,
+          kpiStage: $("cdKpi").value,
+          caseStatus: $("cdStatus").value,
+          ownerUid: currentUser.uid,
+          ownerName: currentName,
+          basic: {},
+          progress: {},
+          report: {},
+          recommendMain: {},
+          recommendOther: {},
+          caseDevices: [],
+          trainings: [],
+          consults: []
+        };
+        $("cdTitle").textContent = "案件｜新增";
+        $("cdSubtitle").textContent = "請填年度與編號後儲存建立。";
+        renderCasePanels();
+        return;
+      }
+
+      const snap = await getDoc(doc(db,"cases", cdId));
+      if(!snap.exists()){
+        toast("找不到此案件。");
+        go("cases");
+        return;
+      }
+      cdDoc = { id: cdId, ...snap.data() };
+
+      $("cdYear").value = cdDoc.year || $("cdYear").value;
+      $("cdCaseNo").value = cdDoc.caseNo || "";
+      $("cdType").value = cdDoc.caseType || $("cdType").value;
+      $("cdKpi").value = cdDoc.kpiStage || $("cdKpi").value;
+      $("cdPhase").value = cdDoc.casePhase || "";
+      $("cdStatus").value = cdDoc.caseStatus || $("cdStatus").value;
+
+      $("cdTitle").textContent = `案件｜${cdDoc.caseNo || cdId}`;
+      $("cdSubtitle").textContent = `${cdDoc.caseType || ""}｜${cdDoc.year || ""}｜更新 ${fmtDT(cdDoc.updatedAt)}`;
+
+      renderCaseTabs();
+      renderCasePanels();
+    }
+
+    function buildCasePayloadFromUI(){
+      const year = $("cdYear").value;
+      const caseNo = $("cdCaseNo").value.trim();
+      if(!caseNo) throw new Error("請填寫編號。");
+
+      const { caseCode, caseType } = detectCaseTypeFromCaseNo(caseNo);
+      const chosenType = $("cdType").value || caseType;
+
+      const payload = {
+        year: String(year),
+        caseNo,
+        caseCode,
+        caseType: chosenType,
+        kpiStage: $("cdKpi").value,
+        casePhase: $("cdPhase").value || "",
+        caseStatus: $("cdStatus").value || "進行中",
+        ownerUid: cdDoc?.ownerUid || currentUser.uid,
+        ownerName: cdDoc?.ownerName || currentName,
+        // derived for lists
+        orgName: cdDoc?.basic?.orgName || cdDoc?.orgName || "",
+        clientName: cdDoc?.basic?.clientName || cdDoc?.clientName || "",
+        basic: cdDoc.basic || {},
+        progress: cdDoc.progress || {},
+        report: cdDoc.report || {},
+        recommendMain: cdDoc.recommendMain || {},
+        recommendOther: cdDoc.recommendOther || {},
+        caseDevices: cdDoc.caseDevices || [],
+        trainings: cdDoc.trainings || [],
+        consults: cdDoc.consults || [],
+        updatedAt: new Date()
+      };
+
+      // read active tab inputs if present
+      // basic
+      const org = document.getElementById("cdb_orgName")?.value?.trim();
+      const client = document.getElementById("cdb_clientName")?.value?.trim();
+      const gender = document.getElementById("cdb_gender")?.value;
+      const dis = document.getElementById("cdb_disability")?.value;
+      const phone = document.getElementById("cdb_phone")?.value?.trim();
+      const note = document.getElementById("cdb_note")?.value?.trim();
+      if(org !== undefined){
+        payload.basic = payload.basic || {};
+        payload.basic.orgName = org || "";
+        payload.basic.clientName = client || "";
+        payload.basic.gender = gender || "";
+        payload.basic.disabilityType = dis || "";
+        payload.basic.phone = phone || "";
+        payload.basic.note = note || "";
+        payload.orgName = payload.basic.orgName;
+        payload.clientName = payload.basic.clientName;
+      }
+
+      // progress
+      const nextAction = document.getElementById("cdp_nextAction")?.value?.trim();
+      const nextDue = document.getElementById("cdp_nextDue")?.value;
+      const pSummary = document.getElementById("cdp_summary")?.value;
+      if(nextAction !== undefined){
+        payload.progress = payload.progress || {};
+        payload.progress.nextAction = nextAction || "";
+        payload.progress.nextDue = nextDue || "";
+        payload.progress.summary = pSummary || "";
+      }
+
+      // report
+      const rStatus = document.getElementById("cdr_status")?.value;
+      const rDue = document.getElementById("cdr_due")?.value;
+      const rMeeting = document.getElementById("cdr_meeting")?.value;
+      const rEffect = document.getElementById("cdr_effectDue")?.value;
+      const rSys2 = document.getElementById("cdr_sys2Due")?.value;
+      const rNote = document.getElementById("cdr_note")?.value?.trim();
+      const rSummary = document.getElementById("cdr_summary")?.value;
+      if(rStatus !== undefined){
+        payload.report = payload.report || {};
+        payload.report.status = rStatus || "";
+        payload.report.dueDate = rDue || "";
+        payload.report.meetingDate = rMeeting || "";
+        payload.report.effectDue = rEffect || "";
+        payload.report.system2Due = rSys2 || "";
+        payload.report.note = rNote || "";
+        payload.report.summary = rSummary || "";
+      }
+
+      // recommend main/other
+      const mText = document.getElementById("cdm_text")?.value;
+      const mEff = document.getElementById("cdm_effect")?.value;
+      if(mText !== undefined){
+        payload.recommendMain = payload.recommendMain || {};
+        payload.recommendMain.text = mText || "";
+        payload.recommendMain.effect = mEff || "";
+      }
+      const oText = document.getElementById("cdo_text")?.value;
+      if(oText !== undefined){
+        payload.recommendOther = payload.recommendOther || {};
+        payload.recommendOther.text = oText || "";
+      }
+
+      return payload;
+    }
+
+    async function saveCaseDetail(){
+      try{
+        const payload = buildCasePayloadFromUI();
+        if(!cdId){
+          cdId = `${payload.year}_${payload.caseNo}`;
+          const ref = doc(db,"cases", cdId);
+          const snap = await getDoc(ref);
+          if(snap.exists()){
+            toast("此編號已存在，請改編號或從清單開啟。");
+            return;
+          }
+          payload.createdAt = new Date();
+          await setDoc(ref, payload, { merge:true });
+          toast("已建立。");
+          cacheCasesByYear.delete(payload.year);
+          go("case", { id: cdId });
+          return;
+        }else{
+          await updateDoc(doc(db,"cases", cdId), payload);
+          toast("已儲存。");
+          cacheCasesByYear.delete(payload.year);
+          $("cdSubtitle").textContent = `${payload.caseType || ""}｜${payload.year || ""}｜更新 ${fmtDT(payload.updatedAt)}`;
+        }
+      }catch(e){
+        console.error(e);
+        toast(e?.message || ("儲存失敗：" + e));
+      }
+    }
+
+    async function deleteCaseDetail(){
+      if(!cdId) return;
+      if(!confirm("確定刪除此案件？")) return;
+      try{
+        await deleteDoc(doc(db,"cases", cdId));
+        toast("已刪除。");
+        cacheCasesByYear.delete($("cdYear").value);
+        go("cases", { year: $("cdYear").value });
+      }catch(e){
+        console.error(e);
+        toast("刪除失敗：" + (e?.message || e));
+      }
+    }
+
+    // ===== Route handler =====
+    async function route(){
+      const { view, params } = parseHash();
+      if(view === "case"){
+        showView("case");
+        // apply params
+        const id = params.get("id");
+        await loadCaseDetail(id);
+        return;
+      }
+      if(view === "cases"){
+        showView("cases");
+        const year = params.get("year");
+        if(year) $("caseYear").value = year;
+        initCasesFilters();
+        const kpi = params.get("kpiStage"); if(kpi) $("caseKpi").value = kpi;
+        const type = params.get("caseType"); if(type) $("caseType").value = type;
+        await refreshCases(false);
+        return;
+      }
+      if(view === "reports"){
+        showView("reports");
+        const year = params.get("year"); if(year) $("repYear").value = year;
+        await refreshReports(false);
+        return;
+      }
+      if(view === "devices"){
+        showView("devices");
+        await refreshDevices(false);
+        return;
+      }
+      // default dashboard
+      showView("dashboard");
+      const year = params.get("year"); if(year) $("dashYear").value = year;
+      await refreshDashboard(false);
+    }
+
+    function refreshAllViewsLight(){
+      // called after settings update
+      initCasesFilters();
+      initCaseDetailSelectors();
+      // If current view is dashboard, rerender with cached data
+      const { view } = parseHash();
+      if(view==="dashboard"){ refreshDashboard(false); }
+      if(view==="cases"){ renderCases(); }
+      if(view==="reports"){ renderReports(); }
+    }
+
+    // ===== Auth state observer =====
+    onAuthStateChanged(auth, async (user)=>{
       currentUser = user;
+
       if(!user){
-        currentRole = null; currentName = null; currentCaseId = null;
-        fieldDefs = []; casesCache = []; hasLoaded = false;
+        currentEmail = null; currentRole = null; currentName = null;
         $("userPill").innerHTML = '<span class="muted">未登入</span>';
-        $("btnLogin").classList.remove("hidden");
-        $("btnLogout").classList.add("hidden");
-        $("btnManageFields").classList.add("hidden");
-        $("btnDeleteCase").classList.add("hidden");
-        $("caseTbody").innerHTML = "";
-        $("dynamicForm").innerHTML = "";
-        $("kpiBar").innerHTML = "";
-        $("listHint").textContent = "登入後會載入資料。";
-        $("fixed_owner").value = "";
-        setDisabledAll(true);
+        $("btnLogin").hidden = false;
+        $("btnLogout").hidden = true;
+        $("btnOpenSettings").hidden = true;
+
+        $("loginHint").style.display = "block";
+        showView("dashboard"); // hidden anyway
         return;
       }
 
@@ -371,454 +2275,30 @@
         return;
       }
 
+      currentEmail = email;
       currentRole = ROLE_BY_EMAIL[email] || "staff";
       currentName = NAME_BY_EMAIL[email] || (user.displayName || email);
 
       $("userPill").innerHTML = `<span>${escapeHtml(currentName)}</span> <span class="muted">(${escapeHtml(email)})</span> <span class="pill">${escapeHtml(currentRole)}</span>`;
-      $("btnLogin").classList.add("hidden");
-      $("btnLogout").classList.remove("hidden");
-      setDisabledAll(false);
+      $("btnLogin").hidden = true;
+      $("btnLogout").hidden = false;
+      $("btnOpenSettings").hidden = (currentRole !== "admin");
+      $("btnDevNew").hidden = (currentRole !== "admin");
 
-      $("fixed_owner").value = currentName;
+      $("loginHint").style.display = "none";
 
-      await upsertUserDoc(email);
+      await loadSettings();
+      await upsertUserDoc();
+      setupSettingsModal();
 
-      if(currentRole === "admin") $("btnManageFields").classList.remove("hidden");
-      else $("btnManageFields").classList.add("hidden");
-
-      await reloadAll();
+      // route
+      await route();
       toast("登入成功！");
     });
 
-    async function upsertUserDoc(email){
-      try{
-        const ref = doc(db, "users", currentUser.uid);
-        const snap = await getDoc(ref);
-        const payload = { email, displayName: currentName, role: currentRole, updatedAt: new Date() };
-        if(!snap.exists()) await setDoc(ref, { ...payload, createdAt: new Date() });
-        else await updateDoc(ref, payload);
-      }catch(e){
-        console.warn("users doc upsert skipped:", e?.message || e);
-      }
-    }
-
-    async function loadFieldDefs(){
-      const snap = await getDocs(collection(db, "fieldDefs"));
-      const items = [];
-      snap.forEach(d => {
-        const data = d.data();
-        items.push({
-          key: d.id,
-          label: data.label || d.id,
-          type: data.type || "text",
-          group: data.group || "其他",
-          required: !!data.required,
-          options: Array.isArray(data.options) ? data.options : []
-        });
-      });
-      items.sort((a,b)=> (a.group||"").localeCompare(b.group||"") || (a.label||"").localeCompare(b.label||""));
-      fieldDefs = items;
-    }
-
-    function renderDynamicForm(values = {}){
-      const byGroup = new Map();
-      for(const fd of fieldDefs){
-        const g = fd.group || "其他";
-        if(!byGroup.has(g)) byGroup.set(g, []);
-        byGroup.get(g).push(fd);
-      }
-      const groups = Array.from(byGroup.keys()).sort((a,b)=>a.localeCompare(b,"zh-Hant"));
-      const container = $("dynamicForm");
-      container.innerHTML = "";
-
-      if(fieldDefs.length === 0){
-        container.innerHTML = `<div class="hint">目前尚未建立動態欄位。若你是 admin，點右上「欄位管理」建立欄位；或在欄位管理裡點「建立示範欄位」。</div>`;
-        return;
-      }
-
-      for(const g of groups){
-        const title = document.createElement("div");
-        title.className = "sectionTitle";
-        title.textContent = g;
-        container.appendChild(title);
-
-        const grid = document.createElement("div");
-        grid.className = "grid2";
-
-        for(const fd of byGroup.get(g)){
-          const wrap = document.createElement("div");
-          const lab = document.createElement("label");
-          lab.textContent = fd.label + (fd.required ? "（必填）" : "");
-          wrap.appendChild(lab);
-
-          let input;
-          const v = values?.[fd.key];
-
-          if(fd.type === "textarea"){
-            input = document.createElement("textarea");
-            input.value = (v ?? "");
-          } else if(fd.type === "number"){
-            input = document.createElement("input");
-            input.type = "number"; input.step = "any";
-            input.value = (v ?? "");
-          } else if(fd.type === "date"){
-            input = document.createElement("input");
-            input.type = "date";
-            input.value = (v ?? "");
-          } else if(fd.type === "boolean"){
-            input = document.createElement("select");
-            input.innerHTML = `<option value="">（未設定）</option><option value="true">是</option><option value="false">否</option>`;
-            input.value = (v === true) ? "true" : (v === false ? "false" : "");
-          } else if(fd.type === "select"){
-            input = document.createElement("select");
-            const opts = fd.options?.length ? fd.options : ["（請先設定 options）"];
-            input.innerHTML = `<option value="">（未選）</option>` + opts.map(o=>`<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
-            input.value = (v ?? "");
-          } else if(fd.type === "multiselect"){
-            input = document.createElement("input");
-            input.placeholder = "多選：以逗號分隔";
-            input.value = Array.isArray(v) ? v.join(",") : (v ?? "");
-          } else {
-            input = document.createElement("input");
-            input.type = "text";
-            input.value = (v ?? "");
-          }
-
-          input.dataset.fieldKey = fd.key;
-          input.dataset.fieldType = fd.type;
-          wrap.appendChild(input);
-          grid.appendChild(wrap);
-        }
-        container.appendChild(grid);
-      }
-    }
-
-    $("btnReload").addEventListener("click", reloadAll);
-    $("fYear").addEventListener("change", () => renderCaseList());
-    $("fStatus").addEventListener("change", () => renderCaseList());
-    $("fQ").addEventListener("input", () => renderCaseList());
-    $("btnNewCase").addEventListener("click", () => openCaseForEdit(null));
-
-    async function loadCases(){
-      const year = $("fYear").value;
-      const colRef = collection(db, "cases");
-      let qy;
-      if(currentRole === "admin"){
-        qy = query(colRef, where("year", "==", year), orderBy("updatedAt", "desc"), limit(200));
-      }else{
-        qy = query(colRef, where("year", "==", year), where("ownerUid", "==", currentUser.uid), orderBy("updatedAt", "desc"), limit(200));
-      }
-      const snap = await getDocs(qy);
-      const items = [];
-      snap.forEach(d => items.push({ id: d.id, ...d.data() }));
-      casesCache = items;
-    }
-
-    function renderKpi(){
-      const year = $("fYear").value;
-      const status = $("fStatus").value;
-      const filtered = casesCache.filter(c => (!status || c.status === status));
-      const total = filtered.length;
-
-      const byStatus = new Map();
-      for(const c of casesCache){
-        const s = c.status || "未填";
-        byStatus.set(s, (byStatus.get(s) || 0) + 1);
-      }
-
-      const kpi = $("kpiBar");
-      kpi.innerHTML = "";
-      kpi.appendChild(pill(`年度 ${year}`));
-      kpi.appendChild(pill(`本頁 ${total} 筆`));
-      ["進行中","結案","退回","中途結案"].forEach(s=> kpi.appendChild(pill(`${s} ${byStatus.get(s) || 0}`)));
-    }
-
-    function pill(text){
-      const span = document.createElement("span");
-      span.className = "pill";
-      span.textContent = text;
-      return span;
-    }
-
-    function normalize(s){ return (s || "").toString().trim().toLowerCase(); }
-
-    function renderCaseList(){
-      const status = $("fStatus").value;
-      const q = normalize($("fQ").value);
-
-      const tbody = $("caseTbody");
-      tbody.innerHTML = "";
-
-      const list = casesCache.filter(c => {
-        if(status && c.status !== status) return false;
-        if(!q) return true;
-        const hay = normalize([c.caseNo, c.orgName, c.clientName, c.searchText, c.status].filter(Boolean).join(" "));
-        return hay.includes(q);
-      });
-
-      $("listHint").textContent = hasLoaded ? (list.length ? `共 ${list.length} 筆` : "沒有符合條件的資料。") : "登入後會載入資料。";
-
-      for(const c of list){
-        const tr = document.createElement("tr");
-        tr.style.cursor = "pointer";
-        tr.addEventListener("click", () => openCaseForEdit(c.id));
-        const updated = formatDateTime(c.updatedAt?.toDate ? c.updatedAt.toDate() : (c.updatedAt || null));
-        tr.innerHTML = `
-          <td><button class="btnLink">${escapeHtml(c.caseNo || "(未填)")}</button></td>
-          <td>${escapeHtml(c.orgName || c.clientName || "(未填)")}</td>
-          <td>${escapeHtml(c.status || "(未填)")}</td>
-          <td class="muted">${escapeHtml(updated || "")}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-      renderKpi();
-    }
-
-    function formatDateTime(d){
-      if(!d) return "";
-      try{ return (d instanceof Date ? d : new Date(d)).toLocaleString("zh-TW",{hour12:false}); }
-      catch{ return ""; }
-    }
-
-    function openCaseForEdit(caseId){
-      currentCaseId = caseId;
-      $("btnDeleteCase").classList.toggle("hidden", !caseId);
-      $("formTitle").textContent = caseId ? "個案表單｜編輯" : "個案表單｜新增";
-      $("btnSaveCase").disabled = false;
-
-      if(!caseId){
-        $("fixed_caseNo").value = "";
-        $("fixed_status").value = "進行中";
-        $("fixed_year").value = $("fYear").value;
-        renderDynamicForm({});
-        return;
-      }
-
-      const c = casesCache.find(x=>x.id===caseId);
-      if(!c){ toast("找不到此筆資料，請重新整理。"); return; }
-
-      $("fixed_caseNo").value = c.caseNo || "";
-      $("fixed_status").value = c.status || "進行中";
-      $("fixed_year").value = c.year || $("fYear").value;
-      renderDynamicForm(c.values || {});
-    }
-
-    function readDynamicValues(){
-      const inputs = $("dynamicForm").querySelectorAll("[data-field-key]");
-      const values = {};
-      const errors = [];
-      for(const el of inputs){
-        const key = el.dataset.fieldKey;
-        const type = el.dataset.fieldType;
-        const fd = fieldDefs.find(x=>x.key===key);
-        let v = el.value;
-
-        if(type === "number"){
-          v = v === "" ? null : Number(v);
-          if(v !== null && Number.isNaN(v)) v = null;
-        } else if(type === "boolean"){
-          v = (v === "") ? null : (v === "true");
-        } else if(type === "multiselect"){
-          v = v.trim() ? v.split(",").map(x=>x.trim()).filter(Boolean) : [];
-        }
-
-        if(fd?.required){
-          const missing = (v === null) || (v === "") || (Array.isArray(v) && v.length===0);
-          if(missing) errors.push(fd.label || key);
-        }
-        values[key] = v;
-      }
-      return { values, errors };
-    }
-
-    $("btnSaveCase").addEventListener("click", async () => {
-      if(!currentUser) return;
-
-      const year = $("fixed_year").value;
-      const caseNo = $("fixed_caseNo").value.trim();
-      const status = $("fixed_status").value;
-
-      if(!caseNo){ toast("請先填寫編號。"); $("fixed_caseNo").focus(); return; }
-
-      const { values, errors } = readDynamicValues();
-      if(errors.length){ toast("以下欄位為必填： " + errors.join("、")); return; }
-
-      const orgName = (values.orgName ?? values.unitName ?? values.companyName ?? "")?.toString?.() ?? "";
-      const clientName = (values.clientName ?? values.name ?? "")?.toString?.() ?? "";
-      const searchText = [caseNo, orgName, clientName, status].filter(Boolean).join(" ");
-
-      const payload = {
-        year, caseNo, status,
-        ownerUid: currentUser.uid,
-        ownerName: currentName,
-        orgName, clientName, searchText,
-        values,
-        updatedAt: new Date()
-      };
-
-      try{
-        if(!currentCaseId){
-          const id = `${year}_${caseNo}`;
-          const ref = doc(db, "cases", id);
-          const snap = await getDoc(ref);
-          if(snap.exists()){ toast("此編號已存在，請改編號或從清單開啟編輯。"); return; }
-          await setDoc(ref, { ...payload, createdAt: new Date() });
-          currentCaseId = id;
-        }else{
-          await updateDoc(doc(db, "cases", currentCaseId), payload);
-        }
-        toast("已儲存。");
-        await reloadAll();
-        openCaseForEdit(currentCaseId);
-      }catch(e){
-        console.error(e);
-        toast("儲存失敗：" + (e?.message || e));
-      }
-    });
-
-    $("btnDeleteCase").addEventListener("click", async () => {
-      if(!currentCaseId) return;
-      if(!confirm("確定要刪除此筆個案？")) return;
-      try{
-        await deleteDoc(doc(db, "cases", currentCaseId));
-        toast("已刪除。");
-        currentCaseId = null;
-        await reloadAll();
-        openCaseForEdit(null);
-      }catch(e){
-        console.error(e);
-        toast("刪除失敗：" + (e?.message || e));
-      }
-    });
-
-    // Field modal
-    $("btnManageFields").addEventListener("click", async ()=> {
-      await renderFieldTable();
-      $("fieldModal").classList.add("show");
-    });
-    $("btnCloseFieldModal").addEventListener("click", ()=> $("fieldModal").classList.remove("show"));
-    $("fieldModal").addEventListener("click", (e)=>{ if(e.target === $("fieldModal")) $("fieldModal").classList.remove("show"); });
-
-    $("btnAddField").addEventListener("click", async () => {
-      const key = $("fd_key").value.trim();
-      const label = $("fd_label").value.trim();
-      const type = $("fd_type").value;
-      const group = $("fd_group").value.trim() || "其他";
-      const required = $("fd_required").value === "true";
-      const options = $("fd_options").value.split(",").map(x=>x.trim()).filter(Boolean);
-
-      if(!key || !/^[A-Za-z0-9_]+$/.test(key)){ toast("key 請用英數與底線（A-Z a-z 0-9 _）。"); return; }
-      if(!label){ toast("請填寫 label（顯示名稱）。"); return; }
-
-      try{
-        await setDoc(doc(db, "fieldDefs", key), { label, type, group, required, options, updatedAt: new Date() }, { merge: true });
-        toast("欄位已新增/更新。");
-        await loadFieldDefs();
-        await renderFieldTable();
-        renderDynamicForm(currentCaseId ? (casesCache.find(x=>x.id===currentCaseId)?.values || {}) : {});
-      }catch(e){
-        console.error(e);
-        toast("寫入欄位失敗：" + (e?.message || e));
-      }
-    });
-
-    $("btnSeedFields").addEventListener("click", async () => {
-      const seeds = [
-        { key:"orgName", label:"單位名稱", type:"text", group:"基本資料", required:true, options:[] },
-        { key:"clientName", label:"個案姓名", type:"text", group:"基本資料", required:false, options:[] },
-        { key:"phone", label:"聯絡電話", type:"text", group:"基本資料", required:false, options:[] },
-        { key:"visitDate", label:"訪視日期", type:"date", group:"評估/訪視", required:false, options:[] },
-        { key:"note", label:"備註", type:"textarea", group:"其他", required:false, options:[] },
-      ];
-      try{
-        for(const s of seeds){
-          await setDoc(doc(db, "fieldDefs", s.key), { ...s, updatedAt: new Date() }, { merge: true });
-        }
-        toast("已建立示範欄位。");
-        await loadFieldDefs();
-        await renderFieldTable();
-        renderDynamicForm({});
-      }catch(e){
-        console.error(e);
-        toast("建立示範欄位失敗：" + (e?.message || e));
-      }
-    });
-
-    async function renderFieldTable(){
-      await loadFieldDefs();
-      const tbody = $("fieldTbody");
-      tbody.innerHTML = "";
-      for(const fd of fieldDefs){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="mono">${escapeHtml(fd.key)}</td>
-          <td>${escapeHtml(fd.label)}</td>
-          <td class="mono">${escapeHtml(fd.type)}</td>
-          <td>${escapeHtml(fd.group || "")}</td>
-          <td>${fd.required ? "是" : "否"}</td>
-          <td>
-            <button class="btnLink" data-act="load" data-key="${escapeHtml(fd.key)}">載入</button>
-            &nbsp;|&nbsp;
-            <button class="btnLink" data-act="delete" data-key="${escapeHtml(fd.key)}">刪除</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      }
-      tbody.querySelectorAll("button[data-act]").forEach(btn=>{
-        btn.addEventListener("click", async ()=>{
-          const act = btn.dataset.act;
-          const key = btn.dataset.key;
-          if(act === "load"){
-            const fd = fieldDefs.find(x=>x.key===key);
-            $("fd_key").value = fd.key;
-            $("fd_label").value = fd.label;
-            $("fd_type").value = fd.type;
-            $("fd_group").value = fd.group || "";
-            $("fd_required").value = fd.required ? "true" : "false";
-            $("fd_options").value = (fd.options || []).join(",");
-            toast("已載入欄位設定，可直接更新。");
-          }else if(act === "delete"){
-            if(!confirm("確定要刪除此欄位定義？（不會刪除既有個案 values，但畫面將不再顯示此欄）")) return;
-            try{
-              await deleteDoc(doc(db, "fieldDefs", key));
-              toast("已刪除欄位。");
-              await loadFieldDefs();
-              await renderFieldTable();
-              renderDynamicForm(currentCaseId ? (casesCache.find(x=>x.id===currentCaseId)?.values || {}) : {});
-            }catch(e){
-              console.error(e);
-              toast("刪除失敗：" + (e?.message || e));
-            }
-          }
-        });
-      });
-    }
-
-    async function reloadAll(){
-      if(!currentUser) return;
-      try{
-        $("btnReload").disabled = true;
-        await loadFieldDefs();
-        await loadCases();
-        hasLoaded = true;
-        renderCaseList();
-        if(currentCaseId && !casesCache.find(x=>x.id===currentCaseId)) currentCaseId = null;
-        openCaseForEdit(currentCaseId);
-      }catch(e){
-        console.error(e);
-        toast("載入失敗：" + (e?.message || e));
-      }finally{
-        $("btnReload").disabled = false;
-      }
-    }
-
-    function escapeHtml(s){
-      return String(s ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+    // Default route if no hash
+    if(!window.location.hash){
+      window.location.hash = "dashboard";
     }
   </script>
 </body>
