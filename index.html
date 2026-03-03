@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -84,15 +83,6 @@
                         <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden">
                     </label>
                 </div>
-                <div class="flex items-center justify-between bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="text-sm md:text-base text-slate-600 font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-user-check text-blue-500"></i>
-                        <span>預設只顯示主責：<span class="text-blue-700">凱宇</span>（統計亦僅計入凱宇案件）</span>
-                    </div>
-                    <button id="btn-toggle-other-owners" class="text-sm md:text-base font-bold px-4 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors active:scale-95">
-                        展開其他主責案件
-                    </button>
-                </div>
                 <div id="cases-container" class="space-y-3 md:space-y-4">
                     <div class="text-center text-slate-400 py-10 md:text-lg">等待資料連線中...</div>
                 </div>
@@ -103,26 +93,7 @@
 
             <!-- ================= 視圖 2: 儀表板 (全新升級進度分類) ================= -->
             <div id="view-dashboard" class="hidden max-w-5xl mx-auto pb-24 space-y-6">
-
-                <!-- 📣 訪視報告撰寫期限提醒（初訪後 7 個工作天） -->
-                <div id="deadline-banner" class="hidden bg-amber-50 border border-amber-200 p-5 md:p-6 rounded-2xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onclick="window.openDeadlineModal()">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <h3 class="font-black text-amber-800 text-lg md:text-xl flex items-center gap-2">
-                                <i class="fa-solid fa-bell"></i>
-                                訪視報告撰寫期限提醒（初訪後 7 個工作天）
-                            </h3>
-                            <p class="text-sm md:text-base text-amber-700 mt-2 font-bold">
-                                逾期：<span id="deadline-overdue-count" class="text-red-700">0</span> 件｜即將到期（≤2工作天）：<span id="deadline-soon-count" class="text-blue-800">0</span> 件
-                            </p>
-                            <p class="text-xs md:text-sm text-slate-600 mt-1">點擊查看每件案件的剩餘/逾期工作天（週六日不計）。</p>
-                        </div>
-                        <div class="text-amber-800 text-3xl md:text-4xl opacity-80 shrink-0">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                        </div>
-                    </div>
-                </div>
-
+                
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
                     <h2 class="text-xl md:text-2xl font-bold text-slate-700 mb-6 border-b pb-3">案件進度追蹤 (點擊方塊查看清單)</h2>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
@@ -270,19 +241,6 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-base font-medium text-slate-600 mb-1">主責人 *</label>
-                        <select id="form-owner" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg bg-white">
-                            <option value="凱宇">凱宇</option>
-                            <option value="黃國裕">黃國裕</option>
-                            <option value="高湘怡">高湘怡</option>
-                            <option value="方姿云">方姿云</option>
-                            <option value="陳秋媚">陳秋媚</option>
-                            <option value="盧怡倫">盧怡倫</option>
-                            <option value="蔡凱宇">蔡凱宇</option>
-                        </select>
-                    </div>
-
                     <div id="group-single-client" class="bg-blue-50 p-4 md:p-5 rounded-xl border border-blue-100 space-y-4">
                         <h3 class="text-base font-bold text-blue-800 border-b border-blue-200 pb-2">單一個案詳細資料</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -395,9 +353,6 @@
                         <button id="btn-edit-case" class="flex-1 text-blue-700 bg-white hover:bg-blue-50 py-2 rounded-lg text-sm font-bold border border-blue-200 shadow-sm transition-colors"><i class="fa-solid fa-pen mr-1"></i> 編輯</button>
                         <button id="btn-delete-case" class="flex-1 text-red-700 bg-white hover:bg-red-50 py-2 rounded-lg text-sm font-bold border border-red-200 shadow-sm transition-colors"><i class="fa-solid fa-trash mr-1"></i> 刪除</button>
                     </div>
-                    <button id="btn-download-package" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-black shadow-md transition-transform active:scale-95">
-                        <i class="fa-solid fa-box-archive mr-2"></i> 打包下載（資料/照片/錄音/Word）
-                    </button>
                 </div>
 
                 <!-- 2. 四大頁籤按鈕 (垂直排列) -->
@@ -892,28 +847,7 @@
     </div>
 
     <!-- Firebase SDKs -->
-    
-    <!-- 📣 訪視報告期限提醒清單視窗 -->
-    <div id="deadline-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[220] flex justify-center items-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div class="p-4 md:p-5 bg-amber-50 border-b border-amber-200 flex justify-between items-center">
-                <h3 class="font-black text-amber-900 text-lg md:text-xl flex items-center gap-2">
-                    <i class="fa-solid fa-bell"></i> 訪視報告撰寫期限提醒清單
-                </h3>
-                <button onclick="document.getElementById('deadline-modal').classList.add('hidden')" class="text-slate-700 hover:text-red-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-bold">
-                    <i class="fa-solid fa-xmark mr-1"></i> 關閉
-                </button>
-            </div>
-            <div class="p-4 md:p-6">
-                <div class="text-sm text-slate-600 font-bold mb-3">
-                    規則：初訪日後 <span class="text-slate-900">7 個工作天</span> 為期限（週六日不計）。
-                </div>
-                <div id="deadline-modal-content" class="space-y-3 max-h-[70vh] overflow-y-auto pr-1"></div>
-            </div>
-        </div>
-    </div>
-
-<script type="module">
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -943,16 +877,6 @@
         let currentEditingCaseId = null;
         let pendingPhotosQueue = []; 
         let audioBlobCache = {}; 
-
-        // ==========================================
-        // 主責人 (案件篩選/統計設定)
-        // ==========================================
-        const PRIMARY_OWNER = '凱宇';
-        const RESPONSIBLE_OPTIONS = ['凱宇','黃國裕','高湘怡','方姿云','陳秋媚','盧怡倫','蔡凱宇'];
-        let showOtherOwnersInList = false; // 案件列表：預設只顯示主責凱宇
-        let cachedDeadlineItems = []; // 儀表板期限提醒清單快取
-
-        
         
         let settings = { 
             committee: [], 
@@ -998,155 +922,6 @@
             DOM.toast.classList.remove('opacity-0');
             setTimeout(() => DOM.toast.classList.add('opacity-0'), 3000);
         }
-
-        // ==========================================
-        // 小工具：主責人/工作天/檔名安全
-        // ==========================================
-        const getCaseOwner = (c) => (c && c.owner) ? String(c.owner).trim() : PRIMARY_OWNER;
-
-        const sanitizeFileName = (name) => {
-            return String(name || '')
-                .replace(/[\\/:*?"<>|]/g, '_')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .slice(0, 120) || '未命名';
-        };
-
-        const dateOnly = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        const parseYMD = (ymd) => {
-            if (!ymd) return null;
-            const s = String(ymd).trim();
-            const d = new Date(s + 'T00:00:00');
-            return isNaN(d.getTime()) ? null : d;
-        };
-        const isWeekend = (d) => {
-            const day = d.getDay(); // 0 Sun, 6 Sat
-            return day === 0 || day === 6;
-        };
-        const addWorkingDays = (startYMD, daysToAdd) => {
-            const start = parseYMD(startYMD);
-            if (!start) return null;
-            let d = dateOnly(start);
-            let added = 0;
-            while (added < daysToAdd) {
-                d.setDate(d.getDate() + 1);
-                if (!isWeekend(d)) added++;
-            }
-            return d;
-        };
-        // 計算「不含起點、含終點」的工作天數（週六日不計）
-        const countWorkdaysExclusive = (fromDate, toDate) => {
-            const from = dateOnly(fromDate);
-            const to = dateOnly(toDate);
-            if (to <= from) return 0;
-            let cur = new Date(from);
-            let count = 0;
-            while (cur < to) {
-                cur.setDate(cur.getDate() + 1);
-                if (!isWeekend(cur) && cur <= to) count++;
-            }
-            return count;
-        };
-
-        const isReportDone = (c) => !!(c && !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
-
-        const getOwnerCases = () => casesData.filter(c => getCaseOwner(c) === PRIMARY_OWNER);
-
-        const computeDeadlineItems = () => {
-            const today = dateOnly(new Date());
-            const ownerCases = getOwnerCases();
-
-            const items = ownerCases
-                .filter(c => c && !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && String(c.report.strategy).trim() !== ''))
-                .map(c => {
-                    const vd = parseYMD(c.visitDate || c.date);
-                    if (!vd) return null;
-                    const due = addWorkingDays(c.visitDate || c.date, 7);
-                    if (!due) return null;
-
-                    const overdue = today > due;
-                    const workdays = overdue
-                        ? countWorkdaysExclusive(due, today)
-                        : countWorkdaysExclusive(today, due);
-
-                    return {
-                        id: c.id,
-                        company: c.company || '未命名企業',
-                        clientName: c.clientName || '無',
-                        visitDate: (c.visitDate || c.date || '-'),
-                        dueDate: `${due.getFullYear()}-${String(due.getMonth()+1).padStart(2,'0')}-${String(due.getDate()).padStart(2,'0')}`,
-                        overdue,
-                        workdays
-                    };
-                })
-                .filter(Boolean);
-
-            // 逾期優先、再來最接近到期
-            items.sort((a,b) => {
-                if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
-                return a.workdays - b.workdays;
-            });
-
-            return items;
-        };
-
-        window.openDeadlineModal = () => {
-            const modal = document.getElementById('deadline-modal');
-            const content = document.getElementById('deadline-modal-content');
-            if (!modal || !content) return;
-
-            cachedDeadlineItems = computeDeadlineItems();
-
-            if (cachedDeadlineItems.length === 0) {
-                content.innerHTML = '<div class="text-center text-slate-500 font-bold py-10">目前沒有需要提醒的案件 🎉</div>';
-            } else {
-                content.innerHTML = cachedDeadlineItems.map(it => {
-                    const statusBadge = it.overdue
-                        ? `<span class="bg-red-100 text-red-800 px-3 py-1 rounded-lg text-xs font-black">已逾期 ${it.workdays} 工作天</span>`
-                        : (it.workdays <= 2
-                            ? `<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-xs font-black">剩餘 ${it.workdays} 工作天</span>`
-                            : `<span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-lg text-xs font-black">剩餘 ${it.workdays} 工作天</span>`);
-                    return `
-                        <div class="bg-slate-50 hover:bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center gap-4 cursor-pointer transition-colors" onclick="window.openWorkspace('${it.id}')">
-                            <div class="min-w-0">
-                                <div class="font-black text-slate-800 text-base truncate">${it.company}</div>
-                                <div class="text-sm text-slate-600 font-bold mt-1 truncate">
-                                    <i class="fa-solid fa-user mr-1"></i>${it.clientName}
-                                    <span class="mx-2 text-slate-300">|</span>
-                                    <i class="fa-solid fa-calendar mr-1"></i>初訪 ${it.visitDate}
-                                    <span class="mx-2 text-slate-300">|</span>
-                                    期限 ${it.dueDate}
-                                </div>
-                            </div>
-                            <div class="shrink-0 flex items-center gap-3">
-                                ${statusBadge}
-                                <i class="fa-solid fa-chevron-right text-blue-600"></i>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            modal.classList.remove('hidden');
-        };
-
-        const renderDeadlineBanner = () => {
-            const banner = document.getElementById('deadline-banner');
-            if (!banner) return;
-
-            const items = computeDeadlineItems();
-            cachedDeadlineItems = items;
-
-            const overdueCount = items.filter(x => x.overdue).length;
-            const soonCount = items.filter(x => !x.overdue && x.workdays <= 2).length;
-
-            document.getElementById('deadline-overdue-count').textContent = overdueCount;
-            document.getElementById('deadline-soon-count').textContent = soonCount;
-
-            if (overdueCount > 0 || soonCount > 0) banner.classList.remove('hidden');
-            else banner.classList.add('hidden');
-        };
-
 
         function autoResizeTextarea(el) {
             el.style.height = 'auto'; 
@@ -1540,52 +1315,22 @@
 
         function renderCaseList(searchTerm = '') {
             DOM.casesContainer.innerHTML = '';
-
-            // 更新「展開/收合」按鈕文字
-            const toggleBtn = document.getElementById('btn-toggle-other-owners');
-            if (toggleBtn) {
-                toggleBtn.textContent = showOtherOwnersInList ? '收合其他主責案件' : '展開其他主責案件';
-            }
-
-            const term = String(searchTerm || '').trim();
-
-            const base = showOtherOwnersInList
-                ? casesData
-                : casesData.filter(c => getCaseOwner(c) === PRIMARY_OWNER);
-
-            const filtered = base.filter(c => {
-                const comp = String(c.company || '');
-                const client = String(c.clientName || '');
-                return comp.includes(term) || client.includes(term);
-            });
-
-            if (filtered.length === 0) {
-                if (!showOtherOwnersInList && !term) {
-                    DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無「主責凱宇」案件</div>';
-                } else {
-                    DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無案件</div>';
-                }
-                return;
-            }
+            const filtered = casesData.filter(c => (c.company && c.company.includes(searchTerm)) || (c.clientName && c.clientName.includes(searchTerm)) );
+            
+            if (filtered.length === 0) { DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無案件</div>'; return; }
 
             filtered.forEach(item => {
                 const el = document.createElement('div');
                 el.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md cursor-pointer relative group transition-all";
-                const catColor = (item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
-
-                const owner = getCaseOwner(item);
-                const ownerColor = owner === PRIMARY_OWNER ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-slate-50 text-slate-600 border border-slate-200';
-
+                let catColor = (item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
+                
                 el.innerHTML = `
-                    <div class="flex justify-between items-start mb-3 gap-3">
-                        <h3 class="font-bold text-slate-800 text-xl pr-4 flex-1 min-w-0">${item.company || '未命名企業'}</h3>
-                        <div class="flex flex-col items-end gap-2 shrink-0">
-                            <span class="text-xs ${ownerColor} px-3 py-1 rounded-lg font-black whitespace-nowrap">主責：${owner}</span>
-                            <span class="text-sm ${catColor} px-3 py-1 rounded-lg font-bold whitespace-nowrap">${item.category || '未分類'}</span>
-                        </div>
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800 text-xl pr-4">${item.company || '未命名企業'}</h3>
+                        <span class="text-sm ${catColor} px-3 py-1 rounded-lg font-bold whitespace-nowrap">${item.category || '未分類'}</span>
                     </div>
                     <div class="flex items-center text-base text-slate-500 gap-4 font-medium">
-                        <span class="truncate max-w-[180px]"><i class="fa-solid fa-users text-slate-400 mr-2"></i> ${item.clientName || '無'}</span>
+                        <span class="truncate max-w-[150px]"><i class="fa-solid fa-users text-slate-400 mr-2"></i> ${item.clientName || '無'}</span>
                         <span><i class="fa-solid fa-calendar text-slate-400 mr-2"></i> ${item.visitDate || item.date || '無'}</span>
                     </div>
                     <div class="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500">
@@ -1597,31 +1342,22 @@
             });
         }
         document.getElementById('search-input').addEventListener('input', (e) => renderCaseList(e.target.value));
-        document.getElementById('btn-toggle-other-owners')?.addEventListener('click', () => {
-            showOtherOwnersInList = !showOtherOwnersInList;
-            renderCaseList(document.getElementById('search-input').value);
-        });
 
         function updateDashboard() {
-            const ownerCases = getOwnerCases();
+            // 傳統分類
+            document.getElementById('dash-total').textContent = casesData.length;
+            document.getElementById('dash-elder').textContent = casesData.filter(c => c.category === '中高齡及高齡者').length;
+            document.getElementById('dash-disabled').textContent = casesData.filter(c => c.category === '身心障礙者').length;
+            document.getElementById('dash-job').textContent = casesData.filter(c => c.category === '勞工就業通').length;
 
-            // 傳統分類（只統計主責凱宇）
-            document.getElementById('dash-total').textContent = ownerCases.length;
-            document.getElementById('dash-elder').textContent = ownerCases.filter(c => c.category === '中高齡及高齡者').length;
-            document.getElementById('dash-disabled').textContent = ownerCases.filter(c => c.category === '身心障礙者').length;
-            document.getElementById('dash-job').textContent = ownerCases.filter(c => c.category === '勞工就業通').length;
-
-            // 進度分類（只統計主責凱宇）
-            const closedCases = ownerCases.filter(c => c.outcome && c.outcome.closeDate);
-            const doneCases = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
-            const progressCases = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
+            // 🌟 新增進度分類統計
+            const closedCases = casesData.filter(c => c.outcome && c.outcome.closeDate);
+            const doneCases = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && c.report.strategy.trim() !== ''));
+            const progressCases = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && c.report.strategy.trim() !== ''));
 
             document.getElementById('dash-closed').textContent = closedCases.length;
             document.getElementById('dash-done').textContent = doneCases.length;
             document.getElementById('dash-progress').textContent = progressCases.length;
-
-            // 期限提醒公告
-            renderDeadlineBanner();
         }
 
         // 🌟 新增：儀表板清單顯示功能
@@ -1629,19 +1365,17 @@
             const container = document.getElementById('dashboard-list-container');
             const content = document.getElementById('dashboard-list-content');
             const title = document.getElementById('dashboard-list-title');
-
-            const ownerCases = getOwnerCases(); // 只顯示主責凱宇
+            
             let filtered = [];
-
             if (type === 'progress') {
                 title.innerHTML = '✍️ 報告撰寫中 - 案件清單';
-                filtered = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
+                filtered = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && c.report.strategy.trim() !== ''));
             } else if (type === 'done') {
                 title.innerHTML = '📄 完成報告 - 案件清單';
-                filtered = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
+                filtered = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && c.report.strategy.trim() !== ''));
             } else if (type === 'closed') {
                 title.innerHTML = '✅ 已結案 - 案件清單';
-                filtered = ownerCases.filter(c => c.outcome && c.outcome.closeDate);
+                filtered = casesData.filter(c => c.outcome && c.outcome.closeDate);
             }
 
             if (filtered.length === 0) {
@@ -1834,7 +1568,6 @@
             document.getElementById('form-phone').value = c.phone || '';
             document.getElementById('form-intake-date').value = c.intakeDate || '';
             document.getElementById('form-visit-date').value = c.visitDate || c.date || '';
-            const ownerField = document.getElementById('form-owner'); if (ownerField) ownerField.value = getCaseOwner(c);
 
             if (c.category === '中高齡及高齡者') {
                 multiClients = c.clients || [];
@@ -2051,215 +1784,6 @@
             XLSX.writeFile(wb, fileName);
         };
 
-        // ==========================================
-        // 📦 案件打包下載（資料/照片/錄音/Word）
-        // ==========================================
-        window.downloadCasePackage = async () => {
-            if (!currentEditingCaseId) return;
-            const c = casesData.find(x => x.id === currentEditingCaseId);
-            if (!c) return;
-
-            if (typeof JSZip === 'undefined') {
-                alert("打包下載需要 JSZip（已透過 CDN 載入）。
-若目前網路阻擋 cdnjs，請更換網路環境後重試。");
-                return;
-            }
-
-            const btn = document.getElementById('btn-download-package');
-            const originalText = btn ? btn.innerHTML : '';
-            if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 打包中...'; btn.classList.add('opacity-60', 'pointer-events-none'); }
-
-            const zip = new JSZip();
-            const companySafe = sanitizeFileName(c.company || '未命名企業');
-            const clientSafe = sanitizeFileName(c.clientName || '未命名個案');
-            const zipName = `${companySafe}_${clientSafe}_案件打包.zip`;
-
-            const fCase = zip.folder('1_個案相關資料');
-            const fPhotos = zip.folder('2_訪視照片');
-            const fAudios = zip.folder('3_訪視錄音');
-            const fWord = zip.folder('4_案件文字word檔');
-
-            const escapeHtml = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-            const extFromMime = (mime, fallback) => {
-                const m = String(mime || '').toLowerCase();
-                if (m.includes('jpeg')) return '.jpg';
-                if (m.includes('png')) return '.png';
-                if (m.includes('webp')) return '.webp';
-                if (m.includes('gif')) return '.gif';
-                if (m.includes('wav')) return '.wav';
-                if (m.includes('mpeg') || m.includes('mp3')) return '.mp3';
-                if (m.includes('mp4') || m.includes('m4a')) return '.m4a';
-                if (m.includes('webm')) return '.webm';
-                return fallback || '';
-            };
-
-            // 1) 個案相關資料
-            const exportData = {
-                id: c.id,
-                owner: getCaseOwner(c),
-                category: c.category || '',
-                company: c.company || '',
-                phone: c.phone || '',
-                intakeDate: c.intakeDate || '',
-                visitDate: c.visitDate || c.date || '',
-                visitors: c.visitors || '',
-                clientName: c.clientName || '',
-                clientGender: c.clientGender || '',
-                clientAge: c.clientAge || '',
-                clientDob: c.clientDob || '',
-                clientTitle: c.clientTitle || '',
-                workLocation: c.workLocation || '',
-                disability: c.disability || '',
-                disabilityCause: c.disabilityCause || '',
-                initialProblems: c.initialProblems || '',
-                report: c.report || {},
-                outcome: c.outcome || {},
-                env: c.env || {},
-                checklist: c.checklist || {},
-                hearing: c.hearing || {},
-                createdAt: c.createdAt ? '(Firestore Timestamp)' : '',
-                updatedAt: c.updatedAt ? '(Firestore Timestamp)' : ''
-            };
-            fCase.file('案件基本資料.json', JSON.stringify(exportData, null, 2));
-
-            const summaryTxt = [
-                `主責人：${getCaseOwner(c)}`,
-                `申請單位：${c.company || ''}`,
-                `個案/工作站：${c.clientName || ''}`,
-                `對象別：${c.category || ''}`,
-                `接案日：${c.intakeDate || ''}`,
-                `初訪日：${c.visitDate || c.date || ''}`,
-                `訪視委員：${c.visitors || ''}`,
-                '',
-                '【遭遇問題及期待改善事項】',
-                (c.initialProblems || ''),
-            ].join('\n');
-            fCase.file('案件摘要.txt', summaryTxt);
-
-            // 2) 訪視照片（若因權限/CORS 無法抓檔，會改存 URL 清單）
-            const photoUrlsFallback = [];
-            const photos = Array.isArray(c.photos) ? c.photos : [];
-            for (let i = 0; i < photos.length; i++) {
-                const p = photos[i];
-                const previewUrl = typeof p === 'string' ? p : (p.previewUrl || '');
-                const downloadUrl = typeof p === 'string' ? p : (p.downloadUrl || p.previewUrl || '');
-                const url = downloadUrl || previewUrl;
-                const base = sanitizeFileName(typeof p === 'string' ? `photo_${i+1}` : (p.name || `photo_${i+1}`));
-
-                if (!url) continue;
-
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error('fetch not ok');
-                    const blob = await res.blob();
-                    const ext = extFromMime(blob.type, '.jpg');
-                    fPhotos.file(`${String(i+1).padStart(2,'0')}_${base}${ext}`, blob);
-                } catch (e) {
-                    photoUrlsFallback.push(`${String(i+1).padStart(2,'0')}. ${url}`);
-                }
-            }
-            if (photoUrlsFallback.length > 0) {
-                fPhotos.file('⚠️_照片無法自動下載_請改用下列連結.txt', photoUrlsFallback.join('\n'));
-            }
-
-            // 3) 訪視錄音（同上：失敗則存 URL）
-            const audioUrlsFallback = [];
-            const audios = Array.isArray(c.audios) ? c.audios : [];
-            for (let i = 0; i < audios.length; i++) {
-                const a = audios[i] || {};
-                const previewUrl = a.previewUrl || '';
-                const downloadUrl = a.downloadUrl || a.previewUrl || '';
-                const url = downloadUrl || previewUrl;
-
-                const displayName = sanitizeFileName(a.displayName || a.name || `audio_${i+1}`);
-                if (!url) continue;
-
-                // 逐字稿（若有）
-                if (a.transcript) {
-                    fAudios.file(`${String(i+1).padStart(2,'0')}_${displayName}_逐字稿.txt`, String(a.transcript));
-                }
-
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error('fetch not ok');
-                    const blob = await res.blob();
-                    const ext = extFromMime(blob.type, '.webm');
-                    fAudios.file(`${String(i+1).padStart(2,'0')}_${displayName}${ext}`, blob);
-                } catch (e) {
-                    audioUrlsFallback.push(`${String(i+1).padStart(2,'0')}. ${url}`);
-                }
-            }
-            if (audioUrlsFallback.length > 0) {
-                fAudios.file('⚠️_錄音無法自動下載_請改用下列連結.txt', audioUrlsFallback.join('\n'));
-            }
-
-            // 4) 案件文字（Word 可開啟的 .doc）
-            const rpt = c.report || {};
-            const out = c.outcome || {};
-            const wordHtml = `<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>
-body{font-family:'標楷體','Times New Roman',serif;line-height:1.8;font-size:12pt;}
-h1{font-size:18pt;margin:0 0 12px 0;}
-h2{font-size:14pt;margin:18px 0 6px 0;}
-p{margin:0 0 8px 0;white-space:pre-wrap;}
-.small{color:#64748b;font-size:10pt;}
-</style>
-</head>
-<body>
-<h1>職務再設計｜訪視評估與成果報告</h1>
-<p class="small">主責人：${escapeHtml(getCaseOwner(c))}　｜　申請單位：${escapeHtml(c.company || '')}　｜　個案/工作站：${escapeHtml(c.clientName || '')}</p>
-<p class="small">接案日：${escapeHtml(c.intakeDate || '')}　｜　初訪日：${escapeHtml(c.visitDate || c.date || '')}　｜　訪視委員：${escapeHtml(c.visitors || '')}</p>
-
-<h2>一、個案之就業狀況</h2>
-<p>${escapeHtml(rpt.status || '')}</p>
-
-<h2>二、個案之生理限制</h2>
-<p>${escapeHtml(rpt.limits || '')}</p>
-
-<h2>三、個案就業問題診斷與分析</h2>
-<p>${escapeHtml(rpt.analysis || '')}</p>
-
-<h2>四、改善方式、內容及輔具建議</h2>
-<p>${escapeHtml(rpt.strategy || '')}</p>
-
-<h2>五、審查會決議</h2>
-<p>${escapeHtml(out.resolution || '')}</p>
-
-<h2>六、輔具試用、訓練及驗收</h2>
-<p>${escapeHtml(out.acceptance || '')}</p>
-
-<h2>七、職務再設計前後效益評估</h2>
-<p>${escapeHtml(out.benefit || '')}</p>
-
-<h2>八、結案日期</h2>
-<p>${escapeHtml(out.closeDate || '')}</p>
-</body></html>`;
-            fWord.file('案件文字.doc', '\ufeff' + wordHtml);
-
-            try {
-                const blob = await zip.generateAsync({ type: 'blob' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = zipName;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
-                showToast("📦 已完成打包下載");
-            } catch (e) {
-                alert("打包失敗：" + e.message);
-            } finally {
-                if (btn) { btn.innerHTML = originalText; btn.classList.remove('opacity-60', 'pointer-events-none'); }
-            }
-        };
-
-        // 綁定按鈕
-        document.getElementById('btn-download-package')?.addEventListener('click', () => window.downloadCasePackage());
-
-
-
 
         function renderWorkstationClients() {
             const container = document.getElementById('multi-client-container');
@@ -2330,7 +1854,6 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
 
         DOM.btnNewCase.addEventListener('click', () => {
             DOM.form.reset(); document.getElementById('form-id').value = ''; document.getElementById('form-visit-date').valueAsDate = new Date();
-            const ownerSel = document.getElementById('form-owner'); if (ownerSel) ownerSel.value = PRIMARY_OWNER;
             multiClients = []; document.getElementById('group-single-client').classList.remove('hidden'); document.getElementById('group-multi-client').classList.add('hidden');
             renderCommitteeCheckboxes(); showView('form', '新增訪視案件', false); triggerAutoResize();
         });
@@ -2340,8 +1863,7 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
             const caseId = document.getElementById('form-id').value;
             const category = document.querySelector('input[name="form-category"]:checked')?.value || '其他';
             const visitors = Array.from(document.querySelectorAll('input[name="chk-visitor"]:checked')).map(cb => cb.value).join('、');
-            const owner = (document.getElementById('form-owner')?.value || PRIMARY_OWNER).trim();
-            const data = { category, owner, company: document.getElementById('form-company').value, phone: document.getElementById('form-phone').value, intakeDate: document.getElementById('form-intake-date').value, visitDate: document.getElementById('form-visit-date').value, visitors: visitors, updatedAt: serverTimestamp() };
+            const data = { category, company: document.getElementById('form-company').value, phone: document.getElementById('form-phone').value, intakeDate: document.getElementById('form-intake-date').value, visitDate: document.getElementById('form-visit-date').value, visitors: visitors, updatedAt: serverTimestamp() };
 
             if(category === '中高齡及高齡者') {
                 data.clients = multiClients.filter(c => c.name.trim() !== ''); data.clientName = data.clients.length > 0 ? `${data.clients[0].name} 等 ${data.clients.length} 人` : '未命名工作站';
@@ -2501,104 +2023,35 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
 
         function renderPhotos(photosArr) {
             const container = document.getElementById('photos-container');
-            if (!container) return;
-            const arr = Array.isArray(photosArr) ? photosArr : [];
-
-            if (arr.length === 0) {
-                container.className = 'text-sm text-slate-400';
-                container.innerHTML = '<p class="text-sm text-slate-400">尚無照片。</p>';
-                return;
+            if (photosArr.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400 col-span-full">尚無照片。</p>'; return;
             }
-
-            // 由 grid 改為「一頁一頁滑」(scroll-snap) 的圖庫
-            container.className = 'w-full';
-
-            const slidesHtml = arr.map((p, index) => {
-                const previewUrl = typeof p === 'string' ? p : (p.previewUrl || '');
-                const downloadUrl = typeof p === 'string' ? p : (p.downloadUrl || p.previewUrl || '');
-                const src = downloadUrl || previewUrl;
-                const name = (typeof p === 'string' ? `現場照片_${index+1}` : (p.name || `現場照片_${index+1}`));
-
+            container.innerHTML = photosArr.map((p, index) => {
+                const previewUrl = typeof p === 'string' ? p : p.previewUrl;
+                const downloadUrl = typeof p === 'string' ? p : p.downloadUrl;
+                const src = downloadUrl || previewUrl; 
                 return `
-                    <div class="snap-center shrink-0 w-full">
-                        <div class="relative w-full aspect-[4/3] md:aspect-video bg-black flex items-center justify-center">
-                            <img src="${src}" class="w-full h-full object-contain cursor-pointer select-none" alt="${name}"
-                                 onclick="window.openPreview('${previewUrl}', '${downloadUrl}', 'image/jpeg', '${sanitizeFileName(name)}')">
-
-                            <div class="absolute top-3 left-3 flex gap-2">
-                                <button onclick="event.stopPropagation(); window.deleteMedia('photos', ${index});"
-                                    class="bg-red-600/90 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm font-black shadow">
-                                    <i class="fa-solid fa-trash mr-1"></i>刪除
-                                </button>
-                                <a href="${downloadUrl}" target="_blank" onclick="event.stopPropagation();"
-                                    class="bg-white/90 hover:bg-white text-blue-700 px-3 py-2 rounded-lg text-xs md:text-sm font-black shadow">
-                                    <i class="fa-solid fa-download mr-1"></i>下載
-                                </a>
-                            </div>
-
-                            <div class="absolute bottom-3 right-3 bg-slate-900/60 text-white px-3 py-1.5 rounded-lg text-xs md:text-sm font-black">
-                                ${index + 1} / ${arr.length}
-                            </div>
-                        </div>
+                <div class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-sm relative group cursor-pointer" 
+                     onclick="window.openPreview('${previewUrl}', '${downloadUrl}', 'image/jpeg', '現場照片')">
+                    <img src="${src}" class="w-full h-full object-cover" alt="現場照片">
+                    
+                    <!-- 預覽提示圖示 (居中) -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-30 text-white transition-opacity">
+                        <i class="fa-solid fa-expand text-3xl mb-1"></i>
                     </div>
-                `;
-            }).join('');
-
-            container.innerHTML = `
-                <div class="relative">
-                    <div id="photo-snap-track" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar rounded-2xl border border-slate-200 bg-black/90" style="scroll-behavior:smooth;">
-                        ${slidesHtml}
-                    </div>
-
-                    <button id="photo-prev-btn" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-700 w-10 h-10 rounded-full shadow flex items-center justify-center active:scale-95">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <button id="photo-next-btn" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-700 w-10 h-10 rounded-full shadow flex items-center justify-center active:scale-95">
-                        <i class="fa-solid fa-chevron-right"></i>
+                    
+                    <!-- 🗑️ 刪除按鈕 (左上角) -->
+                    <button onclick="event.stopPropagation(); window.deleteMedia('photos', ${index})" 
+                       class="absolute top-2 left-2 bg-red-500/90 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10">
+                        <i class="fa-solid fa-trash text-sm"></i>
                     </button>
 
-                    <div class="mt-3 text-center text-sm font-black text-slate-600">
-                        <span id="photo-page-indicator">1 / ${arr.length}</span>
-                        <span class="text-slate-300 mx-2">•</span>
-                        <span class="text-slate-500 font-bold">可左右滑動切換</span>
-                    </div>
-                </div>
-            `;
-
-            const track = document.getElementById('photo-snap-track');
-            const indicator = document.getElementById('photo-page-indicator');
-            const prevBtn = document.getElementById('photo-prev-btn');
-            const nextBtn = document.getElementById('photo-next-btn');
-
-            if (!track || !indicator || !prevBtn || !nextBtn) return;
-
-            let currentIndex = 0;
-            let scrollTimer = null;
-
-            const updateIndicator = () => {
-                const w = track.clientWidth || 1;
-                const idx = Math.round(track.scrollLeft / w);
-                currentIndex = Math.max(0, Math.min(idx, arr.length - 1));
-                indicator.textContent = `${currentIndex + 1} / ${arr.length}`;
-            };
-
-            const goToIndex = (idx) => {
-                const w = track.clientWidth || 1;
-                const target = Math.max(0, Math.min(idx, arr.length - 1));
-                track.scrollTo({ left: target * w, behavior: 'smooth' });
-            };
-
-            track.addEventListener('scroll', () => {
-                if (scrollTimer) clearTimeout(scrollTimer);
-                scrollTimer = setTimeout(updateIndicator, 80);
-            });
-            window.addEventListener('resize', () => updateIndicator(), { passive: true });
-
-            prevBtn.addEventListener('click', (e) => { e.preventDefault(); goToIndex(currentIndex - 1); });
-            nextBtn.addEventListener('click', (e) => { e.preventDefault(); goToIndex(currentIndex + 1); });
-
-            // 初始更新
-            updateIndicator();
+                    <!-- 下載按鈕 (右下角) -->
+                    <a href="${downloadUrl}" target="_blank" onclick="event.stopPropagation();" 
+                       class="absolute bottom-2 right-2 bg-white text-blue-600 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-blue-50 z-10">
+                        <i class="fa-solid fa-download text-lg"></i>
+                    </a>
+                </div>`}).join('');
         }
 
         document.getElementById('file-upload').addEventListener('change', async (e) => {
