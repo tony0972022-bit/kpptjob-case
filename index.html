@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TCN 職務再設計｜個案登打（Firebase）</title>
+  <style>
+    :root { --b:#e5e7eb; --t:#111827; --m:#6b7280; --bg:#f9fafb; --w:#fff; --ok:#16a34a; --warn:#b45309; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--t)}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--b);background:var(--w);position:sticky;top:0;z-index:10}
+    header .left{display:flex;gap:10px;align-items:center}
+    header h1{font-size:16px;margin:0}
+    .badge{font-size:12px;border:1px solid var(--b);border-radius:999px;padding:4px 10px;color:var(--m);background:#fff}
+    button{border:1px solid var(--b);background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
+    button.primary{background:#111827;color:#fff;border-color:#111827}
+    button.danger{background:#fff;color:#b91c1c;border-color:#fecaca}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .wrap{display:grid;grid-template-columns:420px 1fr;gap:14px;padding:14px;max-width:1400px;margin:0 auto}
+    .card{background:var(--w);border:1px solid var(--b);border-radius:16px;padding:14px;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+    .card h2{font-size:14px;margin:0 0 10px 0}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    label{font-size:12px;color:var(--m)}
+    input,select,textarea{width:100%;border:1px solid var(--b);border-radius:10px;padding:9px 10px;font-size:14px;background:#fff}
+    textarea{min-height:76px;resize:vertical}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .muted{color:var(--m);font-size:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{font-size:12px;padding:8px;border-bottom:1px solid var(--b);vertical-align:top}
+    th{color:var(--m);text-align:left;font-weight:600}
+    tr:hover td{background:#fafafa}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--b);border-radius:999px;padding:2px 8px;font-size:12px;color:var(--m);background:#fff}
+    .kpi{display:flex;gap:10px;flex-wrap:wrap}
+    .hidden{display:none!important}
+    .sectionTitle{margin:12px 0 6px 0;font-size:12px;color:#374151;font-weight:700}
+    .hr{height:1px;background:var(--b);margin:10px 0}
+    .hint{font-size:12px;color:#374151;background:#f3f4f6;border:1px dashed #d1d5db;border-radius:12px;padding:10px}
+    .small{font-size:12px}
+    .rightActions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+    .flexBetween{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .toast{position:fixed;right:14px;bottom:14px;background:#111827;color:#fff;padding:10px 12px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);font-size:13px;opacity:0;transform:translateY(6px);transition:.18s;max-width: 420px}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .modalBackdrop{position:fixed;inset:0;background:rgba(17,24,39,.5);display:none;align-items:center;justify-content:center;padding:14px}
+    .modal{background:#fff;border-radius:16px;max-width:860px;width:100%;border:1px solid var(--b);box-shadow:0 20px 60px rgba(0,0,0,.25);padding:14px}
+    .modalBackdrop.show{display:flex}
+    .modal h3{margin:0 0 8px 0;font-size:14px}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .tagOk{color:var(--ok);font-weight:700}
+    .tagWarn{color:var(--warn);font-weight:700}
+    .btnLink{border:none;background:transparent;color:#2563eb;padding:0;cursor:pointer}
+    .fieldRow{display:grid;grid-template-columns: 1.2fr 1fr 1fr 0.7fr 0.5fr; gap:8px; align-items:end}
+    @media (max-width: 1100px){ .wrap{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">
+      <h1>TCN 職務再設計｜個案登打</h1>
+      <span class="badge" id="envBadge">Firebase</span>
+      <span class="badge" id="authBadge">Auth: Google</span>
+    </div>
+    <div class="row">
+      <span class="pill" id="userPill"><span class="muted">未登入</span></span>
+      <button id="btnLogin" class="primary">Google 登入</button>
+      <button id="btnLogout" class="hidden">登出</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card">
+      <div class="flexBetween">
+        <h2>個案清單</h2>
+        <div class="rightActions">
+          <button id="btnNewCase" disabled>新增個案</button>
+          <button id="btnReload" disabled>重新整理</button>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div>
+          <label>年度</label>
+          <select id="fYear" disabled>
+            <option value="115">115</option>
+            <option value="114">114</option>
+            <option value="113">113</option>
+          </select>
+        </div>
+        <div>
+          <label>狀態</label>
+          <select id="fStatus" disabled>
+            <option value="">全部</option>
+            <option value="進行中">進行中</option>
+            <option value="結案">結案</option>
+            <option value="退回">退回</option>
+            <option value="中途結案">中途結案</option>
+          </select>
+        </div>
+        <div>
+          <label>關鍵字（編號/單位/姓名/備註）</label>
+          <input id="fQ" placeholder="例如：JA-001、某某公司、王小明…" disabled />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="kpi" id="kpiBar"></div>
+
+      <div class="hr"></div>
+
+      <div class="muted small" id="listHint">登入後會載入資料。</div>
+
+      <div style="overflow:auto; max-height: 58vh; border:1px solid var(--b); border-radius:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:110px;">編號</th>
+              <th>單位/對象</th>
+              <th style="width:90px;">狀態</th>
+              <th style="width:120px;">更新</th>
+            </tr>
+          </thead>
+          <tbody id="caseTbody"></tbody>
+        </table>
+      </div>
+
+      <div class="hint" style="margin-top:12px;">
+        <div style="font-weight:700;margin-bottom:6px;">測試用白名單登入</div>
+        <div class="small">
+          只有你指定的 Google 帳號能登入。若不在名單，會立刻登出並顯示提示。<br/>
+          真正上線的保護請用 Firestore Rules 鎖住（前端白名單只是輔助）。
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="flexBetween">
+        <h2 id="formTitle">個案表單</h2>
+        <div class="rightActions">
+          <button id="btnManageFields" class="hidden">欄位管理</button>
+          <button id="btnDeleteCase" class="danger hidden">刪除</button>
+          <button id="btnSaveCase" class="primary" disabled>儲存</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>編號（建議唯一）</label>
+          <input id="fixed_caseNo" placeholder="例如：JA-001" disabled />
+        </div>
+        <div>
+          <label>狀態</label>
+          <select id="fixed_status" disabled>
+            <option value="進行中">進行中</option>
+            <option value="結案">結案</option>
+            <option value="退回">退回</option>
+            <option value="中途結案">中途結案</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:10px;">
+        <div>
+          <label>年度</label>
+          <select id="fixed_year" disabled>
+            <option value="115">115</option>
+            <option value="114">114</option>
+            <option value="113">113</option>
+          </select>
+        </div>
+        <div>
+          <label>承辦（自動帶入）</label>
+          <input id="fixed_owner" disabled />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div id="dynamicForm"></div>
+
+      <div class="hr"></div>
+
+      <div class="muted small">
+        <span class="tagOk">●</span> 固定欄位：年度/編號/狀態/承辦　
+        <span class="tagWarn">●</span> 其餘欄位由 <span class="mono">fieldDefs</span> 動態生成
+      </div>
+    </section>
+  </div>
+
+  <div class="modalBackdrop" id="fieldModal">
+    <div class="modal">
+      <div class="flexBetween">
+        <h3>欄位管理（fieldDefs）</h3>
+        <button id="btnCloseFieldModal">關閉</button>
+      </div>
+
+      <div class="hint" style="margin:10px 0;">
+        key 用英數與底線（例如 <span class="mono">orgName</span>、<span class="mono">clientName</span>）。type：text/textarea/number/date/select/multiselect/boolean
+      </div>
+
+      <div class="fieldRow">
+        <div>
+          <label>key（唯一）</label>
+          <input id="fd_key" placeholder="例如：orgName" />
+        </div>
+        <div>
+          <label>顯示名稱 label</label>
+          <input id="fd_label" placeholder="例如：單位名稱" />
+        </div>
+        <div>
+          <label>type</label>
+          <select id="fd_type">
+            <option value="text">text</option>
+            <option value="textarea">textarea</option>
+            <option value="number">number</option>
+            <option value="date">date</option>
+            <option value="select">select</option>
+            <option value="multiselect">multiselect</option>
+            <option value="boolean">boolean</option>
+          </select>
+        </div>
+        <div>
+          <label>group（分區）</label>
+          <input id="fd_group" placeholder="例如：基本資料" />
+        </div>
+        <div>
+          <label>必填</label>
+          <select id="fd_required">
+            <option value="false">否</option>
+            <option value="true">是</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label>options（選單/多選用，以逗號分隔）</label>
+        <input id="fd_options" placeholder="例如：進行中,結案,退回" />
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="btnAddField" class="primary">新增/更新欄位</button>
+        <button id="btnSeedFields">建立示範欄位</button>
+        <span class="muted small">（示範欄位含：單位名稱、個案姓名、聯絡電話、訪視日期、備註）</span>
+      </div>
+
+      <div class="hr"></div>
+
+      <div style="overflow:auto; max-height: 46vh; border:1px solid var(--b); border-radius:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:140px;">key</th>
+              <th style="width:160px;">label</th>
+              <th style="width:110px;">type</th>
+              <th>group</th>
+              <th style="width:70px;">必填</th>
+              <th style="width:120px;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="fieldTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAn095SDFUIC8V5ExwWNvKiWAn-2pc4upw",
+      authDomain: "tcnjob-case.firebaseapp.com",
+      projectId: "tcnjob-case",
+      storageBucket: "tcnjob-case.firebasestorage.app",
+      messagingSenderId: "431850935758",
+      appId: "1:431850935758:web:2cb372fb5bb3007753c79f",
+      measurementId: "G-CHLNJZSFTS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    const ALLOW_EMAILS = new Set([
+      "kaiyu097@gmail.com",
+      "n85551@gmail.com",
+      "hkkwork@gmail.com",
+      "judyfang1226@gmail.com",
+      "kppt1110601@gmail.com",
+      "yilun1208@gmail.com",
+    ]);
+
+    const ROLE_BY_EMAIL = {
+      "kaiyu097@gmail.com": "admin",
+      "n85551@gmail.com": "staff",
+      "hkkwork@gmail.com": "staff",
+      "judyfang1226@gmail.com": "staff",
+      "kppt1110601@gmail.com": "staff",
+      "yilun1208@gmail.com": "staff",
+    };
+
+    const NAME_BY_EMAIL = {
+      "kaiyu097@gmail.com": "蔡凱宇",
+      "n85551@gmail.com": "黃國裕",
+      "hkkwork@gmail.com": "高湘怡",
+      "judyfang1226@gmail.com": "方姿云",
+      "kppt1110601@gmail.com": "陳秋媚",
+      "yilun1208@gmail.com": "盧怡倫",
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const toastEl = $("toast");
+    let toastTimer = null;
+    function toast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>toastEl.classList.remove("show"), 2600);
+    }
+
+    function setDisabledAll(disabled){
+      ["btnNewCase","btnReload","fYear","fStatus","fQ","fixed_caseNo","fixed_status","fixed_year"].forEach(id => $(id).disabled = disabled);
+      $("btnSaveCase").disabled = disabled;
+    }
+
+    let currentUser = null;
+    let currentRole = null;
+    let currentName = null;
+    let currentCaseId = null;
+    let fieldDefs = [];
+    let casesCache = [];
+    let hasLoaded = false;
+
+    $("btnLogin").addEventListener("click", async () => {
+      try{ await signInWithPopup(auth, provider); }
+      catch(e){ console.error(e); toast("登入失敗：" + (e?.message || e)); }
+    });
+
+    $("btnLogout").addEventListener("click", async () => {
+      try{ await signOut(auth); }
+      catch(e){ console.error(e); toast("登出失敗：" + (e?.message || e)); }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      if(!user){
+        currentRole = null; currentName = null; currentCaseId = null;
+        fieldDefs = []; casesCache = []; hasLoaded = false;
+        $("userPill").innerHTML = '<span class="muted">未登入</span>';
+        $("btnLogin").classList.remove("hidden");
+        $("btnLogout").classList.add("hidden");
+        $("btnManageFields").classList.add("hidden");
+        $("btnDeleteCase").classList.add("hidden");
+        $("caseTbody").innerHTML = "";
+        $("dynamicForm").innerHTML = "";
+        $("kpiBar").innerHTML = "";
+        $("listHint").textContent = "登入後會載入資料。";
+        $("fixed_owner").value = "";
+        setDisabledAll(true);
+        return;
+      }
+
+      const email = (user.email || "").toLowerCase();
+      if(!ALLOW_EMAILS.has(email)){
+        toast("此帳號不在允許名單，已自動登出：" + email);
+        await signOut(auth);
+        return;
+      }
+
+      currentRole = ROLE_BY_EMAIL[email] || "staff";
+      currentName = NAME_BY_EMAIL[email] || (user.displayName || email);
+
+      $("userPill").innerHTML = `<span>${escapeHtml(currentName)}</span> <span class="muted">(${escapeHtml(email)})</span> <span class="pill">${escapeHtml(currentRole)}</span>`;
+      $("btnLogin").classList.add("hidden");
+      $("btnLogout").classList.remove("hidden");
+      setDisabledAll(false);
+
+      $("fixed_owner").value = currentName;
+
+      await upsertUserDoc(email);
+
+      if(currentRole === "admin") $("btnManageFields").classList.remove("hidden");
+      else $("btnManageFields").classList.add("hidden");
+
+      await reloadAll();
+      toast("登入成功！");
+    });
+
+    async function upsertUserDoc(email){
+      try{
+        const ref = doc(db, "users", currentUser.uid);
+        const snap = await getDoc(ref);
+        const payload = { email, displayName: currentName, role: currentRole, updatedAt: new Date() };
+        if(!snap.exists()) await setDoc(ref, { ...payload, createdAt: new Date() });
+        else await updateDoc(ref, payload);
+      }catch(e){
+        console.warn("users doc upsert skipped:", e?.message || e);
+      }
+    }
+
+    async function loadFieldDefs(){
+      const snap = await getDocs(collection(db, "fieldDefs"));
+      const items = [];
+      snap.forEach(d => {
+        const data = d.data();
+        items.push({
+          key: d.id,
+          label: data.label || d.id,
+          type: data.type || "text",
+          group: data.group || "其他",
+          required: !!data.required,
+          options: Array.isArray(data.options) ? data.options : []
+        });
+      });
+      items.sort((a,b)=> (a.group||"").localeCompare(b.group||"") || (a.label||"").localeCompare(b.label||""));
+      fieldDefs = items;
+    }
+
+    function renderDynamicForm(values = {}){
+      const byGroup = new Map();
+      for(const fd of fieldDefs){
+        const g = fd.group || "其他";
+        if(!byGroup.has(g)) byGroup.set(g, []);
+        byGroup.get(g).push(fd);
+      }
+      const groups = Array.from(byGroup.keys()).sort((a,b)=>a.localeCompare(b,"zh-Hant"));
+      const container = $("dynamicForm");
+      container.innerHTML = "";
+
+      if(fieldDefs.length === 0){
+        container.innerHTML = `<div class="hint">目前尚未建立動態欄位。若你是 admin，點右上「欄位管理」建立欄位；或在欄位管理裡點「建立示範欄位」。</div>`;
+        return;
+      }
+
+      for(const g of groups){
+        const title = document.createElement("div");
+        title.className = "sectionTitle";
+        title.textContent = g;
+        container.appendChild(title);
+
+        const grid = document.createElement("div");
+        grid.className = "grid2";
+
+        for(const fd of byGroup.get(g)){
+          const wrap = document.createElement("div");
+          const lab = document.createElement("label");
+          lab.textContent = fd.label + (fd.required ? "（必填）" : "");
+          wrap.appendChild(lab);
+
+          let input;
+          const v = values?.[fd.key];
+
+          if(fd.type === "textarea"){
+            input = document.createElement("textarea");
+            input.value = (v ?? "");
+          } else if(fd.type === "number"){
+            input = document.createElement("input");
+            input.type = "number"; input.step = "any";
+            input.value = (v ?? "");
+          } else if(fd.type === "date"){
+            input = document.createElement("input");
+            input.type = "date";
+            input.value = (v ?? "");
+          } else if(fd.type === "boolean"){
+            input = document.createElement("select");
+            input.innerHTML = `<option value="">（未設定）</option><option value="true">是</option><option value="false">否</option>`;
+            input.value = (v === true) ? "true" : (v === false ? "false" : "");
+          } else if(fd.type === "select"){
+            input = document.createElement("select");
+            const opts = fd.options?.length ? fd.options : ["（請先設定 options）"];
+            input.innerHTML = `<option value="">（未選）</option>` + opts.map(o=>`<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
+            input.value = (v ?? "");
+          } else if(fd.type === "multiselect"){
+            input = document.createElement("input");
+            input.placeholder = "多選：以逗號分隔";
+            input.value = Array.isArray(v) ? v.join(",") : (v ?? "");
+          } else {
+            input = document.createElement("input");
+            input.type = "text";
+            input.value = (v ?? "");
+          }
+
+          input.dataset.fieldKey = fd.key;
+          input.dataset.fieldType = fd.type;
+          wrap.appendChild(input);
+          grid.appendChild(wrap);
+        }
+        container.appendChild(grid);
+      }
+    }
+
+    $("btnReload").addEventListener("click", reloadAll);
+    $("fYear").addEventListener("change", () => renderCaseList());
+    $("fStatus").addEventListener("change", () => renderCaseList());
+    $("fQ").addEventListener("input", () => renderCaseList());
+    $("btnNewCase").addEventListener("click", () => openCaseForEdit(null));
+
+    async function loadCases(){
+      const year = $("fYear").value;
+      const colRef = collection(db, "cases");
+      let qy;
+      if(currentRole === "admin"){
+        qy = query(colRef, where("year", "==", year), orderBy("updatedAt", "desc"), limit(200));
+      }else{
+        qy = query(colRef, where("year", "==", year), where("ownerUid", "==", currentUser.uid), orderBy("updatedAt", "desc"), limit(200));
+      }
+      const snap = await getDocs(qy);
+      const items = [];
+      snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+      casesCache = items;
+    }
+
+    function renderKpi(){
+      const year = $("fYear").value;
+      const status = $("fStatus").value;
+      const filtered = casesCache.filter(c => (!status || c.status === status));
+      const total = filtered.length;
+
+      const byStatus = new Map();
+      for(const c of casesCache){
+        const s = c.status || "未填";
+        byStatus.set(s, (byStatus.get(s) || 0) + 1);
+      }
+
+      const kpi = $("kpiBar");
+      kpi.innerHTML = "";
+      kpi.appendChild(pill(`年度 ${year}`));
+      kpi.appendChild(pill(`本頁 ${total} 筆`));
+      ["進行中","結案","退回","中途結案"].forEach(s=> kpi.appendChild(pill(`${s} ${byStatus.get(s) || 0}`)));
+    }
+
+    function pill(text){
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = text;
+      return span;
+    }
+
+    function normalize(s){ return (s || "").toString().trim().toLowerCase(); }
+
+    function renderCaseList(){
+      const status = $("fStatus").value;
+      const q = normalize($("fQ").value);
+
+      const tbody = $("caseTbody");
+      tbody.innerHTML = "";
+
+      const list = casesCache.filter(c => {
+        if(status && c.status !== status) return false;
+        if(!q) return true;
+        const hay = normalize([c.caseNo, c.orgName, c.clientName, c.searchText, c.status].filter(Boolean).join(" "));
+        return hay.includes(q);
+      });
+
+      $("listHint").textContent = hasLoaded ? (list.length ? `共 ${list.length} 筆` : "沒有符合條件的資料。") : "登入後會載入資料。";
+
+      for(const c of list){
+        const tr = document.createElement("tr");
+        tr.style.cursor = "pointer";
+        tr.addEventListener("click", () => openCaseForEdit(c.id));
+        const updated = formatDateTime(c.updatedAt?.toDate ? c.updatedAt.toDate() : (c.updatedAt || null));
+        tr.innerHTML = `
+          <td><button class="btnLink">${escapeHtml(c.caseNo || "(未填)")}</button></td>
+          <td>${escapeHtml(c.orgName || c.clientName || "(未填)")}</td>
+          <td>${escapeHtml(c.status || "(未填)")}</td>
+          <td class="muted">${escapeHtml(updated || "")}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      renderKpi();
+    }
+
+    function formatDateTime(d){
+      if(!d) return "";
+      try{ return (d instanceof Date ? d : new Date(d)).toLocaleString("zh-TW",{hour12:false}); }
+      catch{ return ""; }
+    }
+
+    function openCaseForEdit(caseId){
+      currentCaseId = caseId;
+      $("btnDeleteCase").classList.toggle("hidden", !caseId);
+      $("formTitle").textContent = caseId ? "個案表單｜編輯" : "個案表單｜新增";
+      $("btnSaveCase").disabled = false;
+
+      if(!caseId){
+        $("fixed_caseNo").value = "";
+        $("fixed_status").value = "進行中";
+        $("fixed_year").value = $("fYear").value;
+        renderDynamicForm({});
+        return;
+      }
+
+      const c = casesCache.find(x=>x.id===caseId);
+      if(!c){ toast("找不到此筆資料，請重新整理。"); return; }
+
+      $("fixed_caseNo").value = c.caseNo || "";
+      $("fixed_status").value = c.status || "進行中";
+      $("fixed_year").value = c.year || $("fYear").value;
+      renderDynamicForm(c.values || {});
+    }
+
+    function readDynamicValues(){
+      const inputs = $("dynamicForm").querySelectorAll("[data-field-key]");
+      const values = {};
+      const errors = [];
+      for(const el of inputs){
+        const key = el.dataset.fieldKey;
+        const type = el.dataset.fieldType;
+        const fd = fieldDefs.find(x=>x.key===key);
+        let v = el.value;
+
+        if(type === "number"){
+          v = v === "" ? null : Number(v);
+          if(v !== null && Number.isNaN(v)) v = null;
+        } else if(type === "boolean"){
+          v = (v === "") ? null : (v === "true");
+        } else if(type === "multiselect"){
+          v = v.trim() ? v.split(",").map(x=>x.trim()).filter(Boolean) : [];
+        }
+
+        if(fd?.required){
+          const missing = (v === null) || (v === "") || (Array.isArray(v) && v.length===0);
+          if(missing) errors.push(fd.label || key);
+        }
+        values[key] = v;
+      }
+      return { values, errors };
+    }
+
+    $("btnSaveCase").addEventListener("click", async () => {
+      if(!currentUser) return;
+
+      const year = $("fixed_year").value;
+      const caseNo = $("fixed_caseNo").value.trim();
+      const status = $("fixed_status").value;
+
+      if(!caseNo){ toast("請先填寫編號。"); $("fixed_caseNo").focus(); return; }
+
+      const { values, errors } = readDynamicValues();
+      if(errors.length){ toast("以下欄位為必填： " + errors.join("、")); return; }
+
+      const orgName = (values.orgName ?? values.unitName ?? values.companyName ?? "")?.toString?.() ?? "";
+      const clientName = (values.clientName ?? values.name ?? "")?.toString?.() ?? "";
+      const searchText = [caseNo, orgName, clientName, status].filter(Boolean).join(" ");
+
+      const payload = {
+        year, caseNo, status,
+        ownerUid: currentUser.uid,
+        ownerName: currentName,
+        orgName, clientName, searchText,
+        values,
+        updatedAt: new Date()
+      };
+
+      try{
+        if(!currentCaseId){
+          const id = `${year}_${caseNo}`;
+          const ref = doc(db, "cases", id);
+          const snap = await getDoc(ref);
+          if(snap.exists()){ toast("此編號已存在，請改編號或從清單開啟編輯。"); return; }
+          await setDoc(ref, { ...payload, createdAt: new Date() });
+          currentCaseId = id;
+        }else{
+          await updateDoc(doc(db, "cases", currentCaseId), payload);
+        }
+        toast("已儲存。");
+        await reloadAll();
+        openCaseForEdit(currentCaseId);
+      }catch(e){
+        console.error(e);
+        toast("儲存失敗：" + (e?.message || e));
+      }
+    });
+
+    $("btnDeleteCase").addEventListener("click", async () => {
+      if(!currentCaseId) return;
+      if(!confirm("確定要刪除此筆個案？")) return;
+      try{
+        await deleteDoc(doc(db, "cases", currentCaseId));
+        toast("已刪除。");
+        currentCaseId = null;
+        await reloadAll();
+        openCaseForEdit(null);
+      }catch(e){
+        console.error(e);
+        toast("刪除失敗：" + (e?.message || e));
+      }
+    });
+
+    // Field modal
+    $("btnManageFields").addEventListener("click", async ()=> {
+      await renderFieldTable();
+      $("fieldModal").classList.add("show");
+    });
+    $("btnCloseFieldModal").addEventListener("click", ()=> $("fieldModal").classList.remove("show"));
+    $("fieldModal").addEventListener("click", (e)=>{ if(e.target === $("fieldModal")) $("fieldModal").classList.remove("show"); });
+
+    $("btnAddField").addEventListener("click", async () => {
+      const key = $("fd_key").value.trim();
+      const label = $("fd_label").value.trim();
+      const type = $("fd_type").value;
+      const group = $("fd_group").value.trim() || "其他";
+      const required = $("fd_required").value === "true";
+      const options = $("fd_options").value.split(",").map(x=>x.trim()).filter(Boolean);
+
+      if(!key || !/^[A-Za-z0-9_]+$/.test(key)){ toast("key 請用英數與底線（A-Z a-z 0-9 _）。"); return; }
+      if(!label){ toast("請填寫 label（顯示名稱）。"); return; }
+
+      try{
+        await setDoc(doc(db, "fieldDefs", key), { label, type, group, required, options, updatedAt: new Date() }, { merge: true });
+        toast("欄位已新增/更新。");
+        await loadFieldDefs();
+        await renderFieldTable();
+        renderDynamicForm(currentCaseId ? (casesCache.find(x=>x.id===currentCaseId)?.values || {}) : {});
+      }catch(e){
+        console.error(e);
+        toast("寫入欄位失敗：" + (e?.message || e));
+      }
+    });
+
+    $("btnSeedFields").addEventListener("click", async () => {
+      const seeds = [
+        { key:"orgName", label:"單位名稱", type:"text", group:"基本資料", required:true, options:[] },
+        { key:"clientName", label:"個案姓名", type:"text", group:"基本資料", required:false, options:[] },
+        { key:"phone", label:"聯絡電話", type:"text", group:"基本資料", required:false, options:[] },
+        { key:"visitDate", label:"訪視日期", type:"date", group:"評估/訪視", required:false, options:[] },
+        { key:"note", label:"備註", type:"textarea", group:"其他", required:false, options:[] },
+      ];
+      try{
+        for(const s of seeds){
+          await setDoc(doc(db, "fieldDefs", s.key), { ...s, updatedAt: new Date() }, { merge: true });
+        }
+        toast("已建立示範欄位。");
+        await loadFieldDefs();
+        await renderFieldTable();
+        renderDynamicForm({});
+      }catch(e){
+        console.error(e);
+        toast("建立示範欄位失敗：" + (e?.message || e));
+      }
+    });
+
+    async function renderFieldTable(){
+      await loadFieldDefs();
+      const tbody = $("fieldTbody");
+      tbody.innerHTML = "";
+      for(const fd of fieldDefs){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="mono">${escapeHtml(fd.key)}</td>
+          <td>${escapeHtml(fd.label)}</td>
+          <td class="mono">${escapeHtml(fd.type)}</td>
+          <td>${escapeHtml(fd.group || "")}</td>
+          <td>${fd.required ? "是" : "否"}</td>
+          <td>
+            <button class="btnLink" data-act="load" data-key="${escapeHtml(fd.key)}">載入</button>
+            &nbsp;|&nbsp;
+            <button class="btnLink" data-act="delete" data-key="${escapeHtml(fd.key)}">刪除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+      tbody.querySelectorAll("button[data-act]").forEach(btn=>{
+        btn.addEventListener("click", async ()=>{
+          const act = btn.dataset.act;
+          const key = btn.dataset.key;
+          if(act === "load"){
+            const fd = fieldDefs.find(x=>x.key===key);
+            $("fd_key").value = fd.key;
+            $("fd_label").value = fd.label;
+            $("fd_type").value = fd.type;
+            $("fd_group").value = fd.group || "";
+            $("fd_required").value = fd.required ? "true" : "false";
+            $("fd_options").value = (fd.options || []).join(",");
+            toast("已載入欄位設定，可直接更新。");
+          }else if(act === "delete"){
+            if(!confirm("確定要刪除此欄位定義？（不會刪除既有個案 values，但畫面將不再顯示此欄）")) return;
+            try{
+              await deleteDoc(doc(db, "fieldDefs", key));
+              toast("已刪除欄位。");
+              await loadFieldDefs();
+              await renderFieldTable();
+              renderDynamicForm(currentCaseId ? (casesCache.find(x=>x.id===currentCaseId)?.values || {}) : {});
+            }catch(e){
+              console.error(e);
+              toast("刪除失敗：" + (e?.message || e));
+            }
+          }
+        });
+      });
+    }
+
+    async function reloadAll(){
+      if(!currentUser) return;
+      try{
+        $("btnReload").disabled = true;
+        await loadFieldDefs();
+        await loadCases();
+        hasLoaded = true;
+        renderCaseList();
+        if(currentCaseId && !casesCache.find(x=>x.id===currentCaseId)) currentCaseId = null;
+        openCaseForEdit(currentCaseId);
+      }catch(e){
+        console.error(e);
+        toast("載入失敗：" + (e?.message || e));
+      }finally{
+        $("btnReload").disabled = false;
+      }
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+  </script>
+</body>
+</html>
