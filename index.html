@@ -350,6 +350,26 @@
               </table>
             </div>
           </div>
+
+          <div class="subCard" style="grid-column:1/-1;">
+            <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+              <h2 style="margin-bottom:0;">(E) 輔具借用人次（身障 / 中高齡）</h2>
+              <div class="row" style="gap:6px;flex-wrap:wrap;">
+                <label style="font-size:13px;">起始月份</label>
+                <input type="month" id="repLoanFrom" style="width:140px;" />
+                <label style="font-size:13px;">結束月份</label>
+                <input type="month" id="repLoanTo" style="width:140px;" />
+                <button id="btnRepLoanFilter">篩選</button>
+                <button id="btnRepLoanClear">全年</button>
+              </div>
+            </div>
+            <div class="tableWrap" style="max-height:30vh;margin-top:4px;">
+              <table>
+                <thead><tr><th>類別</th><th style="width:130px;">借用人次</th><th style="width:130px;">百分比</th></tr></thead>
+                <tbody id="repLoanStatTbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <div class="hint" style="margin-top:12px;">
@@ -480,8 +500,10 @@
                   <th style="width:80px;">品牌</th>
                   <th style="width:75px;">購置年</th>
                   <th>說明</th>
+                  <th style="width:160px;">輔具分類</th>
                   <th style="width:90px;">狀態</th>
                   <th style="width:140px;">借用者</th>
+                  <th style="width:44px;"></th>
                 </tr></thead>
                 <tbody id="devInvTbody"></tbody>
               </table>
@@ -504,7 +526,7 @@
             </div>
             <div class="tableWrap" style="max-height:46vh;">
               <table>
-                <thead><tr><th style="width:100px;">編號</th><th>名稱</th><th style="width:80px;">品牌</th><th style="width:80px;">購置年</th><th>說明</th><th style="width:120px;">清點狀況</th></tr></thead>
+                <thead><tr><th style="width:100px;">編號</th><th>名稱</th><th style="width:80px;">品牌</th><th style="width:80px;">購置年</th><th style="width:150px;">輔具分類</th><th>說明</th><th style="width:100px;">清點狀況</th><th style="width:44px;"></th></tr></thead>
                 <tbody id="devBCDTbody"></tbody>
               </table>
             </div>
@@ -518,8 +540,18 @@
         <div class="subCard">
           <h2 style="margin-bottom:6px;">借用紀錄（最近 200 筆）</h2>
           <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
-            <table>
-              <thead><tr><th>輔具</th><th style="width:140px;">借用者</th><th style="width:170px;">借出</th><th style="width:170px;">歸還</th></tr></thead>
+            <table style="font-size:12px;">
+              <thead><tr>
+                <th style="width:90px;">編號</th>
+                <th>品項名</th>
+                <th style="width:70px;">品牌</th>
+                <th style="width:60px;">購置年</th>
+                <th style="width:120px;">個案名</th>
+                <th style="width:70px;">案件類別</th>
+                <th style="width:90px;">借用者</th>
+                <th style="width:140px;">出借時間</th>
+                <th style="width:140px;">歸還時間</th>
+              </tr></thead>
               <tbody id="devLoanTbody"></tbody>
             </table>
           </div>
@@ -866,53 +898,61 @@
 
   <!-- 借出 / 歸還 Modal（獨立，由 nav 按鈕開啟） -->
   <div class="modalBackdrop" id="borrowModal">
-    <div class="modal" style="max-width:620px;max-height:90vh;overflow-y:auto;">
-      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div class="modal" style="max-width:640px;max-height:92vh;overflow-y:auto;">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px;">
         <h2 style="margin:0;">📷 借出 / 歸還</h2>
         <button id="btnCloseBorrowModal">✕ 關閉</button>
       </div>
-      <div class="grid2">
+      <p class="muted" style="margin:0 0 10px;font-size:12px;">① 選借用者 → ② 選連結個案（可略）→ ③ 掃描或輸入設備代碼（按 Enter）→ 確認借出/歸還</p>
+
+      <!-- Step 1+2: 借用者 & 連結個案 -->
+      <div class="grid2" style="margin-bottom:10px;">
         <div>
-          <label>設備代碼 / QR</label>
-          <div class="row">
-            <input id="devScan" placeholder="DEV-001" style="flex:1;" />
-            <button id="btnDevCamera" title="用相機掃QR碼" style="white-space:nowrap;">📷 掃QR</button>
-          </div>
-        </div>
-        <div>
-          <label>操作</label>
-          <div class="row">
-            <button id="btnDevLoad">載入</button>
-            <button id="btnDevBorrow" class="primary" disabled>借出</button>
-            <button id="btnDevReturn" disabled>歸還</button>
-            <button id="btnBatchBorrow">批次借出</button>
-          </div>
-        </div>
-      </div>
-      <!-- QR camera area -->
-      <div id="qrScanArea" style="display:none;margin-top:10px;">
-        <video id="qrVideo" playsinline muted style="width:100%;max-width:420px;border-radius:8px;background:#000;"></video>
-        <div class="row" style="margin-top:6px;gap:8px;">
-          <span class="muted" style="flex:1;">對準 QR 碼，自動讀取…</span>
-          <button id="btnStopCamera">停止掃描</button>
-        </div>
-      </div>
-      <div class="grid2" style="margin-top:10px;">
-        <div>
-          <label>借用者</label>
+          <label>① 借用者 <span style="color:var(--danger)">*</span></label>
           <select id="devBorrower"></select>
         </div>
         <div>
-          <label>連結個案（借出自動記錄試用）</label>
+          <label>② 連結個案（借出同步記錄試用，可略）</label>
           <div style="border:1px solid var(--b);border-radius:12px;padding:6px;background:var(--bg);">
             <input id="devLinkCaseSearch" placeholder="搜尋編號/單位/個案…" style="margin-bottom:4px;font-size:12px;" />
-            <div id="devLinkCaseList" style="max-height:130px;overflow-y:auto;"></div>
+            <div id="devLinkCaseList" style="max-height:100px;overflow-y:auto;"></div>
           </div>
           <div id="devLinkCaseCount" class="muted" style="font-size:11px;margin-top:2px;"></div>
         </div>
       </div>
+
       <div class="hr"></div>
-      <div class="hint" id="devInfo">尚未載入設備。</div>
+
+      <!-- Step 3: 掃描設備 -->
+      <div style="margin:10px 0 6px;">
+        <label>③ 設備代碼（輸入後按 Enter，或點相機掃 QR）</label>
+        <div class="row" style="margin-top:4px;gap:6px;">
+          <input id="devScan" placeholder="輸入代碼後按 Enter…" style="flex:1;font-size:15px;font-weight:600;" autocomplete="off" />
+          <button id="btnDevCamera" style="white-space:nowrap;">📷 掃QR</button>
+        </div>
+      </div>
+
+      <!-- QR camera area -->
+      <div id="qrScanArea" style="display:none;margin-bottom:8px;">
+        <video id="qrVideo" playsinline muted style="width:100%;max-width:420px;border-radius:8px;background:#000;"></video>
+        <div class="row" style="margin-top:6px;gap:8px;">
+          <span class="muted" style="flex:1;">對準 QR 碼，自動讀取後自動借出…</span>
+          <button id="btnStopCamera">停止</button>
+        </div>
+      </div>
+
+      <!-- Device info card -->
+      <div id="devInfoCard" style="border:2px solid var(--b);border-radius:12px;padding:12px 14px;min-height:56px;margin-bottom:10px;transition:border-color .3s,background .3s;">
+        <div id="devInfo" style="color:var(--muted);font-size:13px;">尚未掃描設備。</div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="row" style="gap:8px;justify-content:flex-end;">
+        <button id="btnDevBorrow" class="primary" disabled style="min-width:90px;font-size:15px;padding:8px 18px;">借出</button>
+        <button id="btnDevReturn" disabled style="min-width:90px;font-size:15px;padding:8px 18px;">歸還</button>
+        <button id="btnBatchBorrow" title="一次掃描多件設備、選定借用者，批次送出借用紀錄" style="font-size:12px;padding:6px 12px;">📷 連掃多件</button>
+      </div>
+      <p class="muted" style="text-align:right;font-size:11px;margin-top:4px;">「連掃多件」：先掃描所有要借的設備，最後一次送出借用</p>
     </div>
   </div>
 
@@ -1062,22 +1102,44 @@
     </div>
   </div>
 
-  <!-- New device modal -->
+  <!-- New / Edit device modal -->
   <div class="modalBackdrop" id="deviceModal">
-    <div class="modal">
+    <div class="modal" style="max-width:600px;">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
-        <div><h3>新增輔具</h3><div class="muted">deviceId 建議作為 QR 內容。</div></div>
+        <div><h3 id="deviceModalTitle">新增輔具</h3><div class="muted">deviceId 建議作為 QR 內容。</div></div>
         <div class="row"><button id="btnCloseDeviceModal">關閉</button></div>
       </div>
       <div class="hr"></div>
       <div class="grid2">
-        <div><label>deviceId</label><input id="d_id" placeholder="DEV-001" /></div>
-        <div><label>名稱</label><input id="d_name" placeholder="升降工作台" /></div>
-        <div><label>分類（選填）</label><input id="d_category" placeholder="搬運/站立輔助" /></div>
-        <div><label>狀態</label><select id="d_status"><option value="可借">可借</option><option value="維修">維修</option><option value="停用">停用</option></select></div>
+        <div><label>編號 deviceId <span style="color:var(--danger)">*</span></label><input id="d_id" placeholder="DEV-001" /></div>
+        <div><label>名稱 <span style="color:var(--danger)">*</span></label><input id="d_name" placeholder="升降工作台" /></div>
+        <div><label>品牌</label><input id="d_brand" placeholder="廠牌" /></div>
+        <div><label>購置年份</label><input id="d_purchaseYear" placeholder="2023" /></div>
+        <div><label>單價</label><input id="d_unitPrice" placeholder="12000" /></div>
+        <div><label>數量</label><input id="d_quantity" placeholder="1" /></div>
+        <div><label>輔具分類</label><select id="d_category">
+          <option value="">（未分類）</option>
+          <option value="A">A - 個人行動輔具</option>
+          <option value="B">B - 溝通及資訊-視覺相關輔具</option>
+          <option value="C">C - 溝通及資訊-聽覺相關輔具</option>
+          <option value="D">D - 溝通及資訊-警示指示信號輔具</option>
+          <option value="E">E - 溝通及資訊-電腦周邊</option>
+          <option value="F">F - 工具類相關</option>
+          <option value="G">G - 環境改建相關</option>
+          <option value="H">H - 個人護具類</option>
+          <option value="I">I - 身體擺位支撐相關輔具</option>
+          <option value="J">J - 其他就業相關輔具</option>
+        </select></div>
+        <div><label>狀態</label><select id="d_status"><option value="可借">可借</option><option value="借出">借出</option><option value="維修">維修</option><option value="停用">停用</option></select></div>
+        <div style="grid-column:1/-1;"><label>說明</label><input id="d_description" placeholder="功能說明或備註" /></div>
+        <div><label>清點狀況</label><input id="d_inventoryStatus" placeholder="正常/遺失/損壞" /></div>
+        <div><label>是否貼標籤</label><input id="d_isLabeled" placeholder="是/否" /></div>
       </div>
       <div class="hr"></div>
-      <div class="row" style="justify-content:flex-end"><button id="btnCreateDevice" class="primary">建立</button></div>
+      <div class="row" style="justify-content:flex-end;gap:8px;">
+        <button id="btnDeleteDevice" style="color:var(--danger);display:none;">刪除此輔具</button>
+        <button id="btnCreateDevice" class="primary">建立</button>
+      </div>
     </div>
   </div>
 
@@ -2014,6 +2076,8 @@
     $("btnRepRefresh").addEventListener("click", ()=> refreshReports(true));
     $("repYear").addEventListener("change", ()=> refreshReports(true));
     $("btnRepExport").addEventListener("click", exportReportsCsv);
+    $("btnRepLoanFilter").addEventListener("click", ()=> _renderLoanStat());
+    $("btnRepLoanClear").addEventListener("click", ()=>{ $("repLoanFrom").value=""; $("repLoanTo").value=""; _renderLoanStat(); });
 
     async function loadLoans(force=false){
       if(!force && cacheLoans.length) return cacheLoans;
@@ -2111,6 +2175,51 @@
         dTb.innerHTML += `<tr><td>${escapeHtml(t)}</td><td>${n}</td></tr>`;
         repExportRows.push(["障礙類別", "", t, "", String(n)]);
       }
+
+      // (E) loan stat by case type
+      _renderLoanStat();
+    }
+
+    function _renderLoanStat(){
+      const fromVal = ($("repLoanFrom")?.value || "");
+      const toVal   = ($("repLoanTo")?.value   || "");
+      let filtered = repLoans;
+      if(fromVal){
+        const fromDate = new Date(fromVal + "-01");
+        filtered = filtered.filter(l=>{
+          const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null);
+          return d && d >= fromDate;
+        });
+      }
+      if(toVal){
+        const [y,m] = toVal.split("-").map(Number);
+        const toDate = new Date(y, m, 1); // first day of next month
+        filtered = filtered.filter(l=>{
+          const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null);
+          return d && d < toDate;
+        });
+      }
+      const statMap = { "身障個人":0, "中高齡大宗":0, "其他/未分類":0 };
+      for(const l of filtered){
+        const ct = (l.caseTypes || "").trim();
+        if(ct.includes("身障") || ct.includes("JA") || ct.includes("UH") || ct.includes("EC") || ct.includes("TA")){
+          statMap["身障個人"]++;
+        } else if(ct.includes("中高齡") || ct.includes("AG")){
+          statMap["中高齡大宗"]++;
+        } else {
+          statMap["其他/未分類"]++;
+        }
+      }
+      const total = filtered.length || 1;
+      const tb = $("repLoanStatTbody");
+      if(!tb) return;
+      tb.innerHTML = "";
+      for(const [label, count] of Object.entries(statMap)){
+        const pct = filtered.length ? ((count/filtered.length)*100).toFixed(1) : "0.0";
+        tb.innerHTML += `<tr><td>${escapeHtml(label)}</td><td>${count}</td><td>${pct}%</td></tr>`;
+        repExportRows.push(["借用人次統計", label, "", "", String(count), pct+"%"]);
+      }
+      tb.innerHTML += `<tr style="font-weight:600;border-top:2px solid var(--b);"><td>合計</td><td>${filtered.length}</td><td>100%</td></tr>`;
     }
 
     async function refreshReports(force=false){
@@ -2143,11 +2252,12 @@
     $("btnDevRefresh").addEventListener("click", ()=> refreshDevices(true));
     $("devQ").addEventListener("input", renderDevices);
     $("devStatus").addEventListener("change", renderDevices);
-    $("btnDevLoad").addEventListener("click", loadDeviceFromScan);
     $("btnDevBorrow").addEventListener("click", borrowDevice);
     $("btnDevReturn").addEventListener("click", returnDevice);
     $("btnDevCamera").addEventListener("click", startQrCamera);
     $("btnStopCamera").addEventListener("click", stopQrCamera);
+    // Enter 自動載入，不需按「載入」按鈕
+    $("devScan").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadDeviceFromScan(); } });
 
     // ── QR Camera ────────────────────────────────────────────────────
     let _qrStream = null;
@@ -2265,10 +2375,57 @@
       return Array.from(document.querySelectorAll("#devLinkCaseList .dlcCheck:checked")).map(el=>el.value).filter(Boolean);
     }
 
-    $("btnDevNew").addEventListener("click", ()=> $("deviceModal").classList.add("show"));
+    let _devEditId = null; // null = create mode, string = edit mode
+
+    let _devNewType = "A"; // 新增模式下的 deviceType
+
+    function openDeviceModal(editId, forceType){
+      _devEditId = editId || null;
+      const isEdit = !!_devEditId;
+      _devNewType = forceType || devActiveTab || "A";
+      const typeLabel = {A:"A 單位輔具", B:"B 評估工具", C:"C 維修工具", D:"D 耗材"}[_devNewType] || _devNewType;
+      $("deviceModalTitle").textContent = isEdit ? "編輯輔具" : `新增輔具（${typeLabel}）`;
+      $("btnCreateDevice").textContent = isEdit ? "更新" : "建立";
+      $("btnDeleteDevice").style.display = isEdit ? "" : "none";
+      $("d_id").readOnly = isEdit;
+      $("d_id").style.opacity = isEdit ? "0.6" : "";
+      ["d_id","d_name","d_brand","d_purchaseYear","d_unitPrice","d_quantity","d_category","d_description","d_inventoryStatus","d_isLabeled"].forEach(id=>{ $(id).value=""; });
+      $("d_status").value = "可借";
+      if(isEdit){
+        // 找 A cache 或 BCD cache
+        const dev = cacheDevices.find(d=>d.id===editId)
+          || Object.values(cacheDevicesBCD).flat().find(d=>d.id===editId||d.deviceId===editId)
+          || {};
+        _devNewType = dev.deviceType || _devNewType;
+        $("d_id").value = editId;
+        $("d_name").value = dev.name||"";
+        $("d_brand").value = dev.brand||"";
+        $("d_purchaseYear").value = dev.purchaseYear||"";
+        $("d_unitPrice").value = dev.unitPrice||"";
+        $("d_quantity").value = dev.quantity||"";
+        $("d_category").value = dev.category||"";
+        $("d_status").value = dev.status||"可借";
+        $("d_description").value = dev.description||"";
+        $("d_inventoryStatus").value = dev.inventoryStatus||"";
+        $("d_isLabeled").value = dev.isLabeled||"";
+      }
+      $("deviceModal").classList.add("show");
+    }
+
+    $("btnDevNew").addEventListener("click", ()=> openDeviceModal(null));
     $("btnCloseDeviceModal").addEventListener("click", ()=> $("deviceModal").classList.remove("show"));
     $("deviceModal").addEventListener("click", (e)=>{ if(e.target === $("deviceModal")) $("deviceModal").classList.remove("show"); });
     $("btnCreateDevice").addEventListener("click", createDevice);
+    $("btnDeleteDevice").addEventListener("click", async ()=>{
+      if(!_devEditId) return;
+      if(!confirm(`確認刪除輔具「${_devEditId}」？此操作不可復原。`)) return;
+      try{
+        await deleteDoc(doc(db,"devices",_devEditId));
+        $("deviceModal").classList.remove("show");
+        toast("已刪除輔具。");
+        cacheDevices=[]; await refreshDevices(true);
+      }catch(e){ toast("刪除失敗：" + (e?.message||e)); }
+    });
 
     let devCurrent = null;
 
@@ -2317,19 +2474,51 @@
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
         tr.addEventListener("click", ()=>{ $("borrowModal").classList.add("show"); $("devScan").value = d.id; loadDeviceFromScan(); });
-        tr.innerHTML = `<td class="mono">${escapeHtml(d.id)}</td><td>${escapeHtml(d.name||"")}</td><td>${escapeHtml(d.brand||"")}</td><td>${escapeHtml(d.purchaseYear||"")}</td><td>${escapeHtml(d.description||"")}</td><td>${escapeHtml(d.status||"")}</td><td>${escapeHtml(d.currentBorrowerName||"")}</td>`;
+        const editBtn = currentRole==="admin"
+          ? `<button class="devEditBtn" title="編輯此輔具" style="padding:2px 7px;font-size:12px;border-radius:8px;" data-dev-id="${escapeHtml(d.id)}">✏️</button>`
+          : "";
+        tr.innerHTML = `<td class="mono">${escapeHtml(d.id)}</td><td>${escapeHtml(d.name||"")}</td><td>${escapeHtml(d.brand||"")}</td><td>${escapeHtml(d.purchaseYear||"")}</td><td>${escapeHtml(d.description||"")}</td><td style="font-size:11px;">${escapeHtml(devCatLabel(d.category))}</td><td>${escapeHtml(d.status||"")}</td><td>${escapeHtml(d.currentBorrowerName||"")}</td><td>${editBtn}</td>`;
         tb.appendChild(tr);
       }
-      if(!list.length) tb.innerHTML = `<tr><td colspan="7" class="muted">沒有資料。</td></tr>`;
+      if(!list.length) tb.innerHTML = `<tr><td colspan="8" class="muted">沒有資料。</td></tr>`;
+      // Edit button click (delegated)
+      tb.addEventListener("click", e=>{
+        const btn = e.target.closest(".devEditBtn");
+        if(btn){ e.stopPropagation(); openDeviceModal(btn.dataset.devId); }
+      });
 
       // loans recent
       const ltb = $("devLoanTbody");
       ltb.innerHTML = "";
       const recent = cacheLoans.slice(0,200);
       for(const l of recent){
-        ltb.innerHTML += `<tr><td>${escapeHtml(l.deviceName||l.deviceId||"")}</td><td>${escapeHtml(l.borrowerName||"")}</td><td class="muted">${escapeHtml(fmtDT(l.borrowAt))}</td><td class="muted">${escapeHtml(fmtDT(l.returnAt))}</td></tr>`;
+        // 補齊舊紀錄沒有的欄位：從 cacheDevices / _dlcAllCases 查
+        const devInfo = cacheDevices.find(d=>d.id===l.deviceId)||{};
+        const brand       = l.brand       || devInfo.brand       || "";
+        const purchaseYear= l.purchaseYear|| devInfo.purchaseYear|| "";
+        // 個案名：優先用寫入時存的，否則從 _dlcAllCases 查
+        let clientNames = l.linkedCaseNames || "";
+        let caseTypes   = l.caseTypes || "";
+        if(!clientNames){
+          const ids = l.linkedCaseIds?.length ? l.linkedCaseIds : (l.linkedCaseId ? [l.linkedCaseId] : []);
+          const matched = ids.map(cid=>_dlcAllCases.find(c=>c.id===cid)).filter(Boolean);
+          clientNames = matched.map(c=>c.clientName||c.basic?.clientName||"").filter(Boolean).join("、");
+          caseTypes   = [...new Set(matched.map(c=>c.caseType||"").filter(Boolean))].join("、");
+        }
+        const returnedClass = l.returnAt ? "" : "style='color:var(--primary);font-weight:600;'";
+        ltb.innerHTML += `<tr>
+          <td class="mono">${escapeHtml(l.deviceId||"")}</td>
+          <td>${escapeHtml(l.deviceName||"")}</td>
+          <td>${escapeHtml(brand)}</td>
+          <td>${escapeHtml(purchaseYear)}</td>
+          <td>${escapeHtml(clientNames)}</td>
+          <td>${escapeHtml(caseTypes)}</td>
+          <td>${escapeHtml(l.borrowerName||"")}</td>
+          <td class="muted">${escapeHtml(fmtDT(l.borrowAt))}</td>
+          <td ${returnedClass}>${l.returnAt ? escapeHtml(fmtDT(l.returnAt)) : "借出中"}</td>
+        </tr>`;
       }
-      if(!recent.length) ltb.innerHTML = `<tr><td colspan="4" class="muted">尚無借用紀錄。</td></tr>`;
+      if(!recent.length) ltb.innerHTML = `<tr><td colspan="9" class="muted">尚無借用紀錄。</td></tr>`;
     }
 
     async function refreshDevices(force=false){
@@ -2350,20 +2539,34 @@
       }
     }
 
+    function _setDevInfoCard(color, bg, html){
+      const card = $("devInfoCard");
+      if(card){ card.style.borderColor = color; card.style.background = bg; }
+      $("devInfo").innerHTML = html;
+    }
+
     async function loadDeviceFromScan(){
       const id = $("devScan").value.trim();
-      if(!id){ toast("請輸入設備代碼。"); return; }
+      if(!id){ return; }
+      _setDevInfoCard("var(--b)","","<span class='muted'>載入中…</span>");
+      $("btnDevBorrow").disabled = true;
+      $("btnDevReturn").disabled = true;
       const snap = await getDoc(doc(db,"devices", id));
       if(!snap.exists()){
         devCurrent = null;
-        $("devInfo").innerHTML = `找不到設備：<span class="mono">${escapeHtml(id)}</span>`;
-        $("btnDevBorrow").disabled = true;
-        $("btnDevReturn").disabled = true;
+        _setDevInfoCard("#ef4444","#fff5f5",`<span style="color:#ef4444;font-weight:600;">❌ 找不到設備：${escapeHtml(id)}</span><br><span class="muted" style="font-size:12px;">請確認代碼是否正確</span>`);
         return;
       }
       devCurrent = { id, ...snap.data() };
       const st = devCurrent.status || "可借";
-      $("devInfo").innerHTML = `<div><b>${escapeHtml(devCurrent.name||"")}</b> <span class="pill mono">${escapeHtml(devCurrent.id)}</span></div><div class="muted" style="margin-top:6px;">狀態：<b>${escapeHtml(st)}</b>　借用者：${escapeHtml(devCurrent.currentBorrowerName||"")}</div>`;
+      const stColor = st==="可借" ? "#16a34a" : st==="借出" ? "#d97706" : "#6b7280";
+      const stBg    = st==="可借" ? "#f0fdf4"  : st==="借出" ? "#fffbeb"  : "#f9fafb";
+      const borrowerHint = devCurrent.currentBorrowerName ? `　借用者：${escapeHtml(devCurrent.currentBorrowerName)}` : "";
+      _setDevInfoCard(stColor, stBg, `
+        <div style="font-size:15px;font-weight:700;">${escapeHtml(devCurrent.name||"（無名稱）")} <span class="mono" style="font-size:12px;font-weight:400;color:var(--muted);">${escapeHtml(devCurrent.id)}</span></div>
+        <div style="margin-top:4px;font-size:13px;color:${stColor};font-weight:600;">● ${escapeHtml(st)}${borrowerHint}</div>
+        ${st==="可借" ? '<div class="muted" style="font-size:12px;margin-top:2px;">點「借出」完成登記</div>' : st==="借出" ? '<div class="muted" style="font-size:12px;margin-top:2px;">點「歸還」完成歸還登記</div>' : ''}
+      `);
       $("btnDevBorrow").disabled = (st!=="可借");
       $("btnDevReturn").disabled = (st!=="借出");
     }
@@ -2384,13 +2587,19 @@
       const today = new Date().toISOString().slice(0,10);
 
       try{
+        const linkedCases = linkedCaseIds.map(cid=>_dlcAllCases.find(c=>c.id===cid)).filter(Boolean);
         await setDoc(doc(db,"deviceLoans", loanId), {
-          deviceId: devCurrent.id,
+          deviceId:   devCurrent.id,
           deviceName: devCurrent.name || "",
-          category: devCurrent.category || "",
+          brand:      devCurrent.brand || "",
+          purchaseYear: devCurrent.purchaseYear || "",
+          category:   devCurrent.category || "",
           borrowerUid,
           borrowerName,
           linkedCaseId,
+          linkedCaseIds,
+          linkedCaseNames: linkedCases.map(c=>c.clientName||c.basic?.clientName||"").filter(Boolean).join("、"),
+          caseTypes: [...new Set(linkedCases.map(c=>c.caseType||"").filter(Boolean))].join("、"),
           borrowAt: new Date(),
           returnAt: null,
           status: "借出"
@@ -2470,9 +2679,9 @@
           }
           } // end for linkedCaseIds
           const cnt = linkedCaseIds.length;
-          toast(`已借出，自動記錄至 ${cnt} 個個案試用欄位。`);
+          toast(`✅ 已借出！${cnt ? `同步記錄至 ${cnt} 個個案試用欄位` : ""}`);
         }else{
-          toast("已借出。");
+          toast("✅ 已借出！");
         }
 
         // optional usage log
@@ -2490,12 +2699,27 @@
           console.warn("usage skipped:", e?.message || e);
         }
 
+        // 成功回饋：綠色卡片 → 3秒後自動清除準備下一筆
+        const devLabel = `${devCurrent.name||devCurrent.id}（${devCurrent.id}）`;
+        _setDevInfoCard("#16a34a","#f0fdf4",`
+          <div style="font-size:15px;font-weight:700;color:#16a34a;">✅ 借出成功！</div>
+          <div style="margin-top:4px;">${escapeHtml(devLabel)} → ${escapeHtml(borrowerName)}</div>
+          <div class="muted" style="font-size:12px;margin-top:4px;">3 秒後自動清除，可繼續掃描下一件…</div>
+        `);
+        $("btnDevBorrow").disabled = true;
+        $("btnDevReturn").disabled = true;
+        devCurrent = null;
         cacheDevices = [];
         cacheLoans = [];
-        await refreshDevices(true);
-        await loadDeviceFromScan();
+        refreshDevices(true); // don't await, update in background
+        setTimeout(()=>{
+          $("devScan").value = "";
+          _setDevInfoCard("var(--b)","","<span class='muted'>尚未掃描設備。</span>");
+          $("devScan").focus();
+        }, 3000);
       }catch(e){
         console.error(e);
+        _setDevInfoCard("#ef4444","#fff5f5",`<span style="color:#ef4444;font-weight:600;">❌ 借出失敗：${escapeHtml(e?.message||"未知錯誤")}</span>`);
         toast("借出失敗：" + (e?.message || e));
       }
     }
@@ -2516,37 +2740,67 @@
           console.warn("usage update skipped:", e?.message || e);
         }
 
-        toast("已歸還。");
+        const devLabel = `${devCurrent.name||devCurrent.id}（${devCurrent.id}）`;
+        _setDevInfoCard("#2563eb","#eff6ff",`
+          <div style="font-size:15px;font-weight:700;color:#2563eb;">✅ 歸還成功！</div>
+          <div style="margin-top:4px;">${escapeHtml(devLabel)} 已歸還</div>
+          <div class="muted" style="font-size:12px;margin-top:4px;">3 秒後自動清除，可繼續掃描下一件…</div>
+        `);
+        toast("✅ 已歸還！");
+        $("btnDevBorrow").disabled = true;
+        $("btnDevReturn").disabled = true;
+        devCurrent = null;
         cacheDevices = [];
         cacheLoans = [];
-        await refreshDevices(true);
-        await loadDeviceFromScan();
+        refreshDevices(true);
+        setTimeout(()=>{
+          $("devScan").value = "";
+          _setDevInfoCard("var(--b)","","<span class='muted'>尚未掃描設備。</span>");
+          $("devScan").focus();
+        }, 3000);
       }catch(e){
         console.error(e);
+        _setDevInfoCard("#ef4444","#fff5f5",`<span style="color:#ef4444;font-weight:600;">❌ 歸還失敗：${escapeHtml(e?.message||"未知錯誤")}</span>`);
         toast("歸還失敗：" + (e?.message || e));
       }
     }
 
     async function createDevice(){
-      if(currentRole!=="admin"){ toast("只有管理員可新增。"); return; }
-      const id = $("d_id").value.trim();
+      if(currentRole!=="admin"){ toast("只有管理員可新增/編輯。"); return; }
+      const id = _devEditId || $("d_id").value.trim();
       const name = $("d_name").value.trim();
       if(!id || !name){ toast("請填 deviceId 與名稱。"); return; }
-      const category = $("d_category").value.trim();
-      const status = $("d_status").value;
+      const payload = {
+        name,
+        deviceType:    _devNewType,
+        brand:         $("d_brand").value.trim(),
+        purchaseYear:  $("d_purchaseYear").value.trim(),
+        unitPrice:     $("d_unitPrice").value.trim(),
+        quantity:      $("d_quantity").value.trim(),
+        category:      $("d_category").value.trim(),
+        status:        $("d_status").value,
+        description:   $("d_description").value.trim(),
+        inventoryStatus: $("d_inventoryStatus").value.trim(),
+        isLabeled:     $("d_isLabeled").value.trim(),
+        updatedAt:     new Date()
+      };
       try{
         const ref = doc(db,"devices", id);
-        const snap = await getDoc(ref);
-        if(snap.exists()){ toast("此 deviceId 已存在。"); return; }
-        await setDoc(ref, { name, category, status, currentBorrowerUid:"", currentBorrowerName:"", createdAt:new Date(), updatedAt:new Date() });
+        if(_devEditId){
+          await updateDoc(ref, payload);
+          toast("已更新輔具。");
+        } else {
+          const snap = await getDoc(ref);
+          if(snap.exists()){ toast("此 deviceId 已存在。"); return; }
+          await setDoc(ref, { deviceId:id, ...payload, currentBorrowerUid:"", currentBorrowerName:"", createdAt:new Date() });
+          toast("已建立輔具。");
+        }
         $("deviceModal").classList.remove("show");
-        $("d_id").value=""; $("d_name").value=""; $("d_category").value="";
-        toast("已建立輔具。");
-        cacheDevices = [];
-        await refreshDevices(true);
+        if(_devNewType==="A"){ cacheDevices=[]; await refreshDevices(true); }
+        else { cacheDevicesBCD[_devNewType]=null; await loadAndRenderBCD(_devNewType); }
       }catch(e){
         console.error(e);
-        toast("建立失敗：" + (e?.message || e));
+        toast((_devEditId?"更新":"建立") + "失敗：" + (e?.message || e));
       }
     }
 
@@ -3977,7 +4231,7 @@
       const exportBtn = $("btnDevExport");
       if(exportBtn) exportBtn.hidden = !(isA || isBCD || isLoans || isInventory);
       const newBtn = $("btnDevNew");
-      if(newBtn) newBtn.hidden = !(isA && currentRole==="admin");
+      if(newBtn) newBtn.hidden = !((isA || isBCD) && currentRole==="admin");
     }
 
     async function loadAndRenderBCD(type){
@@ -3998,20 +4252,40 @@
       const filtered = q ? list.filter(d=>(d.deviceId||"").toLowerCase().includes(q)||(d.name||"").toLowerCase().includes(q)) : list;
       const tbody = $("devBCDTbody");
       tbody.innerHTML = "";
-      if(!filtered.length){ tbody.innerHTML = `<tr><td colspan="6" class="muted">尚無資料。可用「匯入JSON」上傳。</td></tr>`; return; }
+      if(!filtered.length){ tbody.innerHTML = `<tr><td colspan="8" class="muted">尚無資料。可用「匯入Excel」上傳。</td></tr>`; return; }
       for(const d of filtered){
+        const did = d.id || d.deviceId || "";
+        const editBtn = currentRole==="admin"
+          ? `<button class="bcdEditBtn" data-dev-id="${escapeHtml(did)}" title="編輯" style="padding:2px 7px;font-size:12px;border-radius:8px;">✏️</button>`
+          : "";
         tbody.innerHTML += `<tr>
-          <td class="mono">${escapeHtml(d.deviceId||d.id||"")}</td>
+          <td class="mono">${escapeHtml(did)}</td>
           <td>${escapeHtml(d.name||"")}</td>
           <td class="muted">${escapeHtml(d.brand||"")}</td>
           <td class="muted">${escapeHtml(d.purchaseYear||"")}</td>
+          <td style="font-size:11px;">${escapeHtml(devCatLabel(d.category))}</td>
           <td class="muted">${escapeHtml(d.description||"")}</td>
           <td class="muted">${escapeHtml(d.inventoryStatus||"")}</td>
+          <td>${editBtn}</td>
         </tr>`;
       }
+      // 委派編輯按鈕點擊
+      tbody.addEventListener("click", e=>{
+        const btn = e.target.closest(".bcdEditBtn");
+        if(btn) openDeviceModal(btn.dataset.devId);
+      });
     }
 
     // ── Device Excel import with column mapping ──
+    const DEV_CATEGORIES = {
+      A:"個人行動輔具", B:"溝通及資訊輔具-視覺相關輔具",
+      C:"溝通及資訊輔具-聽覺相關輔具", D:"溝通及資訊輔具-警示、指示及信號輔具",
+      E:"溝通及資訊輔具-電腦周邊", F:"工具類相關",
+      G:"環境改建相關", H:"個人護具類",
+      I:"身體擺位支撐相關輔具", J:"其他就業相關輔具"
+    };
+    function devCatLabel(code){ const c=(code||"").toUpperCase(); return DEV_CATEGORIES[c] ? `${c} - ${DEV_CATEGORIES[c]}` : (code||""); }
+
     const DEV_FIELDS = [
       { key:"deviceId",        label:"編號",       required:true,  aliases:["編號","deviceId","代碼","品號","設備代碼","設備編號","ID"] },
       { key:"name",            label:"名稱",       required:false, aliases:["名稱","品名","name","設備名稱","中文名稱"] },
@@ -4047,48 +4321,44 @@
       _renderDiPreview(excelCols);
     }
 
-    let _diCustomFields = []; // { label, colKey }
-    let _diFieldOrder = null; // null = use DEV_FIELDS default order; array of indices when reordered
+    // 統一欄位清單：{ type:'std', fi } 或 { type:'custom', label }
+    let _diAllFields = null;
 
     function _renderDiGrid(excelCols){
       const grid = $("devImportMappingGrid");
       const noneOpt = `<option value="">（略過）</option>`;
       const colOpts = excelCols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-      if(!_diFieldOrder) _diFieldOrder = DEV_FIELDS.map((_,i)=>i);
+      if(!_diAllFields) _diAllFields = DEV_FIELDS.map((_,fi)=>({ type:'std', fi }));
 
-      const btnStyle = "padding:1px 5px;font-size:11px;line-height:1.4;border-radius:6px;";
-
+      const bs = "padding:1px 5px;font-size:11px;line-height:1.4;border-radius:6px;";
+      const total = _diAllFields.length;
       grid.innerHTML = "";
-      _diFieldOrder.forEach((fi, pos)=>{
-        const f = DEV_FIELDS[fi];
-        const req = f.required ? `<span style="color:var(--danger)">*</span>` : "";
-        // ↑↓ buttons
+
+      _diAllFields.forEach((entry, pos)=>{
         const upDis = pos===0 ? "disabled" : "";
-        const dnDis = pos===_diFieldOrder.length-1 ? "disabled" : "";
-        grid.insertAdjacentHTML("beforeend", `
-          <div style="display:flex;gap:2px;">
-            <button ${upDis} data-di-up="${pos}" style="${btnStyle}">↑</button>
-            <button ${dnDis} data-di-dn="${pos}" style="${btnStyle}">↓</button>
-          </div>
-          <span style="font-size:12px;padding:4px 6px;">${escapeHtml(f.label)} ${req}</span>
-          <select id="diMap_${f.key}">${noneOpt}${colOpts}</select>
-        `);
+        const dnDis = pos===total-1 ? "disabled" : "";
+        const arrows = `<div style="display:flex;gap:2px;"><button ${upDis} data-di-up="${pos}" style="${bs}">↑</button><button ${dnDis} data-di-dn="${pos}" style="${bs}">↓</button></div>`;
+        if(entry.type==='std'){
+          const f = DEV_FIELDS[entry.fi];
+          const req = f.required ? ` <span style="color:var(--danger)">*</span>` : "";
+          grid.insertAdjacentHTML("beforeend", `
+            ${arrows}
+            <input value="${escapeHtml(f.label)}" data-di-std="${pos}" style="font-size:12px;padding:3px 6px;border-radius:8px;" title="可修改顯示名稱（不影響存檔 key）" />
+            <select id="diMap_${f.key}">${noneOpt}${colOpts}</select>${req}
+          `);
+        } else {
+          grid.insertAdjacentHTML("beforeend", `
+            ${arrows}
+            <input value="${escapeHtml(entry.label)}" data-di-cust="${pos}" style="font-size:12px;padding:3px 6px;border-radius:8px;border:1px dashed var(--b);" placeholder="自訂欄位名稱（作為存檔 key）" />
+            <div style="display:flex;gap:4px;"><select id="diMapCust_${pos}" style="flex:1;">${noneOpt}${colOpts}</select><button data-di-del="${pos}" style="${bs}color:var(--danger);">✕</button></div>
+          `);
+        }
       });
 
-      // Custom fields
-      _diCustomFields.forEach((cf,i)=>{
-        grid.insertAdjacentHTML("beforeend", `
-          <div></div>
-          <input value="${escapeHtml(cf.label)}" data-custom-idx="${i}" style="font-size:12px;padding:4px 6px;border-radius:8px;" placeholder="自訂欄位名稱" />
-          <div style="display:flex;gap:4px;"><select id="diMapC_${i}" style="flex:1;">${noneOpt}${colOpts}</select>
-            <button data-di-del-c="${i}" style="${btnStyle}color:var(--danger);">✕</button>
-          </div>
-        `);
-      });
-
-      // Auto-guess + reactive update
-      _diFieldOrder.forEach(fi=>{
-        const f = DEV_FIELDS[fi];
+      // Auto-guess for std fields
+      _diAllFields.forEach(entry=>{
+        if(entry.type!=='std') return;
+        const f = DEV_FIELDS[entry.fi];
         const sel = $(`diMap_${f.key}`);
         if(!sel) return;
         const g = _guessCol(excelCols, f.aliases);
@@ -4096,26 +4366,18 @@
         sel.addEventListener("change", ()=> _renderDiPreview(excelCols));
       });
 
-      // Delegate ↑↓ and delete-custom clicks
+      // Event delegation (once per render)
       grid.addEventListener("click", e=>{
         const up = e.target.closest("[data-di-up]");
         const dn = e.target.closest("[data-di-dn]");
-        const dc = e.target.closest("[data-di-del-c]");
-        if(up){
-          const pos = +up.dataset.diUp;
-          if(pos>0){[_diFieldOrder[pos-1],_diFieldOrder[pos]]=[_diFieldOrder[pos],_diFieldOrder[pos-1]]; _renderDiGrid(excelCols);}
-        } else if(dn){
-          const pos = +dn.dataset.diDn;
-          if(pos<_diFieldOrder.length-1){[_diFieldOrder[pos],_diFieldOrder[pos+1]]=[_diFieldOrder[pos+1],_diFieldOrder[pos]]; _renderDiGrid(excelCols);}
-        } else if(dc){
-          const idx = +dc.dataset.diDelC;
-          _diCustomFields.splice(idx,1); _renderDiGrid(excelCols);
-        }
+        const del = e.target.closest("[data-di-del]");
+        if(up){ const p=+up.dataset.diUp; if(p>0){[_diAllFields[p-1],_diAllFields[p]]=[_diAllFields[p],_diAllFields[p-1]]; _renderDiGrid(excelCols);} }
+        else if(dn){ const p=+dn.dataset.diDn; if(p<_diAllFields.length-1){[_diAllFields[p],_diAllFields[p+1]]=[_diAllFields[p+1],_diAllFields[p]]; _renderDiGrid(excelCols);} }
+        else if(del){ _diAllFields.splice(+del.dataset.diDel, 1); _renderDiGrid(excelCols); }
       }, { once:true });
 
-      // Add field button
       $("btnDiAddField")?.addEventListener("click", ()=>{
-        _diCustomFields.push({ label:"自訂欄位", colKey:"" });
+        _diAllFields.push({ type:'custom', label:'自訂欄位' });
         _renderDiGrid(excelCols);
       }, { once:true });
     }
@@ -4159,8 +4421,7 @@
             const typeLabel = devActiveTab;
             const matched = _diWb.SheetNames.find(s=> s.toUpperCase().startsWith(typeLabel) || s.includes(typeLabel));
             if(matched) sheetSel.value = matched;
-            _diFieldOrder = null; // reset order on new import
-            _diCustomFields = [];
+            _diAllFields = null; // reset on new import
             _loadDiSheet(sheetSel.value);
             $("devImportModal").classList.add("show");
           }catch(err){
@@ -4192,11 +4453,13 @@
               if(!sel?.value) return;
               payload[f.key] = String(item[sel.value]||"");
             });
-            // Custom fields
-            _diCustomFields.forEach((cf,i)=>{
-              const sel = $(`diMapC_${i}`);
+            // Custom fields (from _diAllFields)
+            _diAllFields.forEach((entry, pos)=>{
+              if(entry.type!=='custom') return;
+              const sel = $(`diMapCust_${pos}`);
               if(!sel?.value) return;
-              const key = ($("devImportMappingGrid").querySelector(`[data-custom-idx="${i}"]`)?.value||cf.label).trim().replace(/\s+/g,"_")||`custom_${i}`;
+              const labelInput = $("devImportMappingGrid").querySelector(`[data-di-cust="${pos}"]`);
+              const key = (labelInput?.value||entry.label).trim().replace(/\s+/g,"_") || `custom_${pos}`;
               payload[key] = String(item[sel.value]||"");
             });
             if(!payload.status) payload.status = "可借";
@@ -4233,7 +4496,20 @@
             filename = `輔具_${devActiveTab}類_${new Date().toISOString().slice(0,10)}.xlsx`;
           } else if(devActiveTab==="loans"){
             const snap = await getDocs(query(collection(db,"deviceLoans"), orderBy("borrowAt","desc")));
-            data = snap.docs.map(d=>d.data()).map(r=>({ 輔具:r.deviceName||"", 借用者:r.borrowerName||"", 借出日:fmtDT(r.borrowAt), 歸還日:r.returnAt?fmtDT(r.returnAt):"未歸還", 連結個案:r.linkedCaseNo||"" }));
+            data = snap.docs.map(d=>d.data()).map(r=>{
+              const dv = cacheDevices.find(x=>x.id===r.deviceId)||{};
+              return {
+                編號:          r.deviceId||"",
+                品項名:        r.deviceName||"",
+                品牌:          r.brand||dv.brand||"",
+                購置年:        r.purchaseYear||dv.purchaseYear||"",
+                個案名:        r.linkedCaseNames||"",
+                案件類別:      r.caseTypes||"",
+                借用者:        r.borrowerName||"",
+                出借時間:      fmtDT(r.borrowAt),
+                歸還時間:      r.returnAt ? fmtDT(r.returnAt) : "借出中"
+              };
+            });
             filename = `借用紀錄_${new Date().toISOString().slice(0,10)}.xlsx`;
           } else if(devActiveTab==="inventory"){
             data = cacheInventoryLogs.map(r=>({ 設備代碼:r.deviceId||"", 設備名稱:r.deviceName||"", 盤點日期:r.checkDate||"", 盤點人員:r.checkBy||"", 狀態:r.status||"", 備註:r.notes||"" }));
@@ -4563,9 +4839,16 @@
         for(const it of _bbItems){
           if(it.status==="借出") continue;
           const loanId = `${it.deviceId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+          const bbLinkedCases = linkedCaseIds.map(cid=>_dlcAllCases.find(c=>c.id===cid)).filter(Boolean);
           batch.set(doc(db,"deviceLoans",loanId),{
-            deviceId:it.deviceId, deviceName:it.deviceName||"", category:it.category||"",
-            borrowerUid, borrowerName, linkedCaseId: linkedCaseIds[0]||"",
+            deviceId:it.deviceId, deviceName:it.deviceName||"",
+            brand:it.brand||"", purchaseYear:it.purchaseYear||"",
+            category:it.category||"",
+            borrowerUid, borrowerName,
+            linkedCaseId: linkedCaseIds[0]||"",
+            linkedCaseIds,
+            linkedCaseNames: bbLinkedCases.map(c=>c.clientName||c.basic?.clientName||"").filter(Boolean).join("、"),
+            caseTypes: [...new Set(bbLinkedCases.map(c=>c.caseType||"").filter(Boolean))].join("、"),
             borrowAt:new Date(), returnAt:null, status:"借出"
           });
           batch.update(doc(db,"devices",it.deviceId),{
