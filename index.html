@@ -457,79 +457,89 @@
 
         <div class="hr"></div>
 
-        <div class="grid2">
-          <div class="subCard">
-            <h2 style="margin-bottom:6px;">借用 / 歸還</h2>
-            <div class="grid2">
-              <div>
-                <label>設備代碼 / QR（建議就是 deviceId）</label>
-                <div class="row">
-                  <input id="devScan" placeholder="DEV-001" style="flex:1;" />
-                  <button id="btnDevCamera" title="用相機掃QR碼" style="white-space:nowrap;">📷 掃QR</button>
-                </div>
-              </div>
-              <div>
-                <label>操作</label>
-                <div class="row">
-                  <button id="btnDevLoad">載入</button>
-                  <button id="btnDevBorrow" class="primary" disabled>借出</button>
-                  <button id="btnDevReturn" disabled>歸還</button>
-                  <button id="btnBatchBorrow">📷 批次借出</button>
-                </div>
-              </div>
-            </div>
-            <!-- QR camera area -->
-            <div id="qrScanArea" style="display:none;margin-top:10px;">
-              <video id="qrVideo" playsinline muted style="width:100%;max-width:420px;border-radius:8px;background:#000;"></video>
-              <div class="row" style="margin-top:6px;gap:8px;">
-                <span class="muted" style="flex:1;">對準 QR 碼，自動讀取…</span>
-                <button id="btnStopCamera">停止掃描</button>
-              </div>
-            </div>
-            <div class="grid2" style="margin-top:10px;">
-              <div>
-                <label>借用者</label>
-                <select id="devBorrower"></select>
-              </div>
-              <div>
-                <label>連結個案（借出自動記錄試用）</label>
-                <div style="border:1px solid var(--b);border-radius:12px;padding:6px;background:var(--bg);">
-                  <input id="devLinkCaseSearch" placeholder="搜尋編號/單位/個案…" style="margin-bottom:4px;font-size:12px;" />
-                  <div id="devLinkCaseList" style="max-height:140px;overflow-y:auto;"></div>
-                </div>
-                <div id="devLinkCaseCount" class="muted" style="font-size:11px;margin-top:2px;"></div>
-              </div>
-            </div>
-            <div class="hr"></div>
-            <div class="hint" id="devInfo">尚未載入設備。</div>
+        <!-- 借用 / 歸還（常駐，不受分頁影響） -->
+        <div class="subCard" style="margin-bottom:10px;">
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h2 style="margin:0;">借用 / 歸還</h2>
           </div>
+          <div class="grid2">
+            <div>
+              <label>設備代碼 / QR（建議就是 deviceId）</label>
+              <div class="row">
+                <input id="devScan" placeholder="DEV-001" style="flex:1;" />
+                <button id="btnDevCamera" title="用相機掃QR碼" style="white-space:nowrap;">📷 掃QR</button>
+              </div>
+            </div>
+            <div>
+              <label>操作</label>
+              <div class="row">
+                <button id="btnDevLoad">載入</button>
+                <button id="btnDevBorrow" class="primary" disabled>借出</button>
+                <button id="btnDevReturn" disabled>歸還</button>
+                <button id="btnBatchBorrow">📷 批次借出</button>
+              </div>
+            </div>
+          </div>
+          <!-- QR camera area -->
+          <div id="qrScanArea" style="display:none;margin-top:10px;">
+            <video id="qrVideo" playsinline muted style="width:100%;max-width:420px;border-radius:8px;background:#000;"></video>
+            <div class="row" style="margin-top:6px;gap:8px;">
+              <span class="muted" style="flex:1;">對準 QR 碼，自動讀取…</span>
+              <button id="btnStopCamera">停止掃描</button>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top:10px;">
+            <div>
+              <label>借用者</label>
+              <select id="devBorrower"></select>
+            </div>
+            <div>
+              <label>連結個案（借出自動記錄試用）</label>
+              <div style="border:1px solid var(--b);border-radius:12px;padding:6px;background:var(--bg);">
+                <input id="devLinkCaseSearch" placeholder="搜尋編號/單位/個案…" style="margin-bottom:4px;font-size:12px;" />
+                <div id="devLinkCaseList" style="max-height:130px;overflow-y:auto;"></div>
+              </div>
+              <div id="devLinkCaseCount" class="muted" style="font-size:11px;margin-top:2px;"></div>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="hint" id="devInfo">尚未載入設備。</div>
+        </div>
 
+        <!-- A 單位輔具清單面板 -->
+        <div id="devPanelA" style="display:none;">
           <div class="subCard">
-            <h2 style="margin-bottom:6px;">庫存清單</h2>
-            <div class="grid3">
-              <div><label>關鍵字</label><input id="devQ" placeholder="搜尋..." /></div>
-              <div><label>狀態</label>
-                <select id="devStatus">
-                  <option value="">全部</option>
+            <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+              <div><h2 style="margin-bottom:4px;">A 單位輔具清單</h2><div class="muted" id="devHint">—</div></div>
+              <div class="row">
+                <input id="devQ" placeholder="搜尋..." style="width:140px;" />
+                <select id="devStatus" style="width:90px;">
+                  <option value="">全部狀態</option>
                   <option value="可借">可借</option>
                   <option value="借出">借出</option>
                   <option value="維修">維修</option>
                   <option value="停用">停用</option>
                 </select>
               </div>
-              <div class="row" style="align-items:flex-end;justify-content:flex-end"><span class="muted" id="devHint">—</span></div>
             </div>
-
-            <div class="tableWrap" style="max-height:46vh;margin-top:10px;">
+            <div class="tableWrap" style="max-height:50vh;">
               <table>
-                <thead><tr><th style="width:110px;">代碼</th><th>名稱</th><th style="width:110px;">狀態</th><th style="width:170px;">借用者</th></tr></thead>
+                <thead><tr>
+                  <th style="width:110px;">代碼</th>
+                  <th>名稱</th>
+                  <th style="width:80px;">品牌</th>
+                  <th style="width:75px;">購置年</th>
+                  <th>說明</th>
+                  <th style="width:90px;">狀態</th>
+                  <th style="width:140px;">借用者</th>
+                </tr></thead>
                 <tbody id="devInvTbody"></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- B/C/D 清單面板（A 使用上方原有庫存表） -->
+        <!-- B/C/D 清單面板 -->
         <div id="devPanelBCD" style="display:none;">
           <div class="subCard">
             <div class="row" style="justify-content:space-between;margin-bottom:8px;">
@@ -2292,10 +2302,10 @@
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
         tr.addEventListener("click", ()=>{ $("devScan").value = d.id; loadDeviceFromScan(); });
-        tr.innerHTML = `<td class="mono">${escapeHtml(d.id)}</td><td>${escapeHtml(d.name||"")}</td><td>${escapeHtml(d.status||"")}</td><td>${escapeHtml(d.currentBorrowerName||"")}</td>`;
+        tr.innerHTML = `<td class="mono">${escapeHtml(d.id)}</td><td>${escapeHtml(d.name||"")}</td><td>${escapeHtml(d.brand||"")}</td><td>${escapeHtml(d.purchaseYear||"")}</td><td>${escapeHtml(d.description||"")}</td><td>${escapeHtml(d.status||"")}</td><td>${escapeHtml(d.currentBorrowerName||"")}</td>`;
         tb.appendChild(tr);
       }
-      if(!list.length) tb.innerHTML = `<tr><td colspan="4" class="muted">沒有資料。</td></tr>`;
+      if(!list.length) tb.innerHTML = `<tr><td colspan="7" class="muted">沒有資料。</td></tr>`;
 
       // loans recent
       const ltb = $("devLoanTbody");
@@ -2388,7 +2398,7 @@
               const caseData = caseSnap.data();
               const dt = caseData.deviceTrial || {};
               const dtr = caseData.deviceTraining || {};
-              const devName = devCurrent.name || devCurrent.id;
+              const devName = devCurrent.name ? `${devCurrent.name}（${devCurrent.id}）` : devCurrent.id;
               const cat = (devCurrent.category||"").toUpperCase();
 
               // ── 試用槽位 ──
@@ -2752,10 +2762,11 @@
               const date = l.borrowAt?.toDate?.() || new Date(l.borrowAt||0);
               const dateStr = date.toISOString().slice(0,10);
               $(`cddt_trialDate${i+1}`).value = dateStr;
-              $(`cddt_trialItem${i+1}`).value = l.deviceName || l.deviceId || "";
-              if(l.deviceName && !usedItems.includes(l.deviceName)) usedItems.push(l.deviceName);
+              const dname = l.deviceName ? (l.deviceId && !l.deviceName.includes("（") ? `${l.deviceName}（${l.deviceId}）` : l.deviceName) : (l.deviceId||"");
+              $(`cddt_trialItem${i+1}`).value = dname;
+              if(dname && !usedItems.includes(dname)) usedItems.push(dname);
               const cat = (l.category||"").toUpperCase();
-              if(cat && /^[A-J]$/.test(cat)) $(`cddt_cat${cat}`).value = l.deviceName||"";
+              if(cat && /^[A-J]$/.test(cat)) $(`cddt_cat${cat}`).value = dname;
             }
             const allNames = loans.map(l=>l.deviceName||l.deviceId||"").filter(Boolean);
             const distinct = [...new Set(allNames)];
@@ -3940,10 +3951,9 @@
       const isBCD = ["B","C","D"].includes(devActiveTab);
       const isLoans = devActiveTab==="loans";
       const isInventory = devActiveTab==="inventory";
-      const devGrid = document.querySelector("#viewDevices .grid2");
-      if(devGrid) devGrid.style.display = isA ? "" : "none";
+      $("devPanelA").style.display = isA ? "" : "none";
       $("devPanelBCD").style.display = isBCD ? "" : "none";
-      $("devPanelLoans").style.display = (isLoans || isA) ? "" : "none";
+      $("devPanelLoans").style.display = isLoans ? "" : "none";
       $("devPanelInventory").style.display = isInventory ? "" : "none";
       // import Excel (admin, A or BCD)
       const importBtn = $("btnDevImportExcel");
@@ -4526,7 +4536,7 @@
             const dt = caseData.deviceTrial||{};
             const update = {};
             for(const it of _bbItems){
-              const devName = it.deviceName||it.deviceId;
+              const devName = it.deviceName ? (it.deviceId && !it.deviceName.includes("（") ? `${it.deviceName}（${it.deviceId}）` : it.deviceName) : (it.deviceId||"");
               const cat = (it.category||"").toUpperCase();
               let slot="";
               if(!dt.trialDate1&&!update["deviceTrial.trialDate1"]){ slot="1"; }
