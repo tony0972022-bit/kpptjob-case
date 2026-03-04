@@ -355,8 +355,10 @@
             <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
               <h2 style="margin-bottom:0;">(E) 輔具借用統計（月份 × 分類）</h2>
               <div class="row" style="gap:4px;">
-                <button id="btnLoanStatJA" class="primary" style="font-size:12px;padding:4px 12px;border-radius:20px;">身障個人</button>
+                <button id="btnLoanStatJA" class="primary" style="font-size:12px;padding:4px 12px;border-radius:20px;">身障</button>
                 <button id="btnLoanStatAG" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">中高齡</button>
+                <button id="btnLoanStatEC" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">ECFA</button>
+                <button id="btnLoanStatLT" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">勞通</button>
               </div>
             </div>
             <div class="tableWrap" style="overflow-x:auto;max-height:55vh;margin-top:4px;">
@@ -2078,18 +2080,20 @@
     $("btnRepRefresh").addEventListener("click", ()=> refreshReports(true));
     $("repYear").addEventListener("change", ()=> refreshReports(true));
     $("btnRepExport").addEventListener("click", exportReportsCsv);
-    $("btnLoanStatJA").addEventListener("click", ()=>{
-      _loanStatMode = "JA";
-      $("btnLoanStatJA").className = "primary"; $("btnLoanStatJA").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;";
-      $("btnLoanStatAG").className = ""; $("btnLoanStatAG").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);";
-      _renderLoanStat();
-    });
-    $("btnLoanStatAG").addEventListener("click", ()=>{
-      _loanStatMode = "AG";
-      $("btnLoanStatAG").className = "primary"; $("btnLoanStatAG").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;";
-      $("btnLoanStatJA").className = ""; $("btnLoanStatJA").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);";
-      _renderLoanStat();
-    });
+    const _loanStatBtns = ["btnLoanStatJA","btnLoanStatAG","btnLoanStatEC","btnLoanStatLT"];
+    const _loanStatOff = "font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);";
+    const _loanStatOn  = "font-size:12px;padding:4px 12px;border-radius:20px;";
+    function _setLoanStatBtn(activeId){
+      _loanStatBtns.forEach(id=>{
+        const b = $(id); if(!b) return;
+        if(id===activeId){ b.className="primary"; b.style.cssText=_loanStatOn; }
+        else { b.className=""; b.style.cssText=_loanStatOff; }
+      });
+    }
+    $("btnLoanStatJA").addEventListener("click", ()=>{ _loanStatMode="JA"; _setLoanStatBtn("btnLoanStatJA"); _renderLoanStat(); });
+    $("btnLoanStatAG").addEventListener("click", ()=>{ _loanStatMode="AG"; _setLoanStatBtn("btnLoanStatAG"); _renderLoanStat(); });
+    $("btnLoanStatEC").addEventListener("click", ()=>{ _loanStatMode="EC"; _setLoanStatBtn("btnLoanStatEC"); _renderLoanStat(); });
+    $("btnLoanStatLT").addEventListener("click", ()=>{ _loanStatMode="LT"; _setLoanStatBtn("btnLoanStatLT"); _renderLoanStat(); });
 
     async function loadLoans(force=false){
       if(!force && cacheLoans.length) return cacheLoans;
@@ -2205,15 +2209,16 @@
       };
 
       // 1. 過濾年度 + 模式
+      // caseTypes 實際值：身障、中高齡、ECFA、單側、勞通
       const modeLoans = repLoans.filter(l=>{
         const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null);
         if(!d || d.getFullYear() !== year) return false;
         const ct = (l.caseTypes || "").trim();
-        if(_loanStatMode === "JA"){
-          return !ct || ct.includes("身障") || ct.includes("JA") || ct.includes("UH") || ct.includes("EC") || ct.includes("TA");
-        } else {
-          return ct.includes("中高齡") || ct.includes("AG");
-        }
+        if(_loanStatMode === "JA")      return ct.includes("身障") || ct.includes("單側") || ct.includes("JA") || ct.includes("UH");
+        else if(_loanStatMode === "AG") return ct.includes("中高齡") || ct.includes("AG");
+        else if(_loanStatMode === "EC") return ct.includes("ECFA") || ct.includes("EC");
+        else if(_loanStatMode === "LT") return ct.includes("勞通") || ct.includes("TA");
+        return false;
       });
 
       // 2. 建立 月 × 分類 計數表
