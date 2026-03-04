@@ -434,6 +434,7 @@
                   <button id="btnDevLoad">載入</button>
                   <button id="btnDevBorrow" class="primary" disabled>借出</button>
                   <button id="btnDevReturn" disabled>歸還</button>
+                  <button id="btnBatchBorrow">📷 批次借出</button>
                 </div>
               </div>
             </div>
@@ -451,8 +452,8 @@
                 <select id="devBorrower"></select>
               </div>
               <div>
-                <label>連結個案（借出時自動記錄試用）</label>
-                <select id="devLinkCase"><option value="">不連結個案</option></select>
+                <label>連結個案（可複選 Ctrl+點選，借出自動記錄試用）</label>
+                <select id="devLinkCase" multiple style="height:90px;width:100%;"></select>
               </div>
             </div>
             <div class="hr"></div>
@@ -532,7 +533,8 @@
               </div>
               <div class="row">
                 <input id="invQ" placeholder="搜尋設備..." style="width:150px;" />
-                <button id="btnInvAdd" class="primary">新增盤點</button>
+                <button id="btnInvScan" class="primary">📷 掃描盤點</button>
+                <button id="btnInvAdd">手動新增</button>
                 <button id="btnInvExport">匯出Excel</button>
               </div>
             </div>
@@ -650,29 +652,43 @@
       </div>
 
       <div id="panelOptions" hidden>
-        <div class="hint">每行一個選項（可調整順序）。直接影響對應區塊的下拉選單。</div>
-
+        <div class="hint">點選分類按鈕切換區塊，每行一個選項可調整順序。</div>
         <div class="hr"></div>
-        <div style="font-weight:800;margin-bottom:8px;color:var(--accent);">【案件相關】</div>
-        <div class="grid2" style="margin-bottom:12px;">
-          <div><label>KPI 狀態（kpiStages）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 案件詳情 KPI 狀態欄位</div><textarea id="opt_kpiStages" class="mono"></textarea></div>
-          <div><label>案件狀態（caseStatuses）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 案件詳情 案件狀態欄位</div><textarea id="opt_caseStatuses" class="mono"></textarea></div>
-          <div><label>案件分群（casePhases）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 案件詳情 分群欄位</div><textarea id="opt_casePhases" class="mono"></textarea></div>
+
+        <!-- 分類 Tab 按鈕 -->
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button id="optTabCase" class="active">📋 案件相關</button>
+          <button id="optTabPerson">👤 個案基本資料</button>
+          <button id="optTabReport">📄 報告相關</button>
         </div>
 
-        <div class="hr"></div>
-        <div style="font-weight:800;margin-bottom:8px;color:var(--accent);">【個案基本資料】</div>
-        <div class="grid2" style="margin-bottom:12px;">
-          <div><label>性別（genders）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 性別欄位</div><textarea id="opt_genders" class="mono"></textarea></div>
-          <div><label>障礙類別（disabilityTypes）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 障礙類別欄位</div><textarea id="opt_disabilityTypes" class="mono"></textarea></div>
-          <div><label>障礙程度（disabilityDegrees）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 障礙程度欄位</div><textarea id="opt_disabilityDegrees" class="mono"></textarea></div>
-          <div><label>轉介來源（referralSources）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 轉介來源欄位</div><textarea id="opt_referralSources" class="mono"></textarea></div>
+        <!-- 案件相關 -->
+        <div id="optSection_case">
+          <div class="hint" style="margin-bottom:8px;">影響：案件詳情頁的 KPI 狀態、案件狀態、分群等下拉選單</div>
+          <div class="grid2">
+            <div><label>KPI 狀態（kpiStages）</label><textarea id="opt_kpiStages" class="mono"></textarea></div>
+            <div><label>案件狀態（caseStatuses）</label><textarea id="opt_caseStatuses" class="mono"></textarea></div>
+            <div><label>案件分群（casePhases）</label><textarea id="opt_casePhases" class="mono"></textarea></div>
+          </div>
         </div>
 
-        <div class="hr"></div>
-        <div style="font-weight:800;margin-bottom:8px;color:var(--accent);">【報告相關】</div>
-        <div class="grid2" style="margin-bottom:12px;">
-          <div><label>報告狀態（reportStatuses）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 報告管理 報告狀態欄位</div><textarea id="opt_reportStatuses" class="mono"></textarea></div>
+        <!-- 個案基本資料 -->
+        <div id="optSection_person" style="display:none;">
+          <div class="hint" style="margin-bottom:8px;">影響：案件詳情 → 基本資料 Tab 的下拉選單</div>
+          <div class="grid2">
+            <div><label>性別（genders）</label><textarea id="opt_genders" class="mono"></textarea></div>
+            <div><label>障礙類別（disabilityTypes）</label><textarea id="opt_disabilityTypes" class="mono"></textarea></div>
+            <div><label>障礙程度（disabilityDegrees）</label><textarea id="opt_disabilityDegrees" class="mono"></textarea></div>
+            <div><label>轉介來源（referralSources）</label><textarea id="opt_referralSources" class="mono"></textarea></div>
+          </div>
+        </div>
+
+        <!-- 報告相關 -->
+        <div id="optSection_report" style="display:none;">
+          <div class="hint" style="margin-bottom:8px;">影響：案件詳情 → 報告管理 Tab 的下拉選單</div>
+          <div class="grid2">
+            <div><label>報告狀態（reportStatuses）</label><textarea id="opt_reportStatuses" class="mono"></textarea></div>
+          </div>
         </div>
 
         <div class="hr"></div>
@@ -834,6 +850,114 @@
       <div class="hr"></div>
       <div class="row" style="justify-content:flex-end">
         <button id="btnRvImportRun" class="primary" disabled>開始匯入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Borrow Scan modal -->
+  <div class="modalBackdrop" id="batchBorrowModal">
+    <div class="modal" style="max-width:580px;">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3>📷 批次借出（最多10筆）</h3>
+          <div class="muted">掃描設備 QR 碼，一次借出多項設備</div>
+        </div>
+        <button id="btnCloseBatchBorrow">關閉</button>
+      </div>
+      <div class="hr"></div>
+
+      <div id="bbCamArea">
+        <video id="bbVideo" playsinline muted style="width:100%;max-width:480px;border-radius:8px;background:#000;"></video>
+        <div class="row" style="margin-top:6px;gap:8px;">
+          <span class="muted" style="flex:1;" id="bbStatusText">對準 QR 碼，自動掃描…</span>
+          <button id="btnBbStop">停止掃描</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px;">
+          <b>已掃描設備 <span id="bbCount">0</span> / 10</b>
+          <button id="btnBbClear">清空重掃</button>
+        </div>
+        <div id="bbList" style="min-height:60px;border:1px solid var(--b);border-radius:8px;padding:8px;background:var(--bg);"></div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="grid2">
+        <div>
+          <label>借用者</label>
+          <select id="bbBorrower"></select>
+        </div>
+        <div>
+          <label>連結個案（可複選 Ctrl+點）</label>
+          <select id="bbLinkCase" multiple style="height:90px;width:100%;"></select>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="row" style="justify-content:flex-end;">
+        <button id="btnBbSave" class="primary" disabled>確認批次借出</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Inventory Scan modal -->
+  <div class="modalBackdrop" id="invScanModal">
+    <div class="modal" style="max-width:560px;">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3>📷 掃描盤點（最多10筆）</h3>
+          <div class="muted">掃描設備 QR 碼，最多可一次盤點 10 項</div>
+        </div>
+        <button id="btnCloseInvScan">關閉</button>
+      </div>
+      <div class="hr"></div>
+
+      <!-- Camera area -->
+      <div id="invScanCamArea">
+        <video id="invScanVideo" playsinline muted style="width:100%;max-width:480px;border-radius:8px;background:#000;"></video>
+        <div class="row" style="margin-top:6px;gap:8px;">
+          <span class="muted" style="flex:1;" id="invScanStatusText">對準 QR 碼，自動掃描…</span>
+          <button id="btnInvScanStop">停止掃描</button>
+        </div>
+      </div>
+
+      <!-- Scanned items list -->
+      <div style="margin-top:12px;">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px;">
+          <b>已掃描清單 <span id="invScanCount">0</span> / 10</b>
+          <button id="btnInvScanClear">清空重掃</button>
+        </div>
+        <div id="invScanList" style="min-height:60px;border:1px solid var(--b);border-radius:8px;padding:8px;background:var(--bg);"></div>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- Common fields for all scanned items -->
+      <div class="grid3">
+        <div>
+          <label>盤點日期</label>
+          <input id="invScanDate" type="date" />
+        </div>
+        <div>
+          <label>狀態</label>
+          <select id="invScanStatusSel">
+            <option value="正常">正常</option>
+            <option value="異常">異常</option>
+            <option value="遺失">遺失</option>
+            <option value="需維修">需維修</option>
+          </select>
+        </div>
+        <div>
+          <label>備註（套用全部）</label>
+          <input id="invScanNote" placeholder="選填" />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="row" style="justify-content:flex-end;">
+        <button id="btnInvScanSave" class="primary" disabled>確認儲存盤點</button>
       </div>
     </div>
   </div>
@@ -1100,9 +1224,20 @@
         if(which==="reviewDisplay") loadReviewDisplaySettings();
       }
       tabRulesBtn.addEventListener("click", ()=>setTab("rules"));
-      tabOptionsBtn.addEventListener("click", ()=>setTab("options"));
+      tabOptionsBtn.addEventListener("click", ()=>{ setTab("options"); showOptSection("case"); });
       tabRvDispBtn.addEventListener("click", ()=>setTab("reviewDisplay"));
       setTab("rules");
+
+      // ── 下拉選單分區 Tab ──
+      function showOptSection(key){
+        const sections = { case:"optSection_case", person:"optSection_person", report:"optSection_report" };
+        const tabBtns  = { case:"optTabCase", person:"optTabPerson", report:"optTabReport" };
+        for(const [k, id] of Object.entries(sections)) $(id).style.display = (k===key) ? "" : "none";
+        for(const [k, id] of Object.entries(tabBtns))  $(id).classList.toggle("active", k===key);
+      }
+      $("optTabCase")  ?.addEventListener("click", ()=> showOptSection("case"));
+      $("optTabPerson")?.addEventListener("click", ()=> showOptSection("person"));
+      $("optTabReport")?.addEventListener("click", ()=> showOptSection("report"));
 
       // Save review display settings
       $("btnSaveReviewDisplay").addEventListener("click", async ()=>{
@@ -1899,15 +2034,20 @@
     // ── Populate devLinkCase from current year's cases ──
     async function populateDevLinkCase(){
       const sel = $("devLinkCase");
-      sel.innerHTML = `<option value="">不連結個案</option>`;
+      sel.innerHTML = `<option value="">(不連結個案)</option>`;
       try{
-        const year = new Date().getFullYear() - 1911; // ROC year
+        const year = new Date().getFullYear() - 1911;
         const cases = await loadCasesYear(String(year));
         for(const c of cases){
-          const label = `${c.caseNo} ${c.clientName||c.orgName||""}`.trim();
+          const label = `${c.caseNo} ${c.clientName||c.basic?.clientName||c.orgName||""}`.trim();
           sel.innerHTML += `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
         }
       }catch(e){ console.warn("devLinkCase load failed:", e?.message||e); }
+    }
+
+    function getSelectedCaseIds(){
+      const sel = $("devLinkCase");
+      return Array.from(sel.selectedOptions).map(o=>o.value).filter(v=>v && v!=="");
     }
 
     $("btnDevNew").addEventListener("click", ()=> $("deviceModal").classList.add("show"));
@@ -2024,7 +2164,8 @@
       }catch{}
 
       const loanId = `${devCurrent.id}_${Date.now()}`;
-      const linkedCaseId = $("devLinkCase").value || "";
+      const linkedCaseIds = getSelectedCaseIds();
+      const linkedCaseId = linkedCaseIds[0] || "";
       const today = new Date().toISOString().slice(0,10);
 
       try{
@@ -2047,11 +2188,13 @@
           updatedAt: new Date()
         });
 
-        // Auto-record trial in linked case (fill first empty trial slot)
-        if(linkedCaseId){
+        // Auto-record trial in linked cases (support multiple)
+        if(linkedCaseIds.length){
+          for(const cid of linkedCaseIds){
           try{
-            const caseSnap = await getDoc(doc(db,"cases", linkedCaseId));
+            const caseSnap = await getDoc(doc(db,"cases", cid));
             if(caseSnap.exists()){
+            const linkedCaseId = cid;
               const caseData = caseSnap.data();
               const dt = caseData.deviceTrial || {};
               const dtr = caseData.deviceTraining || {};
@@ -2104,20 +2247,15 @@
                 update[`deviceTraining.cat${cat}`] = devName;
               }
 
-              await updateDoc(doc(db,"cases", linkedCaseId), update);
-              if(slot){
-                toast(`已借出，自動記錄至個案試用欄位 ${slot}，並同步訓練欄位。`);
-              }else{
-                toast("已借出（試用日期欄位已滿，訓練已同步，A-J分類已更新）。");
-              }
+              await updateDoc(doc(db,"cases", cid), update);
               cacheCasesByYear.clear();
-            }else{
-              toast("已借出（找不到連結個案，請確認）。");
             }
           }catch(e){
             console.warn("case link failed:", e?.message||e);
-            toast("已借出（個案連結記錄失敗，請手動補充）。");
           }
+          } // end for linkedCaseIds
+          const cnt = linkedCaseIds.length;
+          toast(`已借出，自動記錄至 ${cnt} 個個案試用欄位。`);
         }else{
           toast("已借出。");
         }
@@ -3695,16 +3833,16 @@
       }
     }
 
+    // ── 手動新增盤點 ──
     $("btnInvAdd")?.addEventListener("click", async ()=>{
       const deviceId = prompt("請輸入設備代碼：");
       if(!deviceId?.trim()) return;
       const checkDate = prompt("盤點日期（YYYY-MM-DD）：", new Date().toISOString().slice(0,10));
       if(!checkDate) return;
-      const status = prompt("狀態（正常/異常/遺失）：", "正常");
+      const status = prompt("狀態（正常/異常/需維修/遺失）：", "正常");
       if(!status) return;
       const notes = prompt("備註（可留空）：") || "";
       try{
-        // Try to get device name
         let deviceName = "";
         try{ const ds = await getDoc(doc(db,"devices",deviceId.trim())); if(ds.exists()) deviceName = ds.data().name || ""; }catch(e){}
         await addDoc(collection(db,"inventoryLogs"),{ deviceId:deviceId.trim(), deviceName, checkDate, checkBy:currentName, status, notes, createdAt:new Date() });
@@ -3718,12 +3856,316 @@
       $("btnDevExport").click();
     });
 
+    // ── 批次掃描盤點 ──
+    let _invScanStream = null;
+    let _invScanItems = []; // { deviceId, deviceName }
+    const MAX_INV_SCAN = 10;
+
+    function _renderInvScanList(){
+      const el = $("invScanList");
+      const countEl = $("invScanCount");
+      const saveBtn = $("btnInvScanSave");
+      if(countEl) countEl.textContent = _invScanItems.length;
+      if(saveBtn) saveBtn.disabled = _invScanItems.length === 0;
+      if(!el) return;
+      if(!_invScanItems.length){ el.innerHTML = `<span class="muted">尚未掃描任何設備…</span>`; return; }
+      el.innerHTML = _invScanItems.map((it,i)=>`
+        <div class="row" style="gap:8px;margin-bottom:4px;">
+          <span class="pill" style="min-width:22px;text-align:center;">${i+1}</span>
+          <span class="mono" style="flex:0 0 auto;">${escapeHtml(it.deviceId)}</span>
+          <span style="flex:1;color:var(--muted);">${escapeHtml(it.deviceName||"")}</span>
+          <button data-idx="${i}" class="invScanDel danger" style="padding:2px 8px;font-size:0.8em;">✕</button>
+        </div>`).join("");
+      el.querySelectorAll(".invScanDel").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          _invScanItems.splice(Number(btn.dataset.idx),1);
+          _renderInvScanList();
+          if(_invScanItems.length < MAX_INV_SCAN) _startInvScanLoop();
+        });
+      });
+    }
+
+    async function _startInvScanCamera(){
+      try{
+        await loadJsQR();
+        $("invScanCamArea").style.display = "block";
+        const video = $("invScanVideo");
+        _invScanStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
+        video.srcObject = _invScanStream;
+        await video.play();
+        _startInvScanLoop();
+      }catch(e){
+        toast("無法開啟相機：" + (e?.message||e));
+        _stopInvScanCamera();
+      }
+    }
+
+    function _stopInvScanCamera(){
+      if(_invScanStream){ _invScanStream.getTracks().forEach(t=>t.stop()); _invScanStream=null; }
+      const cam = $("invScanCamArea");
+      if(cam) cam.style.display = "none";
+    }
+
+    function _startInvScanLoop(){
+      if(!_invScanStream) return;
+      requestAnimationFrame(_invScanLoop);
+    }
+
+    function _invScanLoop(){
+      if(!_invScanStream) return;
+      if(_invScanItems.length >= MAX_INV_SCAN){
+        $("invScanStatusText").textContent = `已達 ${MAX_INV_SCAN} 筆上限，可刪除後繼續掃描。`;
+        return;
+      }
+      const video = $("invScanVideo");
+      if(!video || video.readyState < video.HAVE_ENOUGH_DATA){ requestAnimationFrame(_invScanLoop); return; }
+      const c = document.createElement("canvas");
+      c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext("2d").drawImage(video,0,0,c.width,c.height);
+      const img = c.getContext("2d").getImageData(0,0,c.width,c.height);
+      const code = window.jsQR(img.data,img.width,img.height,{inversionAttempts:"dontInvert"});
+      if(code){
+        const id = code.data.trim();
+        if(id && !_invScanItems.find(x=>x.deviceId===id)){
+          // Lookup device name async
+          (async()=>{
+            let deviceName = "";
+            try{ const ds=await getDoc(doc(db,"devices",id)); if(ds.exists()) deviceName=ds.data().name||""; }catch(e){}
+            _invScanItems.push({ deviceId:id, deviceName });
+            _renderInvScanList();
+            if(_invScanItems.length < MAX_INV_SCAN){
+              $("invScanStatusText").textContent = `已掃描 ${_invScanItems.length} 筆，繼續掃描…`;
+              setTimeout(()=> requestAnimationFrame(_invScanLoop), 1200);
+            } else {
+              $("invScanStatusText").textContent = `已達 ${MAX_INV_SCAN} 筆上限。`;
+            }
+          })();
+          return;
+        }
+      }
+      requestAnimationFrame(_invScanLoop);
+    }
+
+    $("btnInvScan")?.addEventListener("click", ()=>{
+      _invScanItems = [];
+      _renderInvScanList();
+      $("invScanDate").value = new Date().toISOString().slice(0,10);
+      $("invScanStatusText").textContent = "對準 QR 碼，自動掃描…";
+      $("invScanModal").classList.add("show");
+      _startInvScanCamera();
+    });
+    $("btnCloseInvScan")?.addEventListener("click", ()=>{
+      _stopInvScanCamera();
+      $("invScanModal").classList.remove("show");
+    });
+    $("invScanModal")?.addEventListener("click", e=>{ if(e.target===$("invScanModal")){ _stopInvScanCamera(); $("invScanModal").classList.remove("show"); } });
+    $("btnInvScanStop")?.addEventListener("click", _stopInvScanCamera);
+    $("btnInvScanClear")?.addEventListener("click", ()=>{
+      _invScanItems=[];
+      _renderInvScanList();
+      _startInvScanCamera();
+    });
+    $("btnInvScanSave")?.addEventListener("click", async ()=>{
+      if(!_invScanItems.length){ toast("尚無掃描紀錄。"); return; }
+      const checkDate = $("invScanDate").value;
+      const status = $("invScanStatusSel")?.value || "正常";
+      const notes = $("invScanNote")?.value?.trim()||"";
+      if(!checkDate){ toast("請填盤點日期。"); return; }
+      try{
+        const batch = writeBatch(db);
+        for(const it of _invScanItems){
+          const ref = doc(collection(db,"inventoryLogs"));
+          batch.set(ref,{ deviceId:it.deviceId, deviceName:it.deviceName||"", checkDate, checkBy:currentName, status, notes, createdAt:new Date() });
+        }
+        await batch.commit();
+        toast(`已儲存 ${_invScanItems.length} 筆盤點記錄。`);
+        _stopInvScanCamera();
+        $("invScanModal").classList.remove("show");
+        await loadAndRenderInventory();
+      }catch(e){ toast("儲存失敗：" + (e?.message||e)); }
+    });
+
     // BCD search filter listener
     $("devBCDQ").addEventListener("input", ()=>{ if(["B","C","D"].includes(devActiveTab)) renderBCDTable(devActiveTab); });
 
     setupDevTabs();
     setupDevImportExcel();
     setupDevExport();
+
+    // ── 批次借出掃描 ──
+    let _bbStream = null;
+    let _bbItems = []; // { deviceId, deviceName, category, devData }
+    const MAX_BB = 10;
+
+    function _renderBbList(){
+      const el = $("bbList");
+      const countEl = $("bbCount");
+      const saveBtn = $("btnBbSave");
+      if(countEl) countEl.textContent = _bbItems.length;
+      if(saveBtn) saveBtn.disabled = _bbItems.length === 0;
+      if(!el) return;
+      if(!_bbItems.length){ el.innerHTML = `<span class="muted">尚未掃描任何設備…</span>`; return; }
+      el.innerHTML = _bbItems.map((it,i)=>`
+        <div class="row" style="gap:8px;margin-bottom:4px;">
+          <span class="pill" style="min-width:22px;text-align:center;">${i+1}</span>
+          <span class="mono" style="flex:0 0 auto;">${escapeHtml(it.deviceId)}</span>
+          <span style="flex:1;color:var(--muted);">${escapeHtml(it.deviceName||"")}</span>
+          <span class="muted" style="font-size:0.8em;">${escapeHtml(it.status||"")}</span>
+          <button data-idx="${i}" class="bbDel danger" style="padding:2px 8px;font-size:0.8em;">✕</button>
+        </div>`).join("");
+      el.querySelectorAll(".bbDel").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          _bbItems.splice(Number(btn.dataset.idx),1);
+          _renderBbList();
+          if(_bbItems.length < MAX_BB) _startBbLoop();
+        });
+      });
+    }
+
+    async function _startBbCamera(){
+      try{
+        await loadJsQR();
+        $("bbCamArea").style.display = "block";
+        const video = $("bbVideo");
+        _bbStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
+        video.srcObject = _bbStream;
+        await video.play();
+        _startBbLoop();
+      }catch(e){ toast("無法開啟相機：" + (e?.message||e)); _stopBbCamera(); }
+    }
+
+    function _stopBbCamera(){
+      if(_bbStream){ _bbStream.getTracks().forEach(t=>t.stop()); _bbStream=null; }
+      const cam = $("bbCamArea");
+      if(cam) cam.style.display = "none";
+    }
+
+    function _startBbLoop(){ if(_bbStream) requestAnimationFrame(_bbLoop); }
+
+    function _bbLoop(){
+      if(!_bbStream) return;
+      if(_bbItems.length >= MAX_BB){
+        $("bbStatusText").textContent = `已達 ${MAX_BB} 筆上限，可刪除後繼續掃描。`;
+        return;
+      }
+      const video = $("bbVideo");
+      if(!video || video.readyState < video.HAVE_ENOUGH_DATA){ requestAnimationFrame(_bbLoop); return; }
+      const c = document.createElement("canvas");
+      c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext("2d").drawImage(video,0,0,c.width,c.height);
+      const img = c.getContext("2d").getImageData(0,0,c.width,c.height);
+      const code = window.jsQR(img.data,img.width,img.height,{inversionAttempts:"dontInvert"});
+      if(code){
+        const id = code.data.trim();
+        if(id && !_bbItems.find(x=>x.deviceId===id)){
+          (async()=>{
+            let deviceName="", category="", status="可借", devData={};
+            try{
+              const ds=await getDoc(doc(db,"devices",id));
+              if(ds.exists()){ devData=ds.data(); deviceName=devData.name||""; category=devData.category||""; status=devData.status||"可借"; }
+            }catch(e){}
+            if(status==="借出"){ toast(`${id} 已借出，略過。`); setTimeout(()=>requestAnimationFrame(_bbLoop),1000); return; }
+            _bbItems.push({ deviceId:id, deviceName, category, status, devData });
+            _renderBbList();
+            if(_bbItems.length < MAX_BB){
+              $("bbStatusText").textContent = `已掃描 ${_bbItems.length} 筆，繼續掃描…`;
+              setTimeout(()=>requestAnimationFrame(_bbLoop), 1200);
+            } else {
+              $("bbStatusText").textContent = `已達 ${MAX_BB} 筆上限。`;
+            }
+          })();
+          return;
+        }
+      }
+      requestAnimationFrame(_bbLoop);
+    }
+
+    async function _populateBbDropdowns(){
+      // borrower
+      const bbBorrower = $("bbBorrower");
+      bbBorrower.innerHTML = "";
+      try{
+        const snap = await getDocs(query(collection(db,"users"),limit(200)));
+        snap.forEach(d=>{
+          const u = d.data();
+          bbBorrower.innerHTML += `<option value="${escapeHtml(d.id)}">${escapeHtml(u.displayName||u.email||d.id)}</option>`;
+        });
+      }catch(e){}
+      // cases
+      const bbLinkCase = $("bbLinkCase");
+      bbLinkCase.innerHTML = `<option value="">(不連結個案)</option>`;
+      try{
+        const year = new Date().getFullYear()-1911;
+        const cases = await loadCasesYear(String(year));
+        for(const c of cases){
+          const label = `${c.caseNo} ${c.clientName||c.basic?.clientName||c.orgName||""}`.trim();
+          bbLinkCase.innerHTML += `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
+        }
+      }catch(e){}
+    }
+
+    $("btnBatchBorrow")?.addEventListener("click", async ()=>{
+      _bbItems=[]; _renderBbList();
+      $("bbStatusText").textContent = "對準 QR 碼，自動掃描…";
+      await _populateBbDropdowns();
+      $("batchBorrowModal").classList.add("show");
+      _startBbCamera();
+    });
+    $("btnCloseBatchBorrow")?.addEventListener("click", ()=>{ _stopBbCamera(); $("batchBorrowModal").classList.remove("show"); });
+    $("batchBorrowModal")?.addEventListener("click", e=>{ if(e.target===$("batchBorrowModal")){ _stopBbCamera(); $("batchBorrowModal").classList.remove("show"); } });
+    $("btnBbStop")?.addEventListener("click", _stopBbCamera);
+    $("btnBbClear")?.addEventListener("click", ()=>{ _bbItems=[]; _renderBbList(); _startBbCamera(); });
+    $("btnBbSave")?.addEventListener("click", async ()=>{
+      if(!_bbItems.length){ toast("尚無掃描設備。"); return; }
+      const borrowerUid = $("bbBorrower").value;
+      if(!borrowerUid){ toast("請選借用者。"); return; }
+      const linkedCaseIds = Array.from($("bbLinkCase").selectedOptions).map(o=>o.value).filter(v=>v);
+      let borrowerName = borrowerUid;
+      try{ const us=await getDoc(doc(db,"users",borrowerUid)); if(us.exists()) borrowerName=us.data().displayName||us.data().email||borrowerUid; }catch(e){}
+      const today = new Date().toISOString().slice(0,10);
+      try{
+        const batch = writeBatch(db);
+        for(const it of _bbItems){
+          if(it.status==="借出") continue;
+          const loanId = `${it.deviceId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+          batch.set(doc(db,"deviceLoans",loanId),{
+            deviceId:it.deviceId, deviceName:it.deviceName||"", category:it.category||"",
+            borrowerUid, borrowerName, linkedCaseId: linkedCaseIds[0]||"",
+            borrowAt:new Date(), returnAt:null, status:"借出"
+          });
+          batch.update(doc(db,"devices",it.deviceId),{
+            status:"借出", currentBorrowerUid:borrowerUid, currentBorrowerName:borrowerName, updatedAt:new Date()
+          });
+        }
+        await batch.commit();
+        // record trial in linked cases
+        for(const cid of linkedCaseIds){
+          try{
+            const caseSnap = await getDoc(doc(db,"cases",cid));
+            if(!caseSnap.exists()) continue;
+            const caseData = caseSnap.data();
+            const dt = caseData.deviceTrial||{};
+            const update = {};
+            for(const it of _bbItems){
+              const devName = it.deviceName||it.deviceId;
+              const cat = (it.category||"").toUpperCase();
+              let slot="";
+              if(!dt.trialDate1&&!update["deviceTrial.trialDate1"]){ slot="1"; }
+              else if(!dt.trialDate2&&!update["deviceTrial.trialDate2"]){ slot="2"; }
+              else if(!dt.trialDate3&&!update["deviceTrial.trialDate3"]){ slot="3"; }
+              if(slot){ update[`deviceTrial.trialDate${slot}`]=today; update[`deviceTrial.trialItem${slot}`]=devName; }
+              if(cat&&/^[A-J]$/.test(cat)) update[`deviceTrial.cat${cat}`]=devName;
+            }
+            if(Object.keys(update).length) await updateDoc(doc(db,"cases",cid),update);
+          }catch(e){ console.warn("bb case link:",e?.message||e); }
+        }
+        toast(`已批次借出 ${_bbItems.length} 項設備${linkedCaseIds.length?`，連結 ${linkedCaseIds.length} 個個案`:""}。`);
+        _stopBbCamera();
+        $("batchBorrowModal").classList.remove("show");
+        cacheDevices=[]; cacheLoans=[];
+        await refreshDevices(true);
+      }catch(e){ console.error(e); toast("批次借出失敗：" + (e?.message||e)); }
+    });
 
     // ===== Route handler =====
     async function route(){
