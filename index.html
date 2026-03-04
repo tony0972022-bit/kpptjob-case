@@ -93,7 +93,7 @@
 
       <nav class="nav">
         <button id="navDashboard" data-view="dashboard">儀錶板</button>
-        <button id="navCases" data-view="cases">案件總攬</button>
+        <button id="navCases" data-view="cases">案件總覽</button>
         <button id="navReview" data-view="review">審查會議</button>
         <button id="navReports" data-view="reports">統計分析</button>
         <button id="navDevices" data-view="devices">輔具管理</button>
@@ -151,7 +151,7 @@
             </div>
             <div class="row">
               <span class="pill" id="dashQuickPill">未選</span>
-              <button id="btnDashToCases">前往案件總攬</button>
+              <button id="btnDashToCases">前往案件總覽</button>
             </div>
           </div>
 
@@ -172,21 +172,56 @@
         </section>
 
         <section class="card">
-          <h2>提醒與摘要</h2>
-          <div class="muted">
-            這區先提供摘要。你要的「報告撰寫/審查/會議/成效/二代登打」提醒，後續會以期限欄位在這裡產生逾期/近期待辦清單。
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <h2>📋 報告撰寫提醒</h2>
+              <div class="muted">顯示「撰寫中」的案件，依截止日排序（紅=逾期，橙=3日內到期）</div>
+            </div>
           </div>
-
           <div class="hr"></div>
-
-          <div class="hint">
-            <div style="font-weight:800;margin-bottom:6px;">第一次使用</div>
-            <div class="small">1) 用凱宇帳號登入（admin）後，點右上「系統設定」→「初始化設定」。</div>
-            <div class="small">2) 再到案件總攬匯入 Excel 建案，或手動新增案件。</div>
+          <div class="tableWrap" style="max-height:320px;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:90px;">編號</th>
+                  <th>單位／個案</th>
+                  <th style="width:100px;">截止日</th>
+                  <th style="width:80px;">狀態</th>
+                  <th style="width:80px;">主責人</th>
+                </tr>
+              </thead>
+              <tbody id="dashReportTbody">
+                <tr><td colspan="5" class="muted">載入中…</td></tr>
+              </tbody>
+            </table>
           </div>
+        </section>
 
+        <section class="card">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <h2>🔄 跨年追蹤案件</h2>
+              <div class="muted">已勾選「跨年度追蹤」的案件（跨年底尚未完成成效驗收）</div>
+            </div>
+            <button onclick="location.hash='cases'" style="font-size:12px;">前往篩選</button>
+          </div>
           <div class="hr"></div>
-          <div class="pill"><span class="tagOk">●</span> 一般同仁只會看到自己的案件（以 Firestore 規則為準）</div>
+          <div class="tableWrap" style="max-height:220px;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:70px;">年度</th>
+                  <th style="width:90px;">編號</th>
+                  <th>單位／個案</th>
+                  <th style="width:110px;">KPI</th>
+                  <th style="width:80px;">主責人</th>
+                </tr>
+              </thead>
+              <tbody id="dashCarryTbody">
+                <tr><td colspan="5" class="muted">載入中…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     </section>
@@ -196,7 +231,7 @@
       <section class="card">
         <div class="row" style="justify-content:space-between;">
           <div>
-            <h2>案件總攬</h2>
+            <h2>案件總覽</h2>
             <div class="muted">篩選、匯出、Excel 匯入建立案件。</div>
           </div>
           <div class="row">
@@ -216,6 +251,10 @@
           <div><label>分群（新案/成效）</label><select id="casePhase"></select></div>
           <div><label>案件狀態</label><select id="caseStatus"></select></div>
           <div><label>關鍵字（編號/單位/個案）</label><input id="caseQ" placeholder="例如：JA-001 / 某某公司 / 王小明" /></div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="caseCarryOnly" style="width:auto;cursor:pointer;" />
+            <label for="caseCarryOnly" style="cursor:pointer;color:var(--text);font-size:13px;margin:0;">🔄 只顯示跨年追蹤案件</label>
+          </div>
         </div>
 
         <div class="hr"></div>
@@ -330,6 +369,7 @@
           <div class="row">
             <button id="btnReviewNew">新增紀錄</button>
             <button id="btnReviewImport">Excel 匯入</button>
+            <button id="btnReviewExport">匯出Excel（依轄區）</button>
             <button id="btnReviewRefresh">更新</button>
           </div>
         </div>
@@ -558,7 +598,7 @@
             <div class="muted" id="cdSubtitle">—</div>
           </div>
           <div class="row">
-            <button id="btnCdBack">回案件總攬</button>
+            <button id="btnCdBack">回案件總覽</button>
             <button id="btnCdDelete" class="danger" hidden>刪除</button>
             <button id="btnCdSave" class="primary">儲存</button>
           </div>
@@ -573,6 +613,10 @@
           <div><label>KPI 狀態</label><select id="cdKpi"></select></div>
           <div><label>分群</label><select id="cdPhase"></select></div>
           <div><label>案件狀態</label><select id="cdStatus"></select></div>
+          <div style="display:flex;align-items:center;gap:8px;grid-column:1/-1;padding:6px 0;">
+            <input type="checkbox" id="cdCarryOver" style="width:auto;cursor:pointer;" />
+            <label for="cdCarryOver" style="color:var(--text);cursor:pointer;font-size:13px;margin:0;">🔄 跨年度追蹤　<span class="muted">（年底未完成成效驗收，延伸至下年度繼續管理）</span></label>
+          </div>
         </div>
 
         <div class="hr"></div>
@@ -823,33 +867,34 @@
 
   <!-- Review Excel Import modal -->
   <div class="modalBackdrop" id="reviewImportModal">
-    <div class="modal">
+    <div class="modal" style="max-width:700px;max-height:92vh;overflow-y:auto;">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
-        <div><h3>審查會議 Excel 匯入</h3><div class="muted">支援 115年審查會議結果.xlsx 格式。</div></div>
-        <div class="row"><button id="btnCloseReviewImport">關閉</button></div>
+        <div><h3>📊 審查會議 Excel 匯入 — 欄位對應</h3><div class="muted">選工作表 → 對應欄位 → 預覽確認</div></div>
+        <button id="btnCloseReviewImport">關閉</button>
       </div>
       <div class="hr"></div>
-      <div class="grid2">
+      <div class="grid2" style="margin-bottom:10px;">
         <div>
           <label>選擇 Excel 檔</label>
           <input id="rvImportFile" type="file" accept=".xlsx,.xls" />
         </div>
-        <div>
-          <label>選擇分頁</label>
-          <select id="rvImportSheet"></select>
+        <div class="row" style="align-items:flex-end;gap:8px;">
+          <div style="flex:1;"><label>工作表</label><select id="rvImportSheet"></select></div>
+          <span id="rvImportRowCount" class="muted"></span>
         </div>
       </div>
+
+      <p class="muted" style="margin:0 0 6px;font-size:12px;">欄位對應（<span style="color:var(--danger)">*</span> 必填，其餘留空略過）</p>
+      <div id="rvImportMappingGrid" style="display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:5px 12px;align-items:center;margin-bottom:10px;"></div>
+
       <div class="hr"></div>
-      <div class="muted" id="rvImportHint">請選擇檔案。</div>
-      <div class="tableWrap" style="max-height:40vh;margin-top:10px;">
-        <table>
-          <thead><tr><th style="width:50px;">匯入</th><th style="width:80px;">編號</th><th>姓名</th><th>補助項目</th><th style="width:90px;">申請金額</th><th style="width:90px;">核定金額</th></tr></thead>
-          <tbody id="rvImportTbody"></tbody>
-        </table>
-      </div>
+      <div style="margin-bottom:6px;font-size:13px;font-weight:600;">預覽（前 4 筆）</div>
+      <div class="tableWrap" style="max-height:160px;" id="rvImportPreview"></div>
+
       <div class="hr"></div>
-      <div class="row" style="justify-content:flex-end">
-        <button id="btnRvImportRun" class="primary" disabled>開始匯入</button>
+      <div class="row" style="justify-content:space-between;">
+        <span id="rvImportHint" class="muted">請選擇 Excel 檔案。</span>
+        <button id="btnRvImportRun" class="primary" disabled>確認匯入</button>
       </div>
     </div>
   </div>
@@ -958,6 +1003,40 @@
       <div class="hr"></div>
       <div class="row" style="justify-content:flex-end;">
         <button id="btnInvScanSave" class="primary" disabled>確認儲存盤點</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Excel Import Column Mapping Modal -->
+  <div class="modalBackdrop" id="devImportModal">
+    <div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto;">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3>📊 匯入 Excel — 欄位對應</h3>
+          <div class="muted">選擇工作表，再設定每個系統欄位要對到 Excel 哪一欄</div>
+        </div>
+        <button id="btnCloseDevImport">關閉</button>
+      </div>
+      <div class="hr"></div>
+
+      <div class="row" style="margin-bottom:10px;">
+        <label style="min-width:52px;white-space:nowrap;">工作表</label>
+        <select id="devImportSheetSel" style="flex:1;width:auto;"></select>
+        <span id="devImportRowCount" class="muted"></span>
+      </div>
+
+      <p class="muted" style="margin:0 0 8px;font-size:12px;">
+        系統欄位 → Excel 欄位（<span style="color:var(--danger)">*</span> 為必填，其餘留空則不匯入）
+      </p>
+      <div id="devImportMappingGrid" style="display:grid;grid-template-columns:120px 1fr 120px 1fr;gap:6px 12px;align-items:center;margin-bottom:10px;">
+      </div>
+
+      <div class="hr"></div>
+      <div style="margin-bottom:6px;font-size:13px;font-weight:600;">預覽（前 5 筆）</div>
+      <div class="tableWrap" style="max-height:160px;" id="devImportPreview"></div>
+
+      <div class="row" style="justify-content:flex-end;margin-top:12px;gap:8px;">
+        <button id="btnDevImportConfirm" class="primary">確認匯入</button>
       </div>
     </div>
   </div>
@@ -1093,7 +1172,7 @@
         },
         options: {
           kpiStages: ["待訪視","撰寫報告中","報告審查中","待審查會議","待成效","待二代系統登打","已結案"],
-          reportStatuses: ["未開始","撰寫中","審查中","退回修正","已定稿"],
+          reportStatuses: ["未開始","撰寫中","完成寄件"],
           caseStatuses: ["進行中","退回","中途結案","結案"],
           casePhases: ["新案","舊案成效","新案成效"],
           genders: ["男","女","其他/未填"],
@@ -1544,6 +1623,60 @@
       }
     }
 
+    function renderDashboardReports(cases){
+      const tbody = $("dashReportTbody");
+      if(!tbody) return;
+      const today = new Date().toISOString().slice(0,10);
+      const pending = cases
+        .filter(c=> (c.report?.status || "未開始") !== "完成寄件")
+        .filter(c=> c.report?.dueDate || c.timeline?.visitDate1 || c.timeline?.visitDate2)
+        .map(c=>{
+          const due = c.report?.dueDate || "";
+          return { ...c, _due: due };
+        })
+        .sort((a,b)=> (a._due||"9").localeCompare(b._due||"9"));
+
+      if(!pending.length){
+        tbody.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;">目前沒有待完成的報告 🎉</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = pending.map(c=>{
+        const due = c._due;
+        const isOverdue = due && due < today;
+        const isSoon    = due && !isOverdue && due <= new Date(Date.now()+3*864e5).toISOString().slice(0,10);
+        const color = isOverdue ? "color:var(--danger);font-weight:700;" : isSoon ? "color:var(--warn);font-weight:600;" : "";
+        const dueLabel = due ? (isOverdue ? `⚠ ${due}` : isSoon ? `⏰ ${due}` : due) : "—";
+        const name = escapeHtml(c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || "");
+        return `<tr style="cursor:pointer;" onclick="location.hash='case&id=${encodeURIComponent(c.id)}'">
+          <td><span class="mono">${escapeHtml(c.caseNo||"")}</span></td>
+          <td>${name}</td>
+          <td style="${color}">${escapeHtml(dueLabel)}</td>
+          <td>${escapeHtml(c.report?.status||"未開始")}</td>
+          <td>${escapeHtml(c.ownerName||"")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function renderDashboardCarryOver(allCases){
+      const tbody = $("dashCarryTbody");
+      if(!tbody) return;
+      // Show ALL years' carry-over cases (not just current year)
+      const list = allCases.filter(c=> c.isCarryOver)
+        .sort((a,b)=> (b.year||"").localeCompare(a.year||""));
+      if(!list.length){
+        tbody.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;">目前沒有跨年追蹤案件</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(c=>`
+        <tr style="cursor:pointer;" onclick="location.hash='case&id=${encodeURIComponent(c.id)}'">
+          <td>${escapeHtml(c.year||"")}</td>
+          <td class="mono">${escapeHtml(c.caseNo||"")}</td>
+          <td>${escapeHtml(c.orgName||c.basic?.orgName||c.clientName||c.basic?.clientName||"")}</td>
+          <td>${escapeHtml(c.kpiStage||"")}</td>
+          <td>${escapeHtml(c.ownerName||"")}</td>
+        </tr>`).join("");
+    }
+
     async function refreshDashboard(force=false){
       try{
         $("btnDashRefresh").disabled = true;
@@ -1551,6 +1684,8 @@
         const all = await loadCasesYear(year, force);
         const staffFiltered = (currentRole==="admin") ? all : all.filter(x=>x.ownerUid===currentUser.uid);
         renderDashboardKpis(staffFiltered);
+        renderDashboardReports(staffFiltered);
+        renderDashboardCarryOver(staffFiltered);
       }catch(e){
         console.error(e);
         toast("載入失敗：" + (e?.message || e));
@@ -1569,6 +1704,7 @@
     $("btnCaseImport").addEventListener("click", openImportModal);
     ["caseKpi","caseType","casePhase","caseStatus"].forEach(id=> $(id).addEventListener("change", renderCases));
     $("caseQ").addEventListener("input", renderCases);
+    $("caseCarryOnly").addEventListener("change", renderCases);
 
     function initCasesFilters(){
       $("caseKpi").innerHTML = `<option value="">全部</option>` + (settings.options.kpiStages||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
@@ -1584,12 +1720,14 @@
       const status = $("caseStatus").value;
       const q = normalize($("caseQ").value);
 
+      const carryOnly = $("caseCarryOnly")?.checked;
       caseFiltered = caseAll.filter(c=>{
         if(currentRole!=="admin" && c.ownerUid!==currentUser.uid) return false;
         if(kpi && (c.kpiStage||"")!==kpi) return false;
         if(type && (c.caseType||"")!==type) return false;
         if(phase && (c.casePhase||"")!==phase) return false;
         if(status && (c.caseStatus||"")!==status) return false;
+        if(carryOnly && !c.isCarryOver) return false;
         if(q){
           const hay = normalize([c.caseNo,c.caseType,c.orgName,c.basic?.orgName,c.clientName,c.basic?.clientName,c.ownerName].filter(Boolean).join(" "));
           if(!hay.includes(q)) return false;
@@ -1608,7 +1746,7 @@
         tr.innerHTML = `
           <td>${escapeHtml(c.year||"")}</td>
           <td>${escapeHtml(c.caseType||"")}</td>
-          <td class="mono">${escapeHtml(c.caseNo||"")}</td>
+          <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?'<span title="跨年追蹤" style="color:var(--warn);margin-left:4px;">🔄</span>':''}</td>
           <td>${escapeHtml(c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || "")}</td>
           <td>${escapeHtml(c.kpiStage||"")}</td>
           <td>${escapeHtml(c.casePhase||"")}</td>
@@ -2732,27 +2870,19 @@
       // ── 7. 進度管理 ────────────────────────────────────────────────
       const pProgress = showPanel("progress", `
         <div style="font-weight:700;margin-bottom:6px;">服務歷程時間軸（自動彙整）</div>
-        <div id="cdProgressTimeline" class="muted" style="margin-bottom:12px;">計算中…</div>
-        <div class="hr"></div>
-        <div class="grid2">
-          <div><label>下一步行動</label><input id="cdp_nextAction" value="${escapeHtml(progress.nextAction||"")}" placeholder="例如：安排訪視、補資料…" /></div>
-          <div><label>期限</label><input id="cdp_nextDue" type="date" value="${escapeHtml(progress.nextDue||"")}" /></div>
-          <div style="grid-column:1/-1;"><label>進度摘要</label><textarea id="cdp_summary">${escapeHtml(progress.summary||"")}</textarea></div>
-        </div>
+        <div id="cdProgressTimeline" class="muted">計算中…</div>
       `);
       // ── 進度管理：服務歷程時間軸（包含審查會議日期）──
       if(cdActiveTab==="progress"){
         (async ()=>{
           const events = [
-            { label:"受案日期",   date: d.timeline?.openDate },
-            { label:"訪視評估 1", date: d.timeline?.visitDate1 },
-            { label:"訪視評估 2", date: d.timeline?.visitDate2 },
-            { label:"報告完成",   date: d.report?.completedDate },
-            { label:"寄給承辦",   date: d.report?.sentDate },
-            { label:"審查會議 1", date: d.timeline?.reviewDate1 },
-            { label:"審查會議 2", date: d.timeline?.reviewDate2 },
-            { label:"成效日期",   date: d.report?.effectDue },
-            { label:"二代登打",   date: d.report?.system2Due },
+            { label:"受案日期",      date: d.timeline?.openDate },
+            { label:"訪視評估 1",    date: d.timeline?.visitDate1 },
+            { label:"訪視評估 2",    date: d.timeline?.visitDate2 },
+            { label:"報告完成（寄件）", date: d.report?.sentDate },
+            { label:"審查會議 1",    date: d.timeline?.reviewDate1 },
+            { label:"審查會議 2",    date: d.timeline?.reviewDate2 },
+            { label:"成效日期",      date: d.report?.effectDue },
           ];
           // 嘗試從 reviewMeetings 補充審查會議日期
           if(cdDoc?.caseNo){
@@ -2784,34 +2914,39 @@
       // ── 8. 報告管理 ────────────────────────────────────────────────
       const pReport = showPanel("report", `
         <div class="hint" style="margin-bottom:10px;">
-          開啟案件時自動計算：報告截止（最後訪視 +7工作日）、審查會議日期（從審查會議紀錄帶入）、成效提醒（審查會後 +1個月）。欄位仍可手動修改。
+          訪視日期過後自動顯示「撰寫中」。截止日 = 最後訪視 +7工作日（自動計算）。報告完成時填入寄給承辦日期即完成。
         </div>
+        <input id="cdr_effectDue" type="hidden" value="${escapeHtml(report.effectDue||"")}" />
         <div class="grid2">
           <div><label>報告狀態</label><select id="cdr_status"></select></div>
           <div>
             <label>報告截止日（最後訪視 +7工作日，自動計算）</label>
             <input id="cdr_due" type="date" value="${escapeHtml(report.dueDate||"")}" />
           </div>
-          <div><label>報告完成日期（實際完成）</label><input id="cdr_completedDate" type="date" value="${escapeHtml(report.completedDate||"")}" /></div>
-          <div><label>寄給承辦日期</label><input id="cdr_sentDate" type="date" value="${escapeHtml(report.sentDate||"")}" /></div>
+          <div>
+            <label>報告完成（寄給承辦）日期</label>
+            <input id="cdr_sentDate" type="date" value="${escapeHtml(report.sentDate||"")}" />
+          </div>
           <div>
             <label>審查會議日期（自動帶入）</label>
             <input id="cdr_meeting" type="date" value="${escapeHtml(report.meetingDate||"")}" />
           </div>
-          <div>
-            <label>成效提醒（審查會後+1個月，自動計算）</label>
-            <input id="cdr_effectDue" type="date" value="${escapeHtml(report.effectDue||"")}" />
-          </div>
-          <div><label>二代系統登打到期</label><input id="cdr_sys2Due" type="date" value="${escapeHtml(report.system2Due||"")}" /></div>
           <div><label>備註</label><input id="cdr_note" value="${escapeHtml(report.note||"")}" /></div>
-          <div style="grid-column:1/-1;"><label>報告內容摘要</label><textarea id="cdr_summary">${escapeHtml(report.summary||"")}</textarea></div>
         </div>
       `);
       // report panel: populate status select (always, not just when tab is active)
       const sSel = pReport.querySelector("#cdr_status");
       if(sSel){
-        sSel.innerHTML = (settings.options.reportStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
-        sSel.value = report.status || (settings.options.reportStatuses||[])[0] || "未開始";
+        sSel.innerHTML = ["未開始","撰寫中","完成寄件"].map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+        sSel.value = report.status || "未開始";
+        // auto-set to "撰寫中" if visit date has passed and status is still "未開始"
+        if(sSel.value === "未開始"){
+          const today = new Date().toISOString().slice(0,10);
+          const v1 = $("cdt_visitDate1")?.value || "";
+          const v2 = $("cdt_visitDate2")?.value || "";
+          const lastVisit = [v1,v2].filter(Boolean).sort().pop();
+          if(lastVisit && lastVisit <= today) sSel.value = "撰寫中";
+        }
       }
 
       // ── 9. 審查會議（查詢 reviewMeetings 勾稽） ─────────────────────
@@ -2908,7 +3043,7 @@
       document.getElementById("cdr_meeting")?.addEventListener("change", ()=>{ calcEffectDue(); autoUpdateKpi(); });
 
       // ── KPI 監聽 ──────────────────────────────────────────────────
-      ["cdStatus","cdr_completedDate","cdr_sentDate","cdr_effectDue"]
+      ["cdStatus","cdr_sentDate"]
         .forEach(id => document.getElementById(id)?.addEventListener("change", autoUpdateKpi));
       autoUpdateKpi();
     }
@@ -2960,18 +3095,14 @@
     }
 
     function computeKpiStage(){
-      const status = $("cdStatus")?.value || "";
+      const status      = $("cdStatus")?.value           || "";
       if(["結案","中途結案"].includes(status)) return "已結案";
-      const effectDue     = $("cdr_effectDue")?.value   || "";
-      const reviewDate1   = $("cdt_reviewDate1")?.value || "";
-      const meetingDate   = $("cdr_meeting")?.value     || "";
-      const sentDate      = $("cdr_sentDate")?.value    || "";
-      const completedDate = $("cdr_completedDate")?.value || "";
-      const visitDate1    = $("cdt_visitDate1")?.value  || "";
-      if(effectDue)                  return "待二代系統登打";
+      const reviewDate1 = $("cdt_reviewDate1")?.value   || "";
+      const meetingDate = $("cdr_meeting")?.value        || "";
+      const sentDate    = $("cdr_sentDate")?.value       || "";
+      const visitDate1  = $("cdt_visitDate1")?.value     || "";
       if(reviewDate1 || meetingDate) return "待成效";
       if(sentDate)                   return "待審查會議";
-      if(completedDate)              return "報告審查中";
       if(visitDate1)                 return "撰寫報告中";
       return "待訪視";
     }
@@ -3023,6 +3154,7 @@
       $("cdKpi").value = cdDoc.kpiStage || $("cdKpi").value;
       $("cdPhase").value = cdDoc.casePhase || "";
       $("cdStatus").value = cdDoc.caseStatus || $("cdStatus").value;
+      $("cdCarryOver").checked = !!cdDoc.isCarryOver;
 
       $("cdTitle").textContent = `案件｜${cdDoc.caseNo || cdId}`;
       $("cdSubtitle").textContent = `${cdDoc.caseType || ""}｜${cdDoc.year || ""}｜更新 ${fmtDT(cdDoc.updatedAt)}`;
@@ -3050,6 +3182,7 @@
         kpiStage: computeKpiStage(),
         casePhase: $("cdPhase").value || "",
         caseStatus: $("cdStatus").value || "進行中",
+        isCarryOver: $("cdCarryOver")?.checked || false,
         ownerUid: cdDoc?.ownerUid || currentUser.uid,
         ownerName: cdDoc?.ownerName || currentName,
         orgName:     cdDoc?.basic?.orgName     || cdDoc?.orgName     || "",
@@ -3186,29 +3319,16 @@
         };
       }
 
-      // ── Tab: 進度管理 ──
-      const cdp_nextAction = gvt("cdp_nextAction");
-      if(cdp_nextAction !== undefined){
-        payload.progress = {
-          nextAction: cdp_nextAction       || "",
-          nextDue:    gv("cdp_nextDue")    || "",
-          summary:    gv("cdp_summary")    || "",
-        };
-      }
-
       // ── Tab: 報告管理 ──
       const cdr_status = gv("cdr_status");
       if(cdr_status !== undefined){
         payload.report = {
-          status:        cdr_status                    || "",
-          dueDate:       gv("cdr_due")                || "",
-          completedDate: gv("cdr_completedDate")      || "",
-          sentDate:      gv("cdr_sentDate")           || "",
-          meetingDate:   gv("cdr_meeting")            || "",
-          effectDue:     gv("cdr_effectDue")          || "",
-          system2Due:    gv("cdr_sys2Due")            || "",
-          note:          gvt("cdr_note")              || "",
-          summary:       gv("cdr_summary")            || "",
+          status:      cdr_status              || "",
+          dueDate:     gv("cdr_due")           || "",
+          sentDate:    gv("cdr_sentDate")      || "",
+          meetingDate: gv("cdr_meeting")       || "",
+          effectDue:   gv("cdr_effectDue")     || "",
+          note:        gvt("cdr_note")         || "",
         };
       }
 
@@ -3502,115 +3622,216 @@
     }
 
     // ── Review Excel Import ──
-    let rvImportRows = [];
+    // ── Review meeting field definitions ──
+    const RV_FIELDS = [
+      { key:"caseNo",              label:"案件編號", required:true,  aliases:["編號","案件編號","caseNo","案號","個案編號"] },
+      { key:"clientName",          label:"姓名",     required:false, aliases:["姓名","個案姓名","name","clientName"] },
+      { key:"year",                label:"年度",     required:false, aliases:["年度","year"] },
+      { key:"meetingArea",         label:"轄區",     required:false, aliases:["轄區","區域","meetingArea","縣市"] },
+      { key:"meetingDate",         label:"審查日期", required:false, aliases:["日期","審查日期","meetingDate","會議日期"] },
+      { key:"meetingNo",           label:"場次",     required:false, aliases:["場次","會議場次","meetingNo"] },
+      { key:"itemName",            label:"補助項目", required:false, aliases:["補助項目","申請補助項目","itemName","品名","品項"] },
+      { key:"appliedAmount",       label:"申請金額", required:false, aliases:["申請金額","appliedAmount","申請"] },
+      { key:"approvedAmount",      label:"核定金額", required:false, aliases:["核定金額","approvedAmount","核定"] },
+      { key:"subsidyCategory",     label:"補助分類", required:false, aliases:["補助分類","subsidyCategory","分類"] },
+      { key:"isRecycled",          label:"是否回收", required:false, aliases:["是否回收","isRecycled","回收"] },
+      { key:"meetsRecommendation", label:"符合建議", required:false, aliases:["是否符合建議","meetsRecommendation","符合建議","專案單位建議"] },
+      { key:"getsSubsidy",         label:"獲得補助", required:false, aliases:["是否獲得補助","getsSubsidy","獲補助"] },
+      { key:"meetingDecision",     label:"審查決議", required:false, aliases:["審查決議","meetingDecision","決議","審查會決議"] },
+      { key:"note",                label:"備註",     required:false, aliases:["備註","note","說明"] },
+    ];
+
+    let _rvWb = null;
+    let _rvRawRows = [];
+
+    function _guessRvCol(excelCols, aliases){
+      for(const a of aliases){
+        const m = excelCols.find(c=> c===a || c.includes(a) || a.includes(c));
+        if(m) return m;
+      }
+      return "";
+    }
+
+    function _loadRvSheet(sheetName){
+      const XL = window.XLSX;
+      const ws = _rvWb.Sheets[sheetName];
+      _rvRawRows = XL.utils.sheet_to_json(ws, {defval:""});
+      $("rvImportRowCount").textContent = `共 ${_rvRawRows.length} 筆`;
+      const cols = _rvRawRows.length ? Object.keys(_rvRawRows[0]) : [];
+      _renderRvMappingGrid(cols, sheetName);
+      _renderRvPreview(cols);
+    }
+
+    function _renderRvMappingGrid(cols, sheetName=""){
+      const grid = $("rvImportMappingGrid");
+      const noneOpt = `<option value="">（略過）</option>`;
+      const colOpts = cols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      grid.innerHTML = RV_FIELDS.map(f=>`
+        <label style="font-size:12px;text-align:right;padding-right:4px;">${escapeHtml(f.label)}${f.required?'<span style="color:var(--danger)">*</span>':''}</label>
+        <select id="rvMap_${f.key}">${noneOpt}${colOpts}</select>
+      `).join("");
+      RV_FIELDS.forEach(f=>{
+        const sel = $(`rvMap_${f.key}`);
+        if(!sel) return;
+        // special guess: meetingArea from sheet name
+        if(f.key==="meetingArea"){
+          const areaFromSheet = sheetName.includes("屏東")?"屏東縣":sheetName.includes("澎湖")?"澎湖縣":sheetName.includes("高雄")?"高雄市":"";
+          if(areaFromSheet && !cols.some(c=>c.includes("轄區"))){ sel.value = ""; }
+        }
+        const g = _guessRvCol(cols, f.aliases);
+        if(g) sel.value = g;
+        sel.addEventListener("change", ()=> _renderRvPreview(cols));
+      });
+    }
+
+    function _renderRvPreview(cols){
+      const preview = $("rvImportPreview");
+      const sample = _rvRawRows.slice(0,4);
+      if(!sample.length){ preview.innerHTML = "<p class='muted' style='padding:8px;'>無資料</p>"; return; }
+      const mapped = RV_FIELDS.filter(f=>{ const s=$(`rvMap_${f.key}`); return s&&s.value; });
+      if(!mapped.length){ preview.innerHTML = "<p class='muted' style='padding:8px;'>請選擇欄位對應</p>"; return; }
+      const head = mapped.map(f=>`<th>${escapeHtml(f.label)}</th>`).join("");
+      const rows = sample.map(r=>{
+        const cells = mapped.map(f=>{
+          const v = String(r[$(`rvMap_${f.key}`)?.value]||"").slice(0,25);
+          return `<td>${escapeHtml(v)}</td>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+      preview.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+      const idSel = $("rvMap_caseNo");
+      const validCount = _rvRawRows.filter(r=> String(r[idSel?.value]||"").trim()).length;
+      $("rvImportHint").textContent = `共 ${_rvRawRows.length} 列，含有效編號 ${validCount} 筆。`;
+      $("btnRvImportRun").disabled = !idSel?.value;
+    }
 
     function setupReviewImportModal(){
-      const backdrop = $("reviewImportModal");
-      $("btnReviewImport").addEventListener("click", ()=>{ backdrop.classList.add("show"); });
-      $("btnCloseReviewImport").addEventListener("click", ()=>{ backdrop.classList.remove("show"); });
+      $("btnReviewImport").addEventListener("click", ()=> $("reviewImportModal").classList.add("show"));
+      $("btnCloseReviewImport").addEventListener("click", ()=> $("reviewImportModal").classList.remove("show"));
+      $("reviewImportModal").addEventListener("click", e=>{ if(e.target===$("reviewImportModal")) $("reviewImportModal").classList.remove("show"); });
 
       $("rvImportFile").addEventListener("change", async (e)=>{
         const file = e.target.files[0];
         if(!file) return;
+        if(!window.XLSX) await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
         const buf = await file.arrayBuffer();
-        const XLSX = window.XLSX;
-        if(!XLSX){ toast("XLSX 未載入。"); return; }
-        const wb = XLSX.read(buf, {type:"array"});
+        _rvWb = window.XLSX.read(buf, {type:"array"});
         const sel = $("rvImportSheet");
-        sel.innerHTML = wb.SheetNames.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
-        // 自動選 身障-高雄 或第一個非統計頁
-        const preferred = wb.SheetNames.find(n=>!n.includes("統計") && !n.includes("選單"));
+        sel.innerHTML = _rvWb.SheetNames.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+        const preferred = _rvWb.SheetNames.find(n=>!n.includes("統計") && !n.includes("選單"));
         if(preferred) sel.value = preferred;
-        parseRvSheet(wb, sel.value);
-        sel.onchange = ()=> parseRvSheet(wb, sel.value);
+        _loadRvSheet(sel.value);
       });
+
+      $("rvImportSheet")?.addEventListener("change", e=> { if(_rvWb) _loadRvSheet(e.target.value); });
 
       $("btnRvImportRun").addEventListener("click", async ()=>{
-        const checked = rvImportRows.filter(r=>r._import !== false);
-        if(!checked.length){ toast("請勾選要匯入的紀錄。"); return; }
-        let ok=0, fail=0;
-        const batch = writeBatch(db);
-        for(const r of checked){
-          try{
-            const docId = `${r.year}_${r.meetingArea||""}_${r.caseNo}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
-            batch.set(doc(db,"reviewMeetings",docId), {...r, _import:undefined, updatedAt:new Date()});
+        const idSel = $("rvMap_caseNo");
+        if(!idSel?.value){ toast("請先選擇【案件編號】對應欄位。"); return; }
+        const defaultYear = $("rvYear").value || "115";
+        const sheetName = $("rvImportSheet").value;
+        // Guess area from sheet name if meetingArea col not mapped
+        const areaSel = $("rvMap_meetingArea");
+        const areaFromSheet = sheetName.includes("屏東")?"屏東縣":sheetName.includes("澎湖")?"澎湖縣":sheetName.includes("高雄")?"高雄市":"高雄市";
+
+        const valid = _rvRawRows.filter(r=> String(r[idSel.value]||"").trim());
+        if(!valid.length){ toast("無可匯入資料。"); return; }
+        if(!confirm(`確認匯入 ${valid.length} 筆審查會議紀錄？`)) return;
+        try{
+          const batch = writeBatch(db);
+          let ok=0;
+          for(const r of valid){
+            const get = (key)=>{
+              const sel = $(`rvMap_${key}`);
+              return sel?.value ? String(r[sel.value]||"").trim() : "";
+            };
+            const caseNo = String(r[idSel.value]||"").replace(/\s+/g,"");
+            const area = get("meetingArea") || areaFromSheet;
+            const year = get("year") || defaultYear;
+            const caseType = caseNo.startsWith("JA")?"JA":caseNo.startsWith("AG")?"AG":caseNo.startsWith("UH")?"UH":caseNo.startsWith("EC")?"EC":"JA";
+            const itemName = get("itemName");
+            const payload = {
+              year, meetingArea: area, caseType, caseNo,
+              clientName: get("clientName"),
+              meetingDate: get("meetingDate"),
+              meetingNo: get("meetingNo"),
+              meetsRecommendation: get("meetsRecommendation"),
+              getsSubsidy: get("getsSubsidy"),
+              meetingDecision: get("meetingDecision"),
+              note: get("note"),
+              items: itemName ? [{
+                itemName, unit:"", unitPrice:"",
+                quantity:"", appliedAmount: get("appliedAmount"),
+                approvedAmount: get("approvedAmount"),
+                subsidyCategory: get("subsidyCategory"),
+                isRecycled: get("isRecycled")||"否"
+              }] : [],
+              updatedAt: new Date()
+            };
+            const docId = `${year}_${area}_${caseNo}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+            batch.set(doc(db,"reviewMeetings",docId), payload);
             ok++;
-          }catch(e){ fail++; }
+          }
+          await batch.commit();
+          cacheReviewMeetings = null;
+          toast(`匯入完成 ${ok} 筆。`);
+          $("reviewImportModal").classList.remove("show");
+          await refreshReviewMeetings(true);
+        }catch(err){
+          console.error(err); toast("匯入失敗：" + (err?.message||err));
         }
-        await batch.commit();
-        cacheReviewMeetings = null;
-        toast(`匯入完成 ${ok} 筆${fail?" / 失敗"+fail+"筆":""}`);
-        $("reviewImportModal").classList.remove("show");
-        await refreshReviewMeetings(true);
       });
     }
 
-    function parseRvSheet(wb, sheetName){
-      const ws = wb.Sheets[sheetName];
-      const raw = window.XLSX.utils.sheet_to_json(ws, {header:1, defval:""});
-      // 找 header 列（包含「編號」的那行）
-      let hi = raw.findIndex(r=> r.some(c=>String(c).includes("編號")));
-      if(hi < 0) hi = 0;
-      const headers = raw[hi].map(c=>String(c||"").trim());
-      rvImportRows = [];
-      for(let i=hi+1; i<raw.length; i++){
-        const row = raw[i];
-        if(!row.some(c=>c)) continue;
-        const get = (h)=>{ const idx=headers.indexOf(h); return idx>=0 ? String(row[idx]||"").trim() : ""; };
-        const caseNo = get("編號");
-        if(!caseNo) continue;
-        // 猜 轄區 from sheet name or 轄區 col
-        let area = get("轄區") || (sheetName.includes("屏東")?"屏東縣":sheetName.includes("澎湖")?"澎湖縣":sheetName.includes("高雄")?"高雄市":"高雄市");
-        // 猜 年度
-        const year = get("年度") || $("rvYear").value || "115";
-        // 猜 案件類型
-        const caseType = caseNo.startsWith("JA")?"JA":caseNo.startsWith("AG")?"AG":caseNo.startsWith("UH")?"UH":caseNo.startsWith("EC")?"EC":"JA";
-        const itemName = get("申請補助項目");
-        rvImportRows.push({
-          _import: true,
-          year, meetingArea: area, caseType,
-          caseNo: caseNo.replace(/\s+/g,""),
-          clientName: get("姓名"),
-          items: itemName ? [{
-            itemName, unit: get("單位"), unitPrice: get("單價"),
-            quantity: get("數量"), appliedAmount: get("申請金額"),
-            approvedAmount: get("核定金額"), subsidyCategory: get("補助分類"),
-            isRecycled: get("是否回收")||"否"
-          }] : [],
-          meetsRecommendation: get("是否符合建議")||get("專案單位建議"),
-          getsSubsidy: get("是否獲得補助"),
-          meetingDecision: get("審查會決議")||get("審查決議"),
-          note: get("備註"),
-          meetingDate: get("日期") || get("審查日期") || "",
-          meetingNo: get("場次") || get("會議場次") || ""
+    // ── Review meetings export (one sheet per area) ──
+    $("btnReviewExport")?.addEventListener("click", async ()=>{
+      try{
+        if(!window.XLSX) await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+        const XL = window.XLSX;
+        const year = $("rvYear").value;
+        const list = (cacheReviewMeetings||[]).filter(r=> !year || String(r.year||"")===String(year));
+        if(!list.length){ toast("目前無審查會議資料。"); return; }
+
+        // Group by meetingArea
+        const areas = {};
+        for(const r of list){
+          const a = r.meetingArea || "未知轄區";
+          if(!areas[a]) areas[a] = [];
+          areas[a].push(r);
+        }
+
+        const wb = XL.utils.book_new();
+        for(const [area, rows] of Object.entries(areas)){
+          const data = rows.map(r=>{
+            const items = r.items||[];
+            const itemNames = items.map(x=>x.itemName).filter(Boolean).join("、")||"";
+            const applied = items.reduce((s,x)=>s+(parseFloat(x.appliedAmount||0)||0),0);
+            const approved = items.reduce((s,x)=>s+(parseFloat(x.approvedAmount||0)||0),0);
+            return {
+              年度: r.year||"", 轄區: r.meetingArea||"", 場次: r.meetingNo||"",
+              審查日期: r.meetingDate||"", 案件類型: r.caseType||"",
+              案件編號: r.caseNo||"", 姓名: r.clientName||"",
+              補助項目: itemNames, 申請金額: applied||"", 核定金額: approved||"",
+              補助分類: (items[0]?.subsidyCategory)||"",
+              是否回收: (items[0]?.isRecycled)||"",
+              符合建議: r.meetsRecommendation||"", 獲得補助: r.getsSubsidy||"",
+              審查決議: r.meetingDecision||"", 備註: r.note||""
+            };
+          });
+          const ws = XL.utils.json_to_sheet(data);
+          XL.utils.book_append_sheet(wb, ws, area.slice(0,31));
+        }
+        // Also add a "全部" sheet
+        const allData = list.map(r=>{
+          const items = r.items||[];
+          return { 年度:r.year||"", 轄區:r.meetingArea||"", 場次:r.meetingNo||"", 審查日期:r.meetingDate||"", 案件編號:r.caseNo||"", 姓名:r.clientName||"", 補助項目:(items.map(x=>x.itemName).filter(Boolean).join("、"))||"", 申請金額:items.reduce((s,x)=>s+(parseFloat(x.appliedAmount||0)||0),0)||"", 核定金額:items.reduce((s,x)=>s+(parseFloat(x.approvedAmount||0)||0),0)||"", 審查決議:r.meetingDecision||"" };
         });
-      }
-      window._rvRows = rvImportRows;
-      renderRvImportPreview();
-    }
+        XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(allData), "全部");
 
-    function renderRvImportPreview(){
-      const tbody = $("rvImportTbody");
-      tbody.innerHTML = "";
-      if(!rvImportRows.length){ $("rvImportHint").textContent = "此分頁無可匯入資料。"; $("btnRvImportRun").disabled=true; return; }
-      $("rvImportHint").textContent = `共 ${rvImportRows.length} 筆。`;
-      $("btnRvImportRun").disabled = false;
-      rvImportRows.forEach((r,i)=>{
-        const items = (r.items||[]);
-        const itemNames = items.map(x=>x.itemName).filter(Boolean).join("、")||"—";
-        const totalApplied = items.reduce((s,x)=>s+(parseFloat(x.appliedAmount||0)||0),0);
-        const totalApproved = items.reduce((s,x)=>s+(parseFloat(x.approvedAmount||0)||0),0);
-        tbody.innerHTML += `<tr>
-          <td><input type="checkbox" ${r._import?"checked":""} onchange="window._rvRows[${i}]._import=this.checked" /></td>
-          <td class="mono">${escapeHtml(r.caseNo)}</td>
-          <td>${escapeHtml(r.clientName)}</td>
-          <td class="muted">${escapeHtml(itemNames)}</td>
-          <td class="mono">${totalApplied?totalApplied.toLocaleString():"—"}</td>
-          <td class="mono">${totalApproved?totalApproved.toLocaleString():"—"}</td>
-        </tr>`;
-      });
-    }
-    window._rvRows = rvImportRows; // expose for inline onchange (updated by ref in parseRvSheet)
+        XL.writeFile(wb, `審查會議_${year||"全年度"}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        toast(`匯出完成，共 ${Object.keys(areas).length} 個轄區分頁。`);
+      }catch(err){ console.error(err); toast("匯出失敗：" + (err?.message||err)); }
+    });
 
     // ── Review modal event listeners ──
     $("btnReviewNew").addEventListener("click", ()=> openReviewModal(null));
@@ -3702,7 +3923,77 @@
       }
     }
 
-    // ── Device Excel import ──
+    // ── Device Excel import with column mapping ──
+    const DEV_FIELDS = [
+      { key:"deviceId",        label:"編號",       required:true,  aliases:["編號","deviceId","代碼","品號","設備代碼","設備編號","ID"] },
+      { key:"name",            label:"名稱",       required:false, aliases:["名稱","品名","name","設備名稱","中文名稱"] },
+      { key:"brand",           label:"品牌",       required:false, aliases:["品牌","廠牌","brand","製造廠","廠商"] },
+      { key:"purchaseYear",    label:"購置年份",   required:false, aliases:["購置年份","購入日期","purchaseYear","購置日期","購入年份"] },
+      { key:"unitPrice",       label:"單價",       required:false, aliases:["單價","price","unitPrice","金額","購置金額"] },
+      { key:"description",     label:"說明",       required:false, aliases:["說明","description","備註","摘要","功能說明"] },
+      { key:"inventoryStatus", label:"清點狀況",   required:false, aliases:["清點狀況","inventoryStatus","清點結果","清點狀態","狀況"] },
+      { key:"isLabeled",       label:"是否貼標籤", required:false, aliases:["是否已貼標籤","isLabeled","貼標籤","已貼標"] },
+      { key:"status",          label:"借用狀態",   required:false, aliases:["status","狀態","借用狀態","可用狀態"] },
+      { key:"category",        label:"分類",       required:false, aliases:["category","分類","類別","種類","輔具分類"] },
+      { key:"quantity",        label:"數量",       required:false, aliases:["數量","quantity","件數","數目"] },
+    ];
+
+    let _diWb = null;   // workbook
+    let _diRows = [];   // rows from selected sheet
+
+    function _guessCol(excelCols, aliases){
+      for(const alias of aliases){
+        const m = excelCols.find(c=> c===alias || c.includes(alias) || alias.includes(c));
+        if(m) return m;
+      }
+      return "";
+    }
+
+    function _loadDiSheet(sheetName){
+      const XL = window.XLSX;
+      const ws = _diWb.Sheets[sheetName];
+      _diRows = XL.utils.sheet_to_json(ws, {defval:""});
+      $("devImportRowCount").textContent = `共 ${_diRows.length} 筆`;
+      const excelCols = _diRows.length ? Object.keys(_diRows[0]) : [];
+      _renderDiGrid(excelCols);
+      _renderDiPreview(excelCols);
+    }
+
+    function _renderDiGrid(excelCols){
+      const grid = $("devImportMappingGrid");
+      const noneOpt = `<option value="">（略過）</option>`;
+      const colOpts = excelCols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      grid.innerHTML = DEV_FIELDS.map(f=>`
+        <label style="font-size:12px;text-align:right;padding-right:4px;">${escapeHtml(f.label)}${f.required?'<span style="color:var(--danger)">*</span>':''}</label>
+        <select id="diMap_${f.key}">${noneOpt}${colOpts}</select>
+      `).join("");
+      // auto-guess + reactive preview update
+      DEV_FIELDS.forEach(f=>{
+        const sel = $(`diMap_${f.key}`);
+        if(!sel) return;
+        const g = _guessCol(excelCols, f.aliases);
+        if(g) sel.value = g;
+        sel.addEventListener("change", ()=> _renderDiPreview(excelCols));
+      });
+    }
+
+    function _renderDiPreview(excelCols){
+      const preview = $("devImportPreview");
+      const sample = _diRows.slice(0,5);
+      if(!sample.length){ preview.innerHTML = "<p class='muted' style='padding:8px;'>無資料</p>"; return; }
+      const mapped = DEV_FIELDS.filter(f=>{ const s=$(`diMap_${f.key}`); return s&&s.value; });
+      if(!mapped.length){ preview.innerHTML = "<p class='muted' style='padding:8px;'>請選擇至少一個欄位對應</p>"; return; }
+      const head = mapped.map(f=>`<th>${escapeHtml(f.label)}</th>`).join("");
+      const bodyRows = sample.map(r=>{
+        const cells = mapped.map(f=>{
+          const v = String(r[$(`diMap_${f.key}`)?.value]||"").slice(0,30);
+          return `<td>${escapeHtml(v)}</td>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+      preview.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+    }
+
     function setupDevImportExcel(){
       const btn = $("btnDevImportExcel");
       if(!btn) return;
@@ -3714,52 +4005,59 @@
           const file = e.target.files[0];
           if(!file) return;
           try{
-            if(!window.XLSX){
-              await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
-            }
+            if(!window.XLSX) await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
             const XL = window.XLSX;
             const buf = await file.arrayBuffer();
-            const wb = XL.read(buf, {type:"array"});
-            // Use first sheet, or try to find matching sheet
-            let sheetName = wb.SheetNames[0];
+            _diWb = XL.read(buf, {type:"array"});
+            // populate sheet selector
+            const sheetSel = $("devImportSheetSel");
+            sheetSel.innerHTML = _diWb.SheetNames.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+            // auto-select sheet matching current tab type
             const typeLabel = devActiveTab;
-            const matched = wb.SheetNames.find(s=> s.toUpperCase().startsWith(typeLabel) || s.includes(typeLabel));
-            if(matched) sheetName = matched;
-            const ws = wb.Sheets[sheetName];
-            const rows = XL.utils.sheet_to_json(ws, {defval:""});
-            if(!rows.length){ toast("Excel 無資料。"); return; }
-            if(!confirm(`從工作表「${sheetName}」匯入 ${rows.length} 筆至 ${typeLabel} 類設備？`)) return;
-
-            const batch = writeBatch(db);
-            let count = 0;
-            for(const item of rows){
-              const rawId = String(item["編號"] || item["deviceId"] || item["品名"] || "").replace(/\s+/g,"");
-              if(!rawId) continue;
-              batch.set(doc(db,"devices",rawId), {
-                deviceId: rawId,
-                name: String(item["名稱"] || item["品名"] || item["name"] || ""),
-                deviceType: typeLabel,
-                brand: String(item["品牌"] || item["廠牌"] || item["brand"] || ""),
-                purchaseYear: String(item["購置年份"] || item["購入日期"] || item["purchaseYear"] || ""),
-                unitPrice: String(item["單價"] || item["unitPrice"] || ""),
-                description: String(item["說明"] || item["description"] || ""),
-                inventoryStatus: String(item["清點狀況"] || item["inventoryStatus"] || ""),
-                isLabeled: String(item["是否已貼標籤"] || item["isLabeled"] || ""),
-                status: item["status"] || "可借",
-                updatedAt: new Date()
-              }, {merge:true});
-              count++;
-            }
-            await batch.commit();
-            toast(`匯入完成 ${count} 筆 ${typeLabel} 類設備。`);
-            if(typeLabel==="A"){ cacheDevices=[]; await refreshDevices(true); }
-            else { cacheDevicesBCD[typeLabel]=null; await loadAndRenderBCD(typeLabel); }
+            const matched = _diWb.SheetNames.find(s=> s.toUpperCase().startsWith(typeLabel) || s.includes(typeLabel));
+            if(matched) sheetSel.value = matched;
+            _loadDiSheet(sheetSel.value);
+            $("devImportModal").classList.add("show");
           }catch(err){
-            console.error(err);
-            toast("匯入失敗：" + (err?.message||err));
+            console.error(err); toast("讀取失敗：" + (err?.message||err));
           }
         };
         input.click();
+      });
+
+      $("devImportSheetSel")?.addEventListener("change", e=> _loadDiSheet(e.target.value));
+      $("btnCloseDevImport")?.addEventListener("click", ()=> $("devImportModal").classList.remove("show"));
+      $("devImportModal")?.addEventListener("click", e=>{ if(e.target===$("devImportModal")) $("devImportModal").classList.remove("show"); });
+
+      $("btnDevImportConfirm")?.addEventListener("click", async ()=>{
+        const idSel = $("diMap_deviceId");
+        if(!idSel?.value){ toast("請先選擇【編號】對應欄位（必填）"); return; }
+        const typeLabel = devActiveTab;
+        if(!confirm(`確認從工作表匯入 ${_diRows.length} 筆至 ${typeLabel} 類設備？（相同編號會覆蓋更新）`)) return;
+        try{
+          const batch = writeBatch(db);
+          let count = 0;
+          for(const item of _diRows){
+            const rawId = String(item[idSel.value]||"").replace(/\s+/g,"");
+            if(!rawId) continue;
+            const payload = { deviceId:rawId, deviceType:typeLabel, updatedAt:new Date() };
+            DEV_FIELDS.forEach(f=>{
+              if(f.key==="deviceId") return;
+              const sel = $(`diMap_${f.key}`);
+              if(sel?.value) payload[f.key] = String(item[sel.value]||"");
+            });
+            if(!payload.status) payload.status = "可借";
+            batch.set(doc(db,"devices",rawId), payload, {merge:true});
+            count++;
+          }
+          await batch.commit();
+          toast(`匯入完成 ${count} 筆 ${typeLabel} 類設備。`);
+          $("devImportModal").classList.remove("show");
+          if(typeLabel==="A"){ cacheDevices=[]; await refreshDevices(true); }
+          else { cacheDevicesBCD[typeLabel]=null; await loadAndRenderBCD(typeLabel); }
+        }catch(err){
+          console.error(err); toast("匯入失敗：" + (err?.message||err));
+        }
       });
     }
 
