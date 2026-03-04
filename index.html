@@ -353,19 +353,15 @@
 
           <div class="subCard" style="grid-column:1/-1;">
             <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-              <h2 style="margin-bottom:0;">(E) 輔具借用人次（身障 / 中高齡）</h2>
-              <div class="row" style="gap:6px;flex-wrap:wrap;">
-                <label style="font-size:13px;">起始月份</label>
-                <input type="month" id="repLoanFrom" style="width:140px;" />
-                <label style="font-size:13px;">結束月份</label>
-                <input type="month" id="repLoanTo" style="width:140px;" />
-                <button id="btnRepLoanFilter">篩選</button>
-                <button id="btnRepLoanClear">全年</button>
+              <h2 style="margin-bottom:0;">(E) 輔具借用統計（月份 × 分類）</h2>
+              <div class="row" style="gap:4px;">
+                <button id="btnLoanStatJA" class="primary" style="font-size:12px;padding:4px 12px;border-radius:20px;">身障個人</button>
+                <button id="btnLoanStatAG" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">中高齡</button>
               </div>
             </div>
-            <div class="tableWrap" style="max-height:30vh;margin-top:4px;">
-              <table>
-                <thead><tr><th>類別</th><th style="width:130px;">借用人次</th><th style="width:130px;">百分比</th></tr></thead>
+            <div class="tableWrap" style="overflow-x:auto;max-height:55vh;margin-top:4px;">
+              <table id="repLoanStatTable" style="font-size:12px;white-space:nowrap;min-width:700px;">
+                <thead id="repLoanStatHead"></thead>
                 <tbody id="repLoanStatTbody"></tbody>
               </table>
             </div>
@@ -2082,8 +2078,18 @@
     $("btnRepRefresh").addEventListener("click", ()=> refreshReports(true));
     $("repYear").addEventListener("change", ()=> refreshReports(true));
     $("btnRepExport").addEventListener("click", exportReportsCsv);
-    $("btnRepLoanFilter").addEventListener("click", ()=> _renderLoanStat());
-    $("btnRepLoanClear").addEventListener("click", ()=>{ $("repLoanFrom").value=""; $("repLoanTo").value=""; _renderLoanStat(); });
+    $("btnLoanStatJA").addEventListener("click", ()=>{
+      _loanStatMode = "JA";
+      $("btnLoanStatJA").className = "primary"; $("btnLoanStatJA").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;";
+      $("btnLoanStatAG").className = ""; $("btnLoanStatAG").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);";
+      _renderLoanStat();
+    });
+    $("btnLoanStatAG").addEventListener("click", ()=>{
+      _loanStatMode = "AG";
+      $("btnLoanStatAG").className = "primary"; $("btnLoanStatAG").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;";
+      $("btnLoanStatJA").className = ""; $("btnLoanStatJA").style.cssText = "font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);";
+      _renderLoanStat();
+    });
 
     async function loadLoans(force=false){
       if(!force && cacheLoans.length) return cacheLoans;
@@ -2186,46 +2192,97 @@
       _renderLoanStat();
     }
 
+    let _loanStatMode = "JA"; // "JA"=身障個人, "AG"=中高齡
+
     function _renderLoanStat(){
-      const fromVal = ($("repLoanFrom")?.value || "");
-      const toVal   = ($("repLoanTo")?.value   || "");
-      let filtered = repLoans;
-      if(fromVal){
-        const fromDate = new Date(fromVal + "-01");
-        filtered = filtered.filter(l=>{
-          const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null);
-          return d && d >= fromDate;
-        });
-      }
-      if(toVal){
-        const [y,m] = toVal.split("-").map(Number);
-        const toDate = new Date(y, m, 1); // first day of next month
-        filtered = filtered.filter(l=>{
-          const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null);
-          return d && d < toDate;
-        });
-      }
-      const statMap = { "身障個人":0, "中高齡大宗":0, "其他/未分類":0 };
-      for(const l of filtered){
+      const year = parseInt($("repYear")?.value || new Date().getFullYear());
+      const cats = Object.keys(DEV_CATEGORIES); // A-J
+
+      // 短標籤（for thead）
+      const catShort = {
+        A:"行動輔具", B:"視覺溝通", C:"聽覺溝通", D:"警示信號", E:"電腦周邊",
+        F:"工具類",  G:"環境改建", H:"個人護具", I:"身體擺位", J:"其他就業"
+      };
+
+      // 1. 過濾年度 + 模式
+      const modeLoans = repLoans.filter(l=>{
+        const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null);
+        if(!d || d.getFullYear() !== year) return false;
         const ct = (l.caseTypes || "").trim();
-        if(ct.includes("身障") || ct.includes("JA") || ct.includes("UH") || ct.includes("EC") || ct.includes("TA")){
-          statMap["身障個人"]++;
-        } else if(ct.includes("中高齡") || ct.includes("AG")){
-          statMap["中高齡大宗"]++;
+        if(_loanStatMode === "JA"){
+          return !ct || ct.includes("身障") || ct.includes("JA") || ct.includes("UH") || ct.includes("EC") || ct.includes("TA");
         } else {
-          statMap["其他/未分類"]++;
+          return ct.includes("中高齡") || ct.includes("AG");
         }
+      });
+
+      // 2. 建立 月 × 分類 計數表
+      const grid = {}; // grid[month][cat]
+      for(let m=1; m<=12; m++){ grid[m]={}; for(const c of cats) grid[m][c]=0; }
+
+      for(const l of modeLoans){
+        const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : new Date(l.borrowAt);
+        const month = d.getMonth() + 1;
+        // 優先從借用紀錄的 category，其次查 cacheDevices
+        let cat = (l.category || "").toUpperCase();
+        if(!cats.includes(cat)){
+          const dev = cacheDevices.find(x=>x.id===l.deviceId);
+          cat = (dev?.category || "").toUpperCase();
+        }
+        if(cats.includes(cat) && grid[month]) grid[month][cat]++;
       }
-      const total = filtered.length || 1;
-      const tb = $("repLoanStatTbody");
-      if(!tb) return;
-      tb.innerHTML = "";
-      for(const [label, count] of Object.entries(statMap)){
-        const pct = filtered.length ? ((count/filtered.length)*100).toFixed(1) : "0.0";
-        tb.innerHTML += `<tr><td>${escapeHtml(label)}</td><td>${count}</td><td>${pct}%</td></tr>`;
-        repExportRows.push(["借用人次統計", label, "", "", String(count), pct+"%"]);
+
+      // 3. 欄合計（各 category 全年加總）、列合計（各月加總）
+      const catTotals = {}; for(const c of cats) catTotals[c]=0;
+      const monthTotals = {};
+      let grandTotal = 0;
+      for(let m=1; m<=12; m++){
+        let mSum = 0;
+        for(const c of cats){ catTotals[c]+=grid[m][c]; mSum+=grid[m][c]; }
+        monthTotals[m] = mSum;
+        grandTotal += mSum;
       }
-      tb.innerHTML += `<tr style="font-weight:600;border-top:2px solid var(--b);"><td>合計</td><td>${filtered.length}</td><td>100%</td></tr>`;
+
+      // 4. 渲染 thead
+      const monthNames = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+
+      // 4. 渲染 thead（欄 = 月份）
+      const thead = $("repLoanStatHead");
+      if(!thead) return;
+      thead.innerHTML = `<tr>
+        <th style="min-width:120px;">輔具分類</th>
+        ${monthNames.map(mn=>`<th style="width:44px;min-width:40px;text-align:center;">${mn}</th>`).join("")}
+        <th style="width:52px;min-width:48px;text-align:center;">合計</th>
+      </tr>`;
+
+      // 5. 渲染 tbody（列 = 分類 A-J）
+      const tbody = $("repLoanStatTbody");
+      tbody.innerHTML = "";
+      for(const c of cats){
+        const cells = Array.from({length:12},(_,i)=>{
+          const v = grid[i+1][c];
+          return `<td style="text-align:center;${v>0?"color:var(--primary);font-weight:600;":"color:var(--fg3);"}">${v>0?v:"—"}</td>`;
+        }).join("");
+        tbody.innerHTML += `<tr>
+          <td style="font-weight:600;">${c} <span class="muted" style="font-size:11px;">${escapeHtml(catShort[c]||"")}</span></td>
+          ${cells}
+          <td style="text-align:center;font-weight:700;">${catTotals[c]>0?catTotals[c]:"—"}</td>
+        </tr>`;
+      }
+      // 合計列
+      const totalCells = Array.from({length:12},(_,i)=>`<td style="text-align:center;font-weight:700;">${monthTotals[i+1]>0?monthTotals[i+1]:""}</td>`).join("");
+      tbody.innerHTML += `<tr style="border-top:2px solid var(--b);background:var(--bg2);">
+        <td style="font-weight:700;">合計</td>
+        ${totalCells}
+        <td style="text-align:center;font-weight:800;color:var(--primary);">${grandTotal}</td>
+      </tr>`;
+
+      // 加入 export rows
+      repExportRows.push([`借用統計(${_loanStatMode==="JA"?"身障":"中高齡"})`, "分類", ...monthNames, "合計"]);
+      for(const c of cats){
+        repExportRows.push(["", `${c} ${catShort[c]||""}`, ...Array.from({length:12},(_,i)=>String(grid[i+1][c]||"")), String(catTotals[c]||"")]);
+      }
+      repExportRows.push(["", "合計", ...Array.from({length:12},(_,i)=>String(monthTotals[i+1]||"")), String(grandTotal)]);
     }
 
     async function refreshReports(force=false){
