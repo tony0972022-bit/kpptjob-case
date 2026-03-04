@@ -461,6 +461,7 @@
           </div>
           <div class="row">
             <button id="btnDevNew" hidden>新增輔具</button>
+            <button id="btnDevTemplate" hidden title="下載空白模板，填好後直接匯入，不需手動對應欄位">下載模板</button>
             <button id="btnDevImportExcel" hidden>匯入Excel</button>
             <button id="btnDevExport" hidden>匯出Excel</button>
             <button id="btnDevRefresh">更新</button>
@@ -1085,12 +1086,17 @@
         <span id="devImportRowCount" class="muted"></span>
       </div>
 
-      <p class="muted" style="margin:0 0 6px;font-size:12px;">
-        系統欄位名稱可直接修改 → Excel 欄位（<span style="color:var(--danger)">*</span> 為必填，其餘留空略過）
-      </p>
-      <div id="devImportMappingGrid" style="display:grid;grid-template-columns:44px 130px 1fr;gap:5px 10px;align-items:center;margin-bottom:6px;">
+      <div id="devImportAutoDetect" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;color:#166534;"></div>
+
+      <div id="devImportMappingSection">
+        <p class="muted" style="margin:0 0 6px;font-size:12px;">
+          💡 建議先點「下載模板」，照格式填好後再匯入，欄位可自動對應。<br>
+          或手動設定：系統欄位名稱 → Excel 欄位（<span style="color:var(--danger)">*</span> 為必填，其餘留空略過）
+        </p>
+        <div id="devImportMappingGrid" style="display:grid;grid-template-columns:44px 130px 1fr;gap:5px 10px;align-items:center;margin-bottom:6px;">
+        </div>
+        <button id="btnDiAddField" style="font-size:12px;padding:4px 10px;margin-bottom:8px;">＋ 新增自訂欄位</button>
       </div>
-      <button id="btnDiAddField" style="font-size:12px;padding:4px 10px;margin-bottom:8px;">＋ 新增自訂欄位</button>
 
       <div class="hr"></div>
       <div style="margin-bottom:6px;font-size:13px;font-weight:600;">預覽（前 5 筆）</div>
@@ -4224,9 +4230,11 @@
       $("devPanelBCD").style.display = isBCD ? "" : "none";
       $("devPanelLoans").style.display = isLoans ? "" : "none";
       $("devPanelInventory").style.display = isInventory ? "" : "none";
-      // import Excel (admin, A or BCD)
+      // import Excel + template (admin, A or BCD)
       const importBtn = $("btnDevImportExcel");
       if(importBtn) importBtn.hidden = !((isA || isBCD) && currentRole==="admin");
+      const templateBtn = $("btnDevTemplate");
+      if(templateBtn) templateBtn.hidden = !((isA || isBCD) && currentRole==="admin");
       // export (A, BCD, loans, inventory)
       const exportBtn = $("btnDevExport");
       if(exportBtn) exportBtn.hidden = !(isA || isBCD || isLoans || isInventory);
@@ -4294,7 +4302,7 @@
       { key:"unitPrice",       label:"單價",       required:false, aliases:["單價","price","unitPrice","金額","購置金額"] },
       { key:"description",     label:"說明",       required:false, aliases:["說明","description","備註","摘要","功能說明"] },
       { key:"inventoryStatus", label:"清點狀況",   required:false, aliases:["清點狀況","inventoryStatus","清點結果","清點狀態","狀況"] },
-      { key:"isLabeled",       label:"是否貼標籤", required:false, aliases:["是否已貼標籤","isLabeled","貼標籤","已貼標"] },
+      { key:"isLabeled",       label:"是否貼標籤", required:false, aliases:["是否貼標籤","是否已貼標籤","isLabeled","貼標籤","已貼標"] },
       { key:"status",          label:"借用狀態",   required:false, aliases:["status","狀態","借用狀態","可用狀態"] },
       { key:"category",        label:"分類",       required:false, aliases:["category","分類","類別","種類","輔具分類"] },
       { key:"quantity",        label:"數量",       required:false, aliases:["數量","quantity","件數","數目"] },
@@ -4302,6 +4310,7 @@
 
     let _diWb = null;   // workbook
     let _diRows = [];   // rows from selected sheet
+    let _diIsTemplate = false;
 
     function _guessCol(excelCols, aliases){
       for(const alias of aliases){
@@ -4317,7 +4326,24 @@
       _diRows = XL.utils.sheet_to_json(ws, {defval:""});
       $("devImportRowCount").textContent = `共 ${_diRows.length} 筆`;
       const excelCols = _diRows.length ? Object.keys(_diRows[0]) : [];
-      _renderDiGrid(excelCols);
+
+      // 偵測是否為系統標準模板（≥4 個欄位 label 完全對應）
+      const matchCount = DEV_FIELDS.filter(f => excelCols.includes(f.label)).length;
+      _diIsTemplate = matchCount >= 4 && excelCols.includes("編號");
+
+      _diAllFields = null;
+      _renderDiGrid(excelCols); // 仍要 render（保持 select 在 DOM 中）
+
+      const autoDiv = $("devImportAutoDetect");
+      const mapSection = $("devImportMappingSection");
+      if(_diIsTemplate){
+        autoDiv.style.display = "";
+        autoDiv.innerHTML = `✅ 偵測到系統標準模板（${_diRows.length} 筆，${matchCount}/${DEV_FIELDS.length} 個欄位已自動對應），可直接按「確認匯入」。`;
+        if(mapSection) mapSection.style.display = "none";
+      } else {
+        autoDiv.style.display = "none";
+        if(mapSection) mapSection.style.display = "";
+      }
       _renderDiPreview(excelCols);
     }
 
@@ -4399,9 +4425,41 @@
       preview.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${bodyRows}</tbody></table>`;
     }
 
+    async function downloadDevTemplate(){
+      try{
+        if(!window.XLSX){ await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"); }
+        const XL = window.XLSX;
+        const type = devActiveTab;
+        // 第1列：欄位標題（使用 f.label，與自動偵測一致）
+        const headers = DEV_FIELDS.map(f => f.label);
+        // 第2列：範例值
+        const example = DEV_FIELDS.map(f => {
+          if(f.key==="deviceId") return `${type}001`;
+          if(f.key==="name") return "設備名稱（範例）";
+          if(f.key==="brand") return "品牌";
+          if(f.key==="purchaseYear") return "2023";
+          if(f.key==="unitPrice") return "10000";
+          if(f.key==="description") return "功能說明";
+          if(f.key==="inventoryStatus") return "良好";
+          if(f.key==="isLabeled") return "是";
+          if(f.key==="status") return "可借";
+          if(f.key==="category") return "A";
+          if(f.key==="quantity") return "1";
+          return "";
+        });
+        const ws = XL.utils.aoa_to_sheet([headers, example]);
+        ws["!cols"] = headers.map(()=>({ wch:16 }));
+        const wb = XL.utils.book_new();
+        XL.utils.book_append_sheet(wb, ws, `${type}類輔具`);
+        XL.writeFile(wb, `輔具模板_${type}類.xlsx`);
+        toast(`已下載 ${type} 類模板。第2列為範例，可刪除後填入資料，直接匯入即可自動對應欄位。`);
+      }catch(err){ console.error(err); toast("下載失敗：" + (err?.message||err)); }
+    }
+
     function setupDevImportExcel(){
       const btn = $("btnDevImportExcel");
       if(!btn) return;
+      $("btnDevTemplate")?.addEventListener("click", downloadDevTemplate);
       btn.addEventListener("click", ()=>{
         const input = document.createElement("input");
         input.type = "file";
