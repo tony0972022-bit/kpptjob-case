@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TCN 職務再設計｜案件平台（單檔版）</title>
+  <title>KPPT 職務再設計案件管理系統</title>
   <style>
     :root{
       --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#64748b;
@@ -87,7 +87,7 @@
   <header>
     <div class="topbar">
       <div class="brand">
-        <h1>TCN 職務再設計｜案件平台（單檔）</h1>
+        <h1>KPPT 職務再設計案件管理系統</h1>
         <span class="badge">Firebase</span>
       </div>
 
@@ -96,7 +96,7 @@
         <button id="navCases" data-view="cases">案件總攬</button>
         <button id="navReview" data-view="review">審查會議</button>
         <button id="navReports" data-view="reports">統計分析</button>
-        <button id="navDevices" data-view="devices">輔具中心</button>
+        <button id="navDevices" data-view="devices">輔具管理</button>
       </nav>
 
       <div class="actions">
@@ -119,7 +119,7 @@
 
     <!-- Dashboard -->
     <section class="view" id="viewDashboard">
-      <div class="grid two">
+      <div style="display:flex;flex-direction:column;gap:16px;">
         <section class="card">
           <div class="row" style="justify-content:space-between;">
             <div>
@@ -235,7 +235,7 @@
                 <th style="width:140px;">KPI</th>
                 <th style="width:110px;">分群</th>
                 <th style="width:120px;">狀態</th>
-                <th style="width:120px;">承辦</th>
+                <th style="width:120px;">主責人</th>
                 <th style="width:130px;">更新</th>
               </tr>
             </thead>
@@ -395,12 +395,13 @@
       <section class="card">
         <div class="row" style="justify-content:space-between;">
           <div>
-            <h2>輔具中心</h2>
-            <div class="muted">庫存、借用/歸還、借用紀錄；B/C/D 類別獨立統計。</div>
+            <h2>輔具管理</h2>
+            <div class="muted">庫存、借用/歸還、借用紀錄、盤點；B/C/D 類別獨立統計。</div>
           </div>
           <div class="row">
             <button id="btnDevNew" hidden>新增輔具</button>
-            <button id="btnDevImportJson" hidden>匯入JSON</button>
+            <button id="btnDevImportExcel" hidden>匯入Excel</button>
+            <button id="btnDevExport" hidden>匯出Excel</button>
             <button id="btnDevRefresh">更新</button>
           </div>
         </div>
@@ -411,6 +412,7 @@
           <button id="devTabC">C 維修工具</button>
           <button id="devTabD">D 耗材</button>
           <button id="devTabLoans">借用紀錄</button>
+          <button id="devTabInventory">盤點紀錄</button>
         </div>
 
         <div class="hr"></div>
@@ -518,6 +520,30 @@
           </div>
         </div>
         </div><!-- end devPanelLoans -->
+
+        <!-- 盤點紀錄面板 -->
+        <div id="devPanelInventory" style="display:none;">
+          <div class="hr"></div>
+          <div class="subCard">
+            <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+              <div>
+                <h2 style="margin-bottom:4px;">盤點紀錄</h2>
+                <div class="muted" id="invHint">顯示所有盤點記錄</div>
+              </div>
+              <div class="row">
+                <input id="invQ" placeholder="搜尋設備..." style="width:150px;" />
+                <button id="btnInvAdd" class="primary">新增盤點</button>
+                <button id="btnInvExport">匯出Excel</button>
+              </div>
+            </div>
+            <div class="tableWrap" style="max-height:46vh;">
+              <table>
+                <thead><tr><th style="width:110px;">設備代碼</th><th>設備名稱</th><th style="width:100px;">盤點日期</th><th style="width:100px;">盤點人員</th><th style="width:100px;">狀態</th><th>備註</th></tr></thead>
+                <tbody id="invTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div><!-- end devPanelInventory -->
       </section>
     </section>
 
@@ -540,7 +566,7 @@
 
         <div class="grid3">
           <div><label>年度</label><select id="cdYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select></div>
-          <div><label>編號（自動判定類別）</label><input id="cdCaseNo" placeholder="JA-001" /></div>
+          <div><label>編號（自動判定類別）</label><input id="cdCaseNo" placeholder="JA001" /><small id="cdCaseNoHint" style="color:var(--muted);display:block;margin-top:2px;font-size:0.8em;min-height:1em;"></small></div>
           <div><label>案件類別（可覆蓋）</label><select id="cdType"></select></div>
           <div><label>KPI 狀態</label><select id="cdKpi"></select></div>
           <div><label>分群</label><select id="cdPhase"></select></div>
@@ -624,17 +650,29 @@
       </div>
 
       <div id="panelOptions" hidden>
-        <div class="hint">每行一個選項（可調整順序）。會直接影響下拉選單與 KPI 小卡。</div>
+        <div class="hint">每行一個選項（可調整順序）。直接影響對應區塊的下拉選單。</div>
 
         <div class="hr"></div>
+        <div style="font-weight:800;margin-bottom:8px;color:var(--accent);">【案件相關】</div>
+        <div class="grid2" style="margin-bottom:12px;">
+          <div><label>KPI 狀態（kpiStages）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 案件詳情 KPI 狀態欄位</div><textarea id="opt_kpiStages" class="mono"></textarea></div>
+          <div><label>案件狀態（caseStatuses）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 案件詳情 案件狀態欄位</div><textarea id="opt_caseStatuses" class="mono"></textarea></div>
+          <div><label>案件分群（casePhases）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 案件詳情 分群欄位</div><textarea id="opt_casePhases" class="mono"></textarea></div>
+        </div>
 
-        <div class="grid2">
-          <div><label>KPI 小卡狀態（kpiStages）</label><textarea id="opt_kpiStages" class="mono"></textarea></div>
-          <div><label>報告狀態（reportStatuses）</label><textarea id="opt_reportStatuses" class="mono"></textarea></div>
-          <div><label>案件狀態（caseStatuses）</label><textarea id="opt_caseStatuses" class="mono"></textarea></div>
-          <div><label>案件分群（casePhases）</label><textarea id="opt_casePhases" class="mono"></textarea></div>
-          <div><label>性別（genders）</label><textarea id="opt_genders" class="mono"></textarea></div>
-          <div><label>障礙類別（disabilityTypes）</label><textarea id="opt_disabilityTypes" class="mono"></textarea></div>
+        <div class="hr"></div>
+        <div style="font-weight:800;margin-bottom:8px;color:var(--accent);">【個案基本資料】</div>
+        <div class="grid2" style="margin-bottom:12px;">
+          <div><label>性別（genders）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 性別欄位</div><textarea id="opt_genders" class="mono"></textarea></div>
+          <div><label>障礙類別（disabilityTypes）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 障礙類別欄位</div><textarea id="opt_disabilityTypes" class="mono"></textarea></div>
+          <div><label>障礙程度（disabilityDegrees）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 障礙程度欄位</div><textarea id="opt_disabilityDegrees" class="mono"></textarea></div>
+          <div><label>轉介來源（referralSources）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 基本資料 轉介來源欄位</div><textarea id="opt_referralSources" class="mono"></textarea></div>
+        </div>
+
+        <div class="hr"></div>
+        <div style="font-weight:800;margin-bottom:8px;color:var(--accent);">【報告相關】</div>
+        <div class="grid2" style="margin-bottom:12px;">
+          <div><label>報告狀態（reportStatuses）</label><div class="muted" style="font-size:0.82em;margin-bottom:2px;">→ 報告管理 報告狀態欄位</div><textarea id="opt_reportStatuses" class="mono"></textarea></div>
         </div>
 
         <div class="hr"></div>
@@ -742,8 +780,8 @@
         <div><label>審查日期</label><input type="date" id="rv_date" /></div>
         <div><label>場次（第幾次）</label><input id="rv_no" placeholder="第一次" /></div>
         <div><label>案件類型</label><select id="rv_caseType"><option value="JA">JA 身障</option><option value="AG">AG 中高齡</option><option value="UH">UH 單側聽損</option><option value="EC">EC ECFA</option></select></div>
-        <div><label>案件編號</label><input id="rv_caseNo" placeholder="JA040" /></div>
-        <div><label>個案姓名</label><input id="rv_clientName" placeholder="姓名" /></div>
+        <div><label>案件編號（點選或輸入）</label><input id="rv_caseNo" placeholder="JA040" list="rvCaseNoList" autocomplete="off" /><datalist id="rvCaseNoList"></datalist></div>
+        <div><label>個案姓名（選編號後自動帶入）</label><input id="rv_clientName" placeholder="姓名" /></div>
         <div><label>公司名稱（AG用）</label><input id="rv_companyName" placeholder="" /></div>
         <div><label>在職員工數（AG用）</label><input type="number" id="rv_staffCount" placeholder="0" /></div>
       </div>
@@ -827,7 +865,7 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-      collection, getDocs, query, where, limit, writeBatch
+      collection, getDocs, addDoc, query, where, limit, orderBy, writeBatch
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
     // ===== Firebase config (yours) =====
@@ -1149,6 +1187,8 @@
         settings.options.casePhases = lines("opt_casePhases");
         settings.options.genders = lines("opt_genders");
         settings.options.disabilityTypes = lines("opt_disabilityTypes");
+        settings.options.disabilityDegrees = lines("opt_disabilityDegrees");
+        settings.options.referralSources = lines("opt_referralSources");
         try{
           await safeSetDoc("settings/options", settings.options, true);
           toast("已儲存下拉選單。");
@@ -1226,6 +1266,8 @@
       $("opt_casePhases").value = (settings.options.casePhases||[]).join("\n");
       $("opt_genders").value = (settings.options.genders||[]).join("\n");
       $("opt_disabilityTypes").value = (settings.options.disabilityTypes||[]).join("\n");
+      $("opt_disabilityDegrees").value = (settings.options.disabilityDegrees||[]).join("\n");
+      $("opt_referralSources").value = (settings.options.referralSources||[]).join("\n");
     }
 
     // ===== Login buttons =====
@@ -1462,7 +1504,7 @@
     }
 
     function exportCasesCsv(){
-      const head = ["年度","類別","編號","單位/個案","KPI","分群","狀態","承辦","更新"];
+      const head = ["年度","類別","編號","單位/個案","KPI","分群","狀態","主責人","更新"];
       const rows = [head];
       for(const c of caseFiltered){
         rows.push([
@@ -1472,7 +1514,7 @@
         ]);
       }
       const csv = rows.map(r=> r.map(v=> `"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
-      const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+      const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `cases_${$("caseYear").value}.csv`;
@@ -1782,7 +1824,7 @@
 
     function exportReportsCsv(){
       const csv = repExportRows.map(r=> r.map(v=> `"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
-      const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+      const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `reports_${$("repYear").value}.csv`;
@@ -2012,28 +2054,61 @@
             if(caseSnap.exists()){
               const caseData = caseSnap.data();
               const dt = caseData.deviceTrial || {};
+              const dtr = caseData.deviceTraining || {};
+              const devName = devCurrent.name || devCurrent.id;
+              const cat = (devCurrent.category||"").toUpperCase();
+
+              // ── 試用槽位 ──
               let slot = "";
               if(!dt.trialDate1){ slot = "1"; }
               else if(!dt.trialDate2){ slot = "2"; }
               else if(!dt.trialDate3){ slot = "3"; }
 
+              const update = {};
               if(slot){
-                const update = {};
                 update[`deviceTrial.trialDate${slot}`] = today;
-                update[`deviceTrial.trialItem${slot}`] = devCurrent.name || devCurrent.id;
-                // auto-categorize: increment totalCount
-                const cur = parseInt(dt.totalCount||"0")||0;
-                update["deviceTrial.totalCount"] = String(cur+1);
-                // auto-categorize category by device category
-                const cat = (devCurrent.category||"").toUpperCase();
-                if(cat && /^[A-J]$/.test(cat)){
-                  const catKey = `deviceTrial.cat${cat}`;
-                  update[catKey] = devCurrent.name || devCurrent.id;
-                }
-                await updateDoc(doc(db,"cases", linkedCaseId), update);
-                toast(`已借出，並自動記錄至個案 ${linkedCaseId} 試用欄位 ${slot}。`);
+                update[`deviceTrial.trialItem${slot}`] = devName;
+              }
+
+              // 計算次數（已有幾筆日期 + 這次）
+              const trialDates = [dt.trialDate1, dt.trialDate2, dt.trialDate3].filter(Boolean);
+              update["deviceTrial.totalCount"] = String(trialDates.length + (slot ? 1 : 0));
+
+              // 計算件數（已有幾個不重複品項 + 這次）
+              const trialItems = [dt.trialItem1, dt.trialItem2, dt.trialItem3].filter(Boolean);
+              const distinctItems = [...new Set([...trialItems, devName])];
+              update["deviceTrial.totalItems"] = String(distinctItems.length);
+
+              // A-J 分類
+              if(cat && /^[A-J]$/.test(cat)){
+                update[`deviceTrial.cat${cat}`] = devName;
+              }
+
+              // ── 訓練槽位（同步複製試用）──
+              let trainSlot = "";
+              if(!dtr.trainDate1){ trainSlot = "1"; }
+              else if(!dtr.trainDate2){ trainSlot = "2"; }
+              else if(!dtr.trainDate3){ trainSlot = "3"; }
+
+              if(trainSlot){
+                update[`deviceTraining.trainDate${trainSlot}`] = today;
+                update[`deviceTraining.trainItem${trainSlot}`] = devName;
+              }
+              const trainDates = [dtr.trainDate1, dtr.trainDate2, dtr.trainDate3].filter(Boolean);
+              update["deviceTraining.totalCount"] = String(trainDates.length + (trainSlot ? 1 : 0));
+
+              const trainItems = [dtr.trainItem1, dtr.trainItem2, dtr.trainItem3].filter(Boolean);
+              const distinctTrainItems = [...new Set([...trainItems, devName])];
+              update["deviceTraining.totalItems"] = String(distinctTrainItems.length);
+              if(cat && /^[A-J]$/.test(cat)){
+                update[`deviceTraining.cat${cat}`] = devName;
+              }
+
+              await updateDoc(doc(db,"cases", linkedCaseId), update);
+              if(slot){
+                toast(`已借出，自動記錄至個案試用欄位 ${slot}，並同步訓練欄位。`);
               }else{
-                toast("已借出（個案試用欄位已滿，請手動補充）。");
+                toast("已借出（試用日期欄位已滿，訓練已同步，A-J分類已更新）。");
               }
               cacheCasesByYear.clear();
             }else{
@@ -2142,9 +2217,38 @@
     $("btnCdBack").addEventListener("click", ()=> go("cases", { year: $("cdYear").value }));
     $("btnCdSave").addEventListener("click", saveCaseDetail);
     $("btnCdDelete").addEventListener("click", deleteCaseDetail);
+    let _caseNoHintTimer = null;
     $("cdCaseNo").addEventListener("input", ()=>{
-      const { caseType } = detectCaseTypeFromCaseNo($("cdCaseNo").value);
-      if(caseType) $("cdType").value = caseType;
+      const { caseType, caseCode } = detectCaseTypeFromCaseNo($("cdCaseNo").value);
+      if(caseType && caseType !== "其他") $("cdType").value = caseType;
+      // auto-suggest latest sequence
+      clearTimeout(_caseNoHintTimer);
+      const hint = $("cdCaseNoHint");
+      if(!caseCode || caseCode.length < 2){ if(hint) hint.textContent = ""; return; }
+      if(hint) hint.textContent = "查詢中…";
+      _caseNoHintTimer = setTimeout(async ()=>{
+        try{
+          const year = $("cdYear").value;
+          const cases = await loadCasesYear(year);
+          const prefix = caseCode.toUpperCase();
+          const matches = cases.filter(c=> String(c.caseNo||"").toUpperCase().startsWith(prefix));
+          if(!matches.length){
+            if(hint) hint.textContent = `${year}年度尚無 ${prefix} 案件 → 建議從 ${prefix}001`;
+          } else {
+            const nums = matches.map(c=>{
+              const rest = String(c.caseNo||"").toUpperCase().replace(prefix,"").replace(/^-/,"");
+              return parseInt(rest)||0;
+            }).filter(n=>n>0);
+            if(nums.length){
+              const maxNum = Math.max(...nums);
+              const next = String(maxNum+1).padStart(3,"0");
+              if(hint) hint.textContent = `目前最大：${prefix}${String(maxNum).padStart(3,"0")} → 建議下一個：${prefix}${next}`;
+            } else {
+              if(hint) hint.textContent = `找到 ${matches.length} 筆 ${prefix} 案件`;
+            }
+          }
+        }catch(e){ if(hint) hint.textContent = ""; }
+      }, 500);
     });
 
     function initCaseDetailSelectors(){
@@ -2238,19 +2342,57 @@
       `);
 
       // ── 3. 案件時程（XLS Col 27-32） ──────────────────────────────
-      showPanel("timeline", `
+      const pTimeline = showPanel("timeline", `
+        <div class="hint" style="margin-bottom:8px;">
+          「審查會日期」可從審查會議紀錄自動帶入；「總訪視次數」會加總所有日期欄位（訪視+審查+試用+訓練各1天=1次）。
+        </div>
         <div class="grid2">
           <div><label>開案日期</label><input id="cdt_openDate" type="date" value="${escapeHtml(timeline.openDate||"")}" /></div>
-          <div><label>總訪視次數</label><input id="cdt_totalVisitCount" type="number" value="${escapeHtml(timeline.totalVisitCount||"")}" /></div>
+          <div>
+            <label>總訪視次數 <button id="btnCalcVisit" style="font-size:0.75em;padding:2px 8px;margin-left:6px;">自動計算</button></label>
+            <input id="cdt_totalVisitCount" type="number" value="${escapeHtml(timeline.totalVisitCount||"")}" />
+          </div>
           <div><label>訪視評估日期 1</label><input id="cdt_visitDate1" type="date" value="${escapeHtml(timeline.visitDate1||"")}" /></div>
           <div><label>訪視評估日期 2</label><input id="cdt_visitDate2" type="date" value="${escapeHtml(timeline.visitDate2||"")}" /></div>
-          <div><label>審查會日期 1</label><input id="cdt_reviewDate1" type="date" value="${escapeHtml(timeline.reviewDate1||"")}" /></div>
+          <div>
+            <label>審查會日期 1 <button id="btnFetchReviewDate" style="font-size:0.75em;padding:2px 8px;margin-left:6px;">從審查會議抓日期</button></label>
+            <input id="cdt_reviewDate1" type="date" value="${escapeHtml(timeline.reviewDate1||"")}" />
+          </div>
           <div><label>審查會日期 2</label><input id="cdt_reviewDate2" type="date" value="${escapeHtml(timeline.reviewDate2||"")}" /></div>
         </div>
       `);
+      if(cdActiveTab==="timeline"){
+        // 自動計算訪視次數
+        pTimeline.querySelector("#btnCalcVisit")?.addEventListener("click", ()=>{
+          const fields = ["cdt_visitDate1","cdt_visitDate2",
+            "cdt_reviewDate1","cdt_reviewDate2",
+            "cddt_trialDate1","cddt_trialDate2","cddt_trialDate3",
+            "cdtr_trainDate1","cdtr_trainDate2","cdtr_trainDate3"];
+          const count = fields.filter(id=> (document.getElementById(id)?.value||"").trim()).length;
+          $("cdt_totalVisitCount").value = count;
+          toast(`自動計算：共 ${count} 次（${fields.map(id=> document.getElementById(id)?.value||"").filter(Boolean).join("、")}）`);
+        });
+        // 從審查會議抓日期
+        pTimeline.querySelector("#btnFetchReviewDate")?.addEventListener("click", async ()=>{
+          if(!cdDoc?.caseNo){ toast("請先填寫案件編號。"); return; }
+          try{
+            const q = query(collection(db,"reviewMeetings"), where("caseNo","==", cdDoc.caseNo));
+            const snap = await getDocs(q);
+            const dates = snap.docs.map(d=>d.data().meetingDate).filter(Boolean).sort();
+            if(!dates.length){ toast("審查會議中找不到此案件的紀錄。"); return; }
+            $("cdt_reviewDate1").value = dates[0] || "";
+            $("cdt_reviewDate2").value = dates[1] || "";
+            toast(`已帶入審查會日期：${dates.slice(0,2).join("、")}`);
+          }catch(e){ toast("查詢失敗：" + (e?.message||e)); }
+        });
+      }
 
       // ── 4. 輔具試用（XLS Col 33-50） ──────────────────────────────
-      showPanel("deviceTrial", `
+      const pDevTrial = showPanel("deviceTrial", `
+        <div class="hint" style="margin-bottom:10px;">
+          借出設備連結個案時自動帶入。若有調整，可點「從借用紀錄重算」重新計算；欄位仍可手動修改。
+          <button id="btnRecalcTrial" style="font-size:0.75em;padding:2px 8px;margin-left:8px;">從借用紀錄重算</button>
+        </div>
         <div class="grid2">
           <div><label>試用日期 1</label><input id="cddt_trialDate1" type="date" value="${escapeHtml(deviceTrial.trialDate1||"")}" /></div>
           <div><label>試用項目 1</label><input id="cddt_trialItem1" value="${escapeHtml(deviceTrial.trialItem1||"")}" /></div>
@@ -2258,11 +2400,11 @@
           <div><label>試用項目 2</label><input id="cddt_trialItem2" value="${escapeHtml(deviceTrial.trialItem2||"")}" /></div>
           <div><label>試用日期 3</label><input id="cddt_trialDate3" type="date" value="${escapeHtml(deviceTrial.trialDate3||"")}" /></div>
           <div><label>試用項目 3</label><input id="cddt_trialItem3" value="${escapeHtml(deviceTrial.trialItem3||"")}" /></div>
-          <div><label>試用總次數</label><input id="cddt_totalCount" type="number" value="${escapeHtml(deviceTrial.totalCount||"")}" /></div>
-          <div><label>試用總件數</label><input id="cddt_totalItems" type="number" value="${escapeHtml(deviceTrial.totalItems||"")}" /></div>
+          <div><label>試用總次數（自動計算）</label><input id="cddt_totalCount" type="number" value="${escapeHtml(deviceTrial.totalCount||"")}" /></div>
+          <div><label>試用總件數（自動計算）</label><input id="cddt_totalItems" type="number" value="${escapeHtml(deviceTrial.totalItems||"")}" /></div>
         </div>
         <div class="hr"></div>
-        <div style="font-weight:700;margin-bottom:8px;">輔具試用分類（對照 XLS A-J）</div>
+        <div style="font-weight:700;margin-bottom:8px;">輔具試用分類（A-J，設備分類欄為單字母時自動帶入）</div>
         <div class="grid2">
           <div><label>A 類（聽覺輔具）</label><input id="cddt_catA" value="${escapeHtml(deviceTrial.catA||"")}" /></div>
           <div><label>B 類（視覺輔具）</label><input id="cddt_catB" value="${escapeHtml(deviceTrial.catB||"")}" /></div>
@@ -2276,12 +2418,59 @@
           <div><label>J 類</label><input id="cddt_catJ" value="${escapeHtml(deviceTrial.catJ||"")}" /></div>
         </div>
       `);
+      if(cdActiveTab==="deviceTrial"){
+        pDevTrial.querySelector("#btnRecalcTrial")?.addEventListener("click", async ()=>{
+          if(!cdId){ toast("請先儲存案件後再重算。"); return; }
+          try{
+            const q = query(collection(db,"deviceLoans"), where("linkedCaseId","==",cdId));
+            const snap = await getDocs(q);
+            const loans = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+              const ta = a.borrowAt?.toDate?.()?.getTime() || new Date(a.borrowAt||0).getTime();
+              const tb = b.borrowAt?.toDate?.()?.getTime() || new Date(b.borrowAt||0).getTime();
+              return ta - tb;
+            });
+            if(!loans.length){ toast("找不到此個案的借用紀錄。"); return; }
+
+            // 清空舊值
+            for(const sl of ["1","2","3"]){
+              $(`cddt_trialDate${sl}`).value = "";
+              $(`cddt_trialItem${sl}`).value = "";
+            }
+            for(const c of "ABCDEFGHIJ".split("")){
+              const el = $(`cddt_cat${c}`);
+              if(el) el.value = "";
+            }
+
+            // 填入前3筆借用
+            const usedItems = [];
+            for(let i=0; i<Math.min(loans.length,3); i++){
+              const l = loans[i];
+              const date = l.borrowAt?.toDate?.() || new Date(l.borrowAt||0);
+              const dateStr = date.toISOString().slice(0,10);
+              $(`cddt_trialDate${i+1}`).value = dateStr;
+              $(`cddt_trialItem${i+1}`).value = l.deviceName || l.deviceId || "";
+              if(l.deviceName && !usedItems.includes(l.deviceName)) usedItems.push(l.deviceName);
+              const cat = (l.category||"").toUpperCase();
+              if(cat && /^[A-J]$/.test(cat)) $(`cddt_cat${cat}`).value = l.deviceName||"";
+            }
+            const allNames = loans.map(l=>l.deviceName||l.deviceId||"").filter(Boolean);
+            const distinct = [...new Set(allNames)];
+            $("cddt_totalCount").value = String(loans.length);
+            $("cddt_totalItems").value = String(distinct.length);
+            toast(`已從 ${loans.length} 筆借用紀錄重新計算（顯示前3筆，次數/件數依總筆數）。`);
+          }catch(e){ toast("重算失敗：" + (e?.message||e)); }
+        });
+      }
 
       // ── 5. 輔具訓練（XLS Col 51-68） ──────────────────────────────
-      showPanel("deviceTraining", `
+      const pDevTraining = showPanel("deviceTraining", `
+        <div class="hint" style="margin-bottom:10px;">
+          借出時自動同步試用資料。若訓練與試用不同（例如：無設備訓練），可手動修改；或點「同步自試用」重新複製。
+          <button id="btnSyncTraining" style="font-size:0.75em;padding:2px 8px;margin-left:8px;">同步自試用資料</button>
+        </div>
         <div class="grid2">
           <div><label>訓練日期 1</label><input id="cdtr_trainDate1" type="date" value="${escapeHtml(deviceTraining.trainDate1||"")}" /></div>
-          <div><label>訓練項目 1</label><input id="cdtr_trainItem1" value="${escapeHtml(deviceTraining.trainItem1||"")}" /></div>
+          <div><label>訓練項目 1（可留空=無設備訓練）</label><input id="cdtr_trainItem1" value="${escapeHtml(deviceTraining.trainItem1||"")}" /></div>
           <div><label>訓練日期 2</label><input id="cdtr_trainDate2" type="date" value="${escapeHtml(deviceTraining.trainDate2||"")}" /></div>
           <div><label>訓練項目 2</label><input id="cdtr_trainItem2" value="${escapeHtml(deviceTraining.trainItem2||"")}" /></div>
           <div><label>訓練日期 3</label><input id="cdtr_trainDate3" type="date" value="${escapeHtml(deviceTraining.trainDate3||"")}" /></div>
@@ -2290,7 +2479,7 @@
           <div><label>訓練總件數</label><input id="cdtr_totalItems" type="number" value="${escapeHtml(deviceTraining.totalItems||"")}" /></div>
         </div>
         <div class="hr"></div>
-        <div style="font-weight:700;margin-bottom:8px;">輔具訓練分類（對照 XLS A-J）</div>
+        <div style="font-weight:700;margin-bottom:8px;">輔具訓練分類（A-J）</div>
         <div class="grid2">
           <div><label>A 類（聽覺輔具）</label><input id="cdtr_catA" value="${escapeHtml(deviceTraining.catA||"")}" /></div>
           <div><label>B 類（視覺輔具）</label><input id="cdtr_catB" value="${escapeHtml(deviceTraining.catB||"")}" /></div>
@@ -2304,41 +2493,48 @@
           <div><label>J 類</label><input id="cdtr_catJ" value="${escapeHtml(deviceTraining.catJ||"")}" /></div>
         </div>
       `);
+      if(cdActiveTab==="deviceTraining"){
+        pDevTraining.querySelector("#btnSyncTraining")?.addEventListener("click", ()=>{
+          // 從試用欄位複製到訓練欄位（日期/項目/次數/件數/分類）
+          for(const sl of ["1","2","3"]){
+            const dateVal = $(`cddt_trialDate${sl}`)?.value || "";
+            const itemVal = $(`cddt_trialItem${sl}`)?.value || "";
+            $(`cdtr_trainDate${sl}`).value = dateVal;
+            $(`cdtr_trainItem${sl}`).value = itemVal;
+          }
+          $("cdtr_totalCount").value = $("cddt_totalCount")?.value || "";
+          $("cdtr_totalItems").value = $("cddt_totalItems")?.value || "";
+          for(const c of "ABCDEFGHIJ".split("")){
+            const v = $(`cddt_cat${c}`)?.value || "";
+            const el = $(`cdtr_cat${c}`);
+            if(el) el.value = v;
+          }
+          toast("已同步試用資料至訓練欄位。若有無設備訓練，請直接手動補充日期欄位。");
+        });
+      }
 
       // ── 6. 職再設計（XLS Col 69-85） ──────────────────────────────
-      showPanel("jobRedesign", `
-        <div class="grid2">
-          <div><label>是否改裝</label>
-            <select id="cdjr_isRenovation">
-              <option value="">未填</option>
-              <option value="是"${jobRedesign.isRenovation==="是"?" selected":""}>是</option>
-              <option value="否"${jobRedesign.isRenovation==="否"?" selected":""}>否</option>
-            </select>
-          </div>
-          <div><label>改裝內容</label><input id="cdjr_renovationContent" value="${escapeHtml(jobRedesign.renovationContent||"")}" /></div>
-          <div><label>是否回收</label>
-            <select id="cdjr_isRecycled">
-              <option value="">未填</option>
-              <option value="是"${jobRedesign.isRecycled==="是"?" selected":""}>是</option>
-              <option value="否"${jobRedesign.isRecycled==="否"?" selected":""}>否</option>
-            </select>
-          </div>
-          <div><label>回收內容</label><input id="cdjr_recycledContent" value="${escapeHtml(jobRedesign.recycledContent||"")}" /></div>
+      const jrPPEOpts = ["無","護目鏡","安全帽","防護手套","安全鞋","防塵口罩","聽力防護","防護背心","防靜電手環","其他"];
+      const pJobRedesign = showPanel("jobRedesign", `
+        <div class="hint" style="margin-bottom:10px;">
+          補助品項可從審查會議自動匯入，或手動新增。每個品項可個別設定是否改裝/回收。
+          <button id="btnJrImportItems" style="font-size:0.75em;padding:2px 8px;margin-left:8px;">從審查會議匯入品項</button>
         </div>
-        <div class="grid2" style="margin-top:10px;">
-          <div style="grid-column:1/-1;"><label>職再建議細目</label><textarea id="cdjr_recommendDetail">${escapeHtml(jobRedesign.recommendDetail||"")}</textarea></div>
-          <div><label>職再策略總次數</label><input id="cdjr_strategyCount" type="number" value="${escapeHtml(jobRedesign.strategyCount||"")}" /></div>
-          <div><label>資源連結</label><input id="cdjr_resourceLink" value="${escapeHtml(jobRedesign.resourceLink||"")}" /></div>
-          <div><label>個人護具</label><input id="cdjr_personalPPE" value="${escapeHtml(jobRedesign.personalPPE||"")}" /></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div style="font-weight:700;">補助品項</div>
+          <span class="muted" style="font-size:0.85em;">職再策略總次數：<b id="jrStrategyCount">${escapeHtml(String(jobRedesign.strategyCount||"0"))}</b></span>
+          <button id="btnJrAddItem" style="font-size:0.8em;padding:2px 10px;">+ 新增品項</button>
         </div>
+        <div id="jrItemsArea"></div>
         <div class="hr"></div>
-        <div style="font-weight:700;margin-bottom:8px;">職再需求分類 1-5</div>
         <div class="grid2">
-          <div><label>需求分類 1</label><input id="cdjr_need1" value="${escapeHtml(jobRedesign.need1||"")}" /></div>
-          <div><label>需求分類 2</label><input id="cdjr_need2" value="${escapeHtml(jobRedesign.need2||"")}" /></div>
-          <div><label>需求分類 3</label><input id="cdjr_need3" value="${escapeHtml(jobRedesign.need3||"")}" /></div>
-          <div><label>需求分類 4</label><input id="cdjr_need4" value="${escapeHtml(jobRedesign.need4||"")}" /></div>
-          <div><label>需求分類 5</label><input id="cdjr_need5" value="${escapeHtml(jobRedesign.need5||"")}" /></div>
+          <div style="grid-column:1/-1;"><label>職再建議細目（報告摘要）</label><textarea id="cdjr_recommendDetail">${escapeHtml(jobRedesign.recommendDetail||"")}</textarea></div>
+          <div><label>資源連結</label><input id="cdjr_resourceLink" value="${escapeHtml(jobRedesign.resourceLink||"")}" /></div>
+          <div><label>個人護具</label>
+            <select id="cdjr_personalPPE">
+              ${jrPPEOpts.map(x=>`<option value="${escapeHtml(x)}"${jobRedesign.personalPPE===x?" selected":""}>${escapeHtml(x)}</option>`).join("")}
+            </select>
+          </div>
         </div>
         <div class="hr"></div>
         <div style="font-weight:700;margin-bottom:8px;">職訓案時間（TA 類）</div>
@@ -2347,23 +2543,157 @@
           <div><label>職訓結束日期</label><input id="cdjr_vocTrainEnd" type="date" value="${escapeHtml(jobRedesign.vocTrainEnd||"")}" /></div>
         </div>
       `);
+      // ── 職再設計：品項 helper ──
+      function updateJrStrategyCount(){
+        const cnt = pJobRedesign.querySelectorAll(".jrItemRow .jri_name").length;
+        const el = pJobRedesign.querySelector("#jrStrategyCount");
+        if(el) el.textContent = String(cnt);
+      }
+      function buildJrItemRow(item={}){
+        const div = document.createElement("div");
+        div.className = "jrItemRow";
+        div.style.cssText = "border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;background:var(--bg,#fff);";
+        div.innerHTML = `
+          <div class="grid3">
+            <div style="grid-column:1/3;"><label>品項名稱</label><input class="jri_name" value="${escapeHtml(item.itemName||"")}" placeholder="補助品項名稱（e.g. 助聽器）" /></div>
+            <div><label>補助分類/改善策略</label><input class="jri_cat" value="${escapeHtml(item.subsidyCategory||"")}" placeholder="改善工作條件" /></div>
+            <div><label>是否改裝</label>
+              <select class="jri_renovation">
+                <option value="">未填</option>
+                <option value="是"${item.isRenovation==="是"?" selected":""}>是</option>
+                <option value="否"${item.isRenovation==="否"?" selected":""}>否</option>
+              </select>
+            </div>
+            <div><label>改裝內容</label><input class="jri_renovContent" value="${escapeHtml(item.renovationContent||"")}" /></div>
+            <div><label>是否回收</label>
+              <select class="jri_recycle">
+                <option value="">未填</option>
+                <option value="是"${item.isRecycled==="是"?" selected":""}>是</option>
+                <option value="否"${item.isRecycled==="否"?" selected":""}>否</option>
+              </select>
+            </div>
+            <div><label>回收內容</label><input class="jri_recycleContent" value="${escapeHtml(item.recycledContent||"")}" /></div>
+            <div style="display:flex;align-items:flex-end;"><button class="btnJrRemItem danger">刪除</button></div>
+          </div>
+        `;
+        div.querySelector(".btnJrRemItem").addEventListener("click", ()=>{ div.remove(); updateJrStrategyCount(); });
+        return div;
+      }
+      // 填入已有品項
+      const jrArea = pJobRedesign.querySelector("#jrItemsArea");
+      for(const item of (jobRedesign.items||[])){
+        jrArea.appendChild(buildJrItemRow(item));
+      }
+      updateJrStrategyCount();
+      // 新增品項按鈕
+      pJobRedesign.querySelector("#btnJrAddItem")?.addEventListener("click", ()=>{
+        jrArea.appendChild(buildJrItemRow());
+        updateJrStrategyCount();
+      });
+      // 從審查會議匯入按鈕
+      pJobRedesign.querySelector("#btnJrImportItems")?.addEventListener("click", async ()=>{
+        if(!cdDoc?.caseNo){ toast("請先儲存案件後再匯入。"); return; }
+        try{
+          const q = query(collection(db,"reviewMeetings"), where("caseNo","==",cdDoc.caseNo));
+          const snap = await getDocs(q);
+          const allItems = [];
+          for(const d of snap.docs){
+            for(const item of (d.data().items||[])){
+              if(item.itemName) allItems.push({
+                itemName: item.itemName,
+                subsidyCategory: item.subsidyCategory||"",
+                isRenovation: "", renovationContent: "",
+                isRecycled: item.isRecycled||"否", recycledContent: ""
+              });
+            }
+          }
+          if(!allItems.length){ toast("審查會議中找不到此案件的補助品項。"); return; }
+          jrArea.innerHTML = "";
+          for(const item of allItems) jrArea.appendChild(buildJrItemRow(item));
+          updateJrStrategyCount();
+          toast(`已匯入 ${allItems.length} 個補助品項。請確認是否改裝/回收欄位。`);
+        }catch(e){ toast("匯入失敗：" + (e?.message||e)); }
+      });
 
       // ── 7. 進度管理 ────────────────────────────────────────────────
-      showPanel("progress", `
+      const pProgress = showPanel("progress", `
+        <div style="font-weight:700;margin-bottom:6px;">服務歷程時間軸（自動彙整）</div>
+        <div id="cdProgressTimeline" class="muted" style="margin-bottom:12px;">計算中…</div>
+        <div class="hr"></div>
         <div class="grid2">
           <div><label>下一步行動</label><input id="cdp_nextAction" value="${escapeHtml(progress.nextAction||"")}" placeholder="例如：安排訪視、補資料…" /></div>
           <div><label>期限</label><input id="cdp_nextDue" type="date" value="${escapeHtml(progress.nextDue||"")}" /></div>
           <div style="grid-column:1/-1;"><label>進度摘要</label><textarea id="cdp_summary">${escapeHtml(progress.summary||"")}</textarea></div>
         </div>
       `);
+      // ── 進度管理：服務歷程時間軸（包含審查會議日期）──
+      if(cdActiveTab==="progress"){
+        (async ()=>{
+          const events = [
+            { label:"受案日期",   date: d.timeline?.openDate },
+            { label:"訪視評估 1", date: d.timeline?.visitDate1 },
+            { label:"訪視評估 2", date: d.timeline?.visitDate2 },
+            { label:"報告完成",   date: d.report?.completedDate },
+            { label:"寄給承辦",   date: d.report?.sentDate },
+            { label:"審查會議 1", date: d.timeline?.reviewDate1 },
+            { label:"審查會議 2", date: d.timeline?.reviewDate2 },
+            { label:"成效日期",   date: d.report?.effectDue },
+            { label:"二代登打",   date: d.report?.system2Due },
+          ];
+          // 嘗試從 reviewMeetings 補充審查會議日期
+          if(cdDoc?.caseNo){
+            try{
+              const q = query(collection(db,"reviewMeetings"), where("caseNo","==",cdDoc.caseNo));
+              const snap = await getDocs(q);
+              snap.docs.forEach(doc=>{
+                const rv = doc.data();
+                if(rv.meetingDate) events.push({ label:`審查會（${rv.meetingArea||""}${rv.meetingNo||""}）`, date: rv.meetingDate });
+              });
+            }catch(e){}
+          }
+          const filled = events.filter(e=>e.date).sort((a,b)=>a.date.localeCompare(b.date));
+          const container = pProgress.querySelector("#cdProgressTimeline");
+          if(!container) return;
+          if(!filled.length){
+            container.textContent = "尚無日期資料，請填寫各分頁日期欄位。";
+            return;
+          }
+          container.innerHTML = filled.map((e,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <span style="color:var(--primary,#2563eb);font-size:1.1em;">●</span>
+              <span class="mono" style="min-width:100px;">${escapeHtml(e.date)}</span>
+              <span>${escapeHtml(e.label)}</span>
+            </div>`).join("");
+        })();
+      }
 
       // ── 8. 報告管理 ────────────────────────────────────────────────
       const pReport = showPanel("report", `
+        <div class="hint" style="margin-bottom:10px;">
+          「報告截止」可依最後訪視日自動推算7個工作日（不含例假日）；「審查會議日期」可從審查會議自動抓。
+        </div>
         <div class="grid2">
           <div><label>報告狀態</label><select id="cdr_status"></select></div>
-          <div><label>報告到期/提醒</label><input id="cdr_due" type="date" value="${escapeHtml(report.dueDate||"")}" /></div>
-          <div><label>審查會議日期</label><input id="cdr_meeting" type="date" value="${escapeHtml(report.meetingDate||"")}" /></div>
-          <div><label>成效到期/提醒</label><input id="cdr_effectDue" type="date" value="${escapeHtml(report.effectDue||"")}" /></div>
+          <div>
+            <label>報告截止日（最後訪視 +7工作日）
+              <button id="btnCalcReportDue" style="font-size:0.75em;padding:2px 6px;margin-left:4px;">自動計算</button>
+            </label>
+            <input id="cdr_due" type="date" value="${escapeHtml(report.dueDate||"")}" />
+          </div>
+          <div><label>報告完成日期（實際完成）</label><input id="cdr_completedDate" type="date" value="${escapeHtml(report.completedDate||"")}" /></div>
+          <div><label>寄給承辦日期</label><input id="cdr_sentDate" type="date" value="${escapeHtml(report.sentDate||"")}" /></div>
+          <div>
+            <label>審查會議日期
+              <button id="btnFetchReportMeetingDate" style="font-size:0.75em;padding:2px 6px;margin-left:4px;">從審查會議抓</button>
+            </label>
+            <input id="cdr_meeting" type="date" value="${escapeHtml(report.meetingDate||"")}" />
+          </div>
+          <div>
+            <label>成效提醒（審查會後+1個月）
+              <button id="btnCalcEffectDue" style="font-size:0.75em;padding:2px 6px;margin-left:4px;">自動計算</button>
+            </label>
+            <input id="cdr_effectDue" type="date" value="${escapeHtml(report.effectDue||"")}" />
+          </div>
           <div><label>二代系統登打到期</label><input id="cdr_sys2Due" type="date" value="${escapeHtml(report.system2Due||"")}" /></div>
           <div><label>備註</label><input id="cdr_note" value="${escapeHtml(report.note||"")}" /></div>
           <div style="grid-column:1/-1;"><label>報告內容摘要</label><textarea id="cdr_summary">${escapeHtml(report.summary||"")}</textarea></div>
@@ -2373,6 +2703,51 @@
         const sSel = pReport.querySelector("#cdr_status");
         sSel.innerHTML = (settings.options.reportStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
         sSel.value = report.status || (settings.options.reportStatuses||[])[0] || "未開始";
+
+        // ── 報告截止：最後訪視日 +7 工作日（不含例假日）──
+        pReport.querySelector("#btnCalcReportDue")?.addEventListener("click", ()=>{
+          // 找最後一個訪視日期
+          const dates = [
+            $("cdt_visitDate1")?.value, $("cdt_visitDate2")?.value
+          ].filter(Boolean).sort();
+          if(!dates.length){ toast("請先填寫訪視評估日期。"); return; }
+          const lastVisit = new Date(dates[dates.length-1]);
+          // 加7個工作日（跳過週六=6, 週日=0）
+          let workDays = 0;
+          const cur = new Date(lastVisit);
+          while(workDays < 7){
+            cur.setDate(cur.getDate() + 1);
+            const dow = cur.getDay();
+            if(dow !== 0 && dow !== 6) workDays++;
+          }
+          const result = cur.toISOString().slice(0,10);
+          $("cdr_due").value = result;
+          toast(`報告截止：${result}（最後訪視 ${dates[dates.length-1]} +7工作日）`);
+        });
+
+        // ── 審查會議日期：從 reviewMeetings 自動抓 ──
+        pReport.querySelector("#btnFetchReportMeetingDate")?.addEventListener("click", async ()=>{
+          if(!cdDoc?.caseNo){ toast("請先儲存案件後再查詢。"); return; }
+          try{
+            const q = query(collection(db,"reviewMeetings"), where("caseNo","==",cdDoc.caseNo));
+            const snap = await getDocs(q);
+            const dates = snap.docs.map(d=>d.data().meetingDate).filter(Boolean).sort();
+            if(!dates.length){ toast("審查會議中找不到此案件的紀錄。"); return; }
+            $("cdr_meeting").value = dates[0];
+            toast(`已帶入審查會議日期：${dates[0]}`);
+          }catch(e){ toast("查詢失敗：" + (e?.message||e)); }
+        });
+
+        // ── 成效提醒：審查會日期 +1 個月 ──
+        pReport.querySelector("#btnCalcEffectDue")?.addEventListener("click", ()=>{
+          const meetingDate = $("cdr_meeting")?.value;
+          if(!meetingDate){ toast("請先填寫審查會議日期。"); return; }
+          const d = new Date(meetingDate);
+          d.setMonth(d.getMonth() + 1);
+          const result = d.toISOString().slice(0,10);
+          $("cdr_effectDue").value = result;
+          toast(`成效提醒：${result}（審查會 ${meetingDate} +1個月，記得詢問個案是否採購及約成效）`);
+        });
       }
 
       // ── 9. 審查會議（查詢 reviewMeetings 勾稽） ─────────────────────
@@ -2452,6 +2827,34 @@
           <div style="grid-column:1/-1;"><label>備註（XLS Col85）</label><textarea id="cdrm_remarks">${escapeHtml(d.remarks||"")}</textarea></div>
         </div>
       `);
+
+      // ── KPI 自動判斷監聽 ──────────────────────────────────────────
+      ["cdStatus","cdt_visitDate1","cdr_completedDate","cdr_sentDate","cdt_reviewDate1","cdr_meeting","cdr_effectDue"]
+        .forEach(id => document.getElementById(id)?.addEventListener("change", autoUpdateKpi));
+      autoUpdateKpi();
+    }
+
+    function computeKpiStage(){
+      const status = $("cdStatus")?.value || "";
+      if(["結案","中途結案"].includes(status)) return "已結案";
+      const effectDue     = $("cdr_effectDue")?.value   || "";
+      const reviewDate1   = $("cdt_reviewDate1")?.value || "";
+      const meetingDate   = $("cdr_meeting")?.value     || "";
+      const sentDate      = $("cdr_sentDate")?.value    || "";
+      const completedDate = $("cdr_completedDate")?.value || "";
+      const visitDate1    = $("cdt_visitDate1")?.value  || "";
+      if(effectDue)                  return "待二代系統登打";
+      if(reviewDate1 || meetingDate) return "待成效";
+      if(sentDate)                   return "待審查會議";
+      if(completedDate)              return "報告審查中";
+      if(visitDate1)                 return "撰寫報告中";
+      return "待訪視";
+    }
+
+    function autoUpdateKpi(){
+      const stage = computeKpiStage();
+      const sel = $("cdKpi");
+      if(sel) sel.value = stage;
     }
 
     async function loadCaseDetail(id){
@@ -2519,7 +2922,7 @@
         caseNo,
         caseCode,
         caseType: chosenType,
-        kpiStage: $("cdKpi").value,
+        kpiStage: computeKpiStage(),
         casePhase: $("cdPhase").value || "",
         caseStatus: $("cdStatus").value || "進行中",
         ownerUid: cdDoc?.ownerUid || currentUser.uid,
@@ -2632,22 +3035,29 @@
       }
 
       // ── Tab: 職再設計 ──
-      const cdjr_isRenovation = gv("cdjr_isRenovation");
-      if(cdjr_isRenovation !== undefined){
+      const cdjr_recommendDetail = gv("cdjr_recommendDetail");
+      if(cdjr_recommendDetail !== undefined){
+        const jrItemEls = document.querySelectorAll(".jrItemRow");
+        const jrItems = Array.from(jrItemEls).map(row=>({
+          itemName:         row.querySelector(".jri_name")?.value?.trim()        || "",
+          subsidyCategory:  row.querySelector(".jri_cat")?.value?.trim()         || "",
+          isRenovation:     row.querySelector(".jri_renovation")?.value           || "",
+          renovationContent:row.querySelector(".jri_renovContent")?.value?.trim()|| "",
+          isRecycled:       row.querySelector(".jri_recycle")?.value              || "",
+          recycledContent:  row.querySelector(".jri_recycleContent")?.value?.trim()||""
+        })).filter(i=>i.itemName);
+
         payload.jobRedesign = {
-          isRenovation:      cdjr_isRenovation                  || "",
-          renovationContent: gvt("cdjr_renovationContent")      || "",
-          isRecycled:        gv("cdjr_isRecycled")              || "",
-          recycledContent:   gvt("cdjr_recycledContent")        || "",
-          recommendDetail:   gv("cdjr_recommendDetail")         || "",
-          strategyCount:     gvt("cdjr_strategyCount")          || "",
-          resourceLink:      gvt("cdjr_resourceLink")           || "",
-          personalPPE:       gvt("cdjr_personalPPE")            || "",
-          need1: gvt("cdjr_need1")||"", need2: gvt("cdjr_need2")||"",
-          need3: gvt("cdjr_need3")||"", need4: gvt("cdjr_need4")||"",
-          need5: gvt("cdjr_need5")||"",
-          vocTrainStart:     gv("cdjr_vocTrainStart")           || "",
-          vocTrainEnd:       gv("cdjr_vocTrainEnd")             || "",
+          items:         jrItems,
+          recommendDetail: cdjr_recommendDetail                  || "",
+          strategyCount:   String(jrItems.length),
+          resourceLink:    gvt("cdjr_resourceLink")              || "",
+          personalPPE:     gv("cdjr_personalPPE")               || "",
+          vocTrainStart:   gv("cdjr_vocTrainStart")             || "",
+          vocTrainEnd:     gv("cdjr_vocTrainEnd")               || "",
+          // 彙總欄位（報表用）
+          isRenovation:    jrItems.some(i=>i.isRenovation==="是") ? "是" : "否",
+          isRecycled:      jrItems.some(i=>i.isRecycled==="是")   ? "是" : "否",
         };
       }
 
@@ -2665,13 +3075,15 @@
       const cdr_status = gv("cdr_status");
       if(cdr_status !== undefined){
         payload.report = {
-          status:     cdr_status               || "",
-          dueDate:    gv("cdr_due")            || "",
-          meetingDate:gv("cdr_meeting")        || "",
-          effectDue:  gv("cdr_effectDue")      || "",
-          system2Due: gv("cdr_sys2Due")        || "",
-          note:       gvt("cdr_note")          || "",
-          summary:    gv("cdr_summary")        || "",
+          status:        cdr_status                    || "",
+          dueDate:       gv("cdr_due")                || "",
+          completedDate: gv("cdr_completedDate")      || "",
+          sentDate:      gv("cdr_sentDate")           || "",
+          meetingDate:   gv("cdr_meeting")            || "",
+          effectDue:     gv("cdr_effectDue")          || "",
+          system2Due:    gv("cdr_sys2Due")            || "",
+          note:          gvt("cdr_note")              || "",
+          summary:       gv("cdr_summary")            || "",
         };
       }
 
@@ -2819,6 +3231,41 @@
       return div;
     }
 
+    // 載入案件到 datalist 並設定自動帶入姓名
+    let _rvCaseCache = []; // { caseNo, clientName, orgName, year }
+    async function populateRvCaseList(year){
+      try{
+        const cases = await loadCasesYear(String(year));
+        _rvCaseCache = cases.map(c=>({
+          caseNo: c.caseNo||"",
+          clientName: c.basic?.clientName || c.clientName || "",
+          orgName: c.basic?.orgName || c.orgName || "",
+          year: c.year||""
+        })).filter(c=>c.caseNo);
+        const dl = $("rvCaseNoList");
+        if(!dl) return;
+        dl.innerHTML = _rvCaseCache.map(c=>
+          `<option value="${escapeHtml(c.caseNo)}" data-name="${escapeHtml(c.clientName)}">${escapeHtml(c.caseNo)} ${escapeHtml(c.clientName)} ${escapeHtml(c.orgName)}</option>`
+        ).join("");
+      }catch(e){ console.warn("案件清單載入失敗:", e?.message||e); }
+    }
+
+    function setupRvCaseAutoFill(){
+      const input = $("rv_caseNo");
+      if(!input || input._rvSetup) return;
+      input._rvSetup = true;
+      input.addEventListener("change", ()=>{
+        const val = input.value.trim().toUpperCase();
+        if(!val) return;
+        const matched = _rvCaseCache.find(c=>c.caseNo.toUpperCase()===val || c.caseNo.toUpperCase()===val.replace(/-/g,""));
+        if(matched && matched.clientName && !$("rv_clientName").value){
+          $("rv_clientName").value = matched.clientName;
+        }
+      });
+      // 年度切換時重新載入
+      $("rv_year")?.addEventListener("change", ()=> populateRvCaseList($("rv_year").value));
+    }
+
     async function openReviewModal(id=null){
       rvItems = [];
       $("rvItemsArea").innerHTML = "";
@@ -2863,6 +3310,8 @@
         $("rv_commLevel").value = "";
         $("rv_note").value = "";
       }
+      setupRvCaseAutoFill();
+      await populateRvCaseList($("rv_year").value);
       $("reviewModal").classList.add("show");
     }
 
@@ -3052,11 +3501,12 @@
     setupReviewImportModal();
 
     // ===== Device sub-tabs =====
-    let devActiveTab = "A"; // A / B / C / D / loans
+    let devActiveTab = "A"; // A / B / C / D / loans / inventory
     let cacheDevicesBCD = {}; // { B:[], C:[], D:[] }
+    let cacheInventoryLogs = [];
 
     function setupDevTabs(){
-      const tabs = { A:"devTabA", B:"devTabB", C:"devTabC", D:"devTabD", loans:"devTabLoans" };
+      const tabs = { A:"devTabA", B:"devTabB", C:"devTabC", D:"devTabD", loans:"devTabLoans", inventory:"devTabInventory" };
       for(const [key, btnId] of Object.entries(tabs)){
         $(btnId).addEventListener("click", async ()=>{
           devActiveTab = key;
@@ -3064,7 +3514,9 @@
           if(key==="A"){
             renderDevices();
           } else if(key==="loans"){
-            renderDevices(); // still shows loan table
+            renderDevices();
+          } else if(key==="inventory"){
+            await loadAndRenderInventory();
           } else {
             await loadAndRenderBCD(key);
           }
@@ -3073,21 +3525,23 @@
     }
 
     function updateDevTabUI(){
-      const tabs = { A:"devTabA", B:"devTabB", C:"devTabC", D:"devTabD", loans:"devTabLoans" };
+      const tabs = { A:"devTabA", B:"devTabB", C:"devTabC", D:"devTabD", loans:"devTabLoans", inventory:"devTabInventory" };
       for(const [key, btnId] of Object.entries(tabs)) $(btnId).classList.toggle("active", devActiveTab===key);
-      // show/hide panels
       const isA = devActiveTab==="A";
       const isBCD = ["B","C","D"].includes(devActiveTab);
       const isLoans = devActiveTab==="loans";
-      // borrow/inventory grid (for A only)
+      const isInventory = devActiveTab==="inventory";
       const devGrid = document.querySelector("#viewDevices .grid2");
       if(devGrid) devGrid.style.display = isA ? "" : "none";
       $("devPanelBCD").style.display = isBCD ? "" : "none";
       $("devPanelLoans").style.display = (isLoans || isA) ? "" : "none";
-      // import JSON button (admin only)
-      const importBtn = $("btnDevImportJson");
-      if(importBtn) importBtn.hidden = !(isBCD && currentRole==="admin");
-      // new device button
+      $("devPanelInventory").style.display = isInventory ? "" : "none";
+      // import Excel (admin, A or BCD)
+      const importBtn = $("btnDevImportExcel");
+      if(importBtn) importBtn.hidden = !((isA || isBCD) && currentRole==="admin");
+      // export (A, BCD, loans, inventory)
+      const exportBtn = $("btnDevExport");
+      if(exportBtn) exportBtn.hidden = !(isA || isBCD || isLoans || isInventory);
       const newBtn = $("btnDevNew");
       if(newBtn) newBtn.hidden = !(isA && currentRole==="admin");
     }
@@ -3123,46 +3577,58 @@
       }
     }
 
-    // ── Device JSON import ──
-    function setupDevImportJson(){
-      const btn = $("btnDevImportJson");
+    // ── Device Excel import ──
+    function setupDevImportExcel(){
+      const btn = $("btnDevImportExcel");
       if(!btn) return;
       btn.addEventListener("click", ()=>{
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = ".json";
+        input.accept = ".xlsx,.xls";
         input.onchange = async (e)=>{
           const file = e.target.files[0];
           if(!file) return;
           try{
-            const text = await file.text();
-            const data = JSON.parse(text);
-            if(!Array.isArray(data)){ toast("JSON 格式錯誤：需為陣列。"); return; }
-            if(!confirm(`確定匯入 ${data.length} 筆 ${devActiveTab} 類設備？`)) return;
+            if(!window.XLSX){
+              await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+            }
+            const XL = window.XLSX;
+            const buf = await file.arrayBuffer();
+            const wb = XL.read(buf, {type:"array"});
+            // Use first sheet, or try to find matching sheet
+            let sheetName = wb.SheetNames[0];
+            const typeLabel = devActiveTab;
+            const matched = wb.SheetNames.find(s=> s.toUpperCase().startsWith(typeLabel) || s.includes(typeLabel));
+            if(matched) sheetName = matched;
+            const ws = wb.Sheets[sheetName];
+            const rows = XL.utils.sheet_to_json(ws, {defval:""});
+            if(!rows.length){ toast("Excel 無資料。"); return; }
+            if(!confirm(`從工作表「${sheetName}」匯入 ${rows.length} 筆至 ${typeLabel} 類設備？`)) return;
+
             const batch = writeBatch(db);
             let count = 0;
-            for(const item of data){
-              const id = (item.deviceId || item.編號 || "").replace(/\s+/g,"");
-              if(!id) continue;
-              batch.set(doc(db,"devices",id), {
-                deviceId: id,
-                name: item.name || item.名稱 || item.品名 || "",
-                deviceType: devActiveTab,
-                brand: item.brand || item.品牌 || item.廠牌 || "",
-                purchaseYear: item.purchaseYear || item.購置年份 || item.購入日期 || "",
-                unitPrice: item.unitPrice || item.單價 || "",
-                description: item.description || item.說明 || "",
-                inventoryStatus: item.inventoryStatus || item.清點狀況 || "",
-                isLabeled: item.isLabeled || item.是否已貼標籤 || "",
-                status: "可借",
+            for(const item of rows){
+              const rawId = String(item["編號"] || item["deviceId"] || item["品名"] || "").replace(/\s+/g,"");
+              if(!rawId) continue;
+              batch.set(doc(db,"devices",rawId), {
+                deviceId: rawId,
+                name: String(item["名稱"] || item["品名"] || item["name"] || ""),
+                deviceType: typeLabel,
+                brand: String(item["品牌"] || item["廠牌"] || item["brand"] || ""),
+                purchaseYear: String(item["購置年份"] || item["購入日期"] || item["purchaseYear"] || ""),
+                unitPrice: String(item["單價"] || item["unitPrice"] || ""),
+                description: String(item["說明"] || item["description"] || ""),
+                inventoryStatus: String(item["清點狀況"] || item["inventoryStatus"] || ""),
+                isLabeled: String(item["是否已貼標籤"] || item["isLabeled"] || ""),
+                status: item["status"] || "可借",
                 updatedAt: new Date()
               }, {merge:true});
               count++;
             }
             await batch.commit();
-            toast(`匯入完成 ${count} 筆 ${devActiveTab} 類設備。`);
-            cacheDevicesBCD[devActiveTab] = null;
-            await loadAndRenderBCD(devActiveTab);
+            toast(`匯入完成 ${count} 筆 ${typeLabel} 類設備。`);
+            if(typeLabel==="A"){ cacheDevices=[]; await refreshDevices(true); }
+            else { cacheDevicesBCD[typeLabel]=null; await loadAndRenderBCD(typeLabel); }
           }catch(err){
             console.error(err);
             toast("匯入失敗：" + (err?.message||err));
@@ -3172,11 +3638,92 @@
       });
     }
 
+    // ── Device Export Excel ──
+    function setupDevExport(){
+      const btn = $("btnDevExport");
+      if(!btn) return;
+      btn.addEventListener("click", async ()=>{
+        try{
+          if(!window.XLSX){ await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"); }
+          const XL = window.XLSX;
+          let data = [];
+          let filename = "";
+          if(devActiveTab==="A"){
+            data = cacheDevices.map(d=>({ 代碼:d.id, 名稱:d.name||"", 狀態:d.status||"", 借用者:d.currentBorrowerName||"", 購置年份:d.purchaseYear||"", 品牌:d.brand||"", 說明:d.description||"" }));
+            filename = `輔具_A類_${new Date().toISOString().slice(0,10)}.xlsx`;
+          } else if(["B","C","D"].includes(devActiveTab)){
+            const list = cacheDevicesBCD[devActiveTab]||[];
+            data = list.map(d=>({ 編號:d.deviceId||"", 名稱:d.name||"", 品牌:d.brand||"", 購置年份:d.purchaseYear||"", 單價:d.unitPrice||"", 說明:d.description||"", 清點狀況:d.inventoryStatus||"", 是否已貼標籤:d.isLabeled||"" }));
+            filename = `輔具_${devActiveTab}類_${new Date().toISOString().slice(0,10)}.xlsx`;
+          } else if(devActiveTab==="loans"){
+            const snap = await getDocs(query(collection(db,"deviceLoans"), orderBy("borrowAt","desc")));
+            data = snap.docs.map(d=>d.data()).map(r=>({ 輔具:r.deviceName||"", 借用者:r.borrowerName||"", 借出日:fmtDT(r.borrowAt), 歸還日:r.returnAt?fmtDT(r.returnAt):"未歸還", 連結個案:r.linkedCaseNo||"" }));
+            filename = `借用紀錄_${new Date().toISOString().slice(0,10)}.xlsx`;
+          } else if(devActiveTab==="inventory"){
+            data = cacheInventoryLogs.map(r=>({ 設備代碼:r.deviceId||"", 設備名稱:r.deviceName||"", 盤點日期:r.checkDate||"", 盤點人員:r.checkBy||"", 狀態:r.status||"", 備註:r.notes||"" }));
+            filename = `盤點紀錄_${new Date().toISOString().slice(0,10)}.xlsx`;
+          }
+          if(!data.length){ toast("無資料可匯出。"); return; }
+          const ws = XL.utils.json_to_sheet(data);
+          const wb2 = XL.utils.book_new();
+          XL.utils.book_append_sheet(wb2, ws, "Sheet1");
+          XL.writeFile(wb2, filename);
+        }catch(err){ console.error(err); toast("匯出失敗：" + (err?.message||err)); }
+      });
+    }
+
+    // ── Inventory Logs ──
+    async function loadAndRenderInventory(){
+      $("invHint").textContent = "載入中…";
+      const snap = await getDocs(query(collection(db,"inventoryLogs"), orderBy("checkDate","desc")));
+      cacheInventoryLogs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      $("invHint").textContent = `共 ${cacheInventoryLogs.length} 筆`;
+      renderInventoryTable();
+    }
+
+    function renderInventoryTable(){
+      const q = ($("invQ")?.value||"").toLowerCase();
+      const list = q ? cacheInventoryLogs.filter(r=>(r.deviceId||"").toLowerCase().includes(q)||(r.deviceName||"").toLowerCase().includes(q)) : cacheInventoryLogs;
+      const tbody = $("invTbody");
+      if(!tbody) return;
+      tbody.innerHTML = "";
+      if(!list.length){ tbody.innerHTML = `<tr><td colspan="6" class="muted">尚無盤點記錄。點「新增盤點」開始記錄。</td></tr>`; return; }
+      for(const r of list){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="mono">${escapeHtml(r.deviceId||"")}</td><td>${escapeHtml(r.deviceName||"")}</td><td>${escapeHtml(r.checkDate||"")}</td><td>${escapeHtml(r.checkBy||"")}</td><td>${escapeHtml(r.status||"")}</td><td class="muted">${escapeHtml(r.notes||"")}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    $("btnInvAdd")?.addEventListener("click", async ()=>{
+      const deviceId = prompt("請輸入設備代碼：");
+      if(!deviceId?.trim()) return;
+      const checkDate = prompt("盤點日期（YYYY-MM-DD）：", new Date().toISOString().slice(0,10));
+      if(!checkDate) return;
+      const status = prompt("狀態（正常/異常/遺失）：", "正常");
+      if(!status) return;
+      const notes = prompt("備註（可留空）：") || "";
+      try{
+        // Try to get device name
+        let deviceName = "";
+        try{ const ds = await getDoc(doc(db,"devices",deviceId.trim())); if(ds.exists()) deviceName = ds.data().name || ""; }catch(e){}
+        await addDoc(collection(db,"inventoryLogs"),{ deviceId:deviceId.trim(), deviceName, checkDate, checkBy:currentName, status, notes, createdAt:new Date() });
+        toast("盤點記錄已儲存。");
+        await loadAndRenderInventory();
+      }catch(e){ toast("儲存失敗：" + (e?.message||e)); }
+    });
+    $("invQ")?.addEventListener("input", ()=> renderInventoryTable());
+    $("btnInvExport")?.addEventListener("click", async ()=>{
+      devActiveTab = "inventory";
+      $("btnDevExport").click();
+    });
+
     // BCD search filter listener
     $("devBCDQ").addEventListener("input", ()=>{ if(["B","C","D"].includes(devActiveTab)) renderBCDTable(devActiveTab); });
 
     setupDevTabs();
-    setupDevImportJson();
+    setupDevImportExcel();
+    setupDevExport();
 
     // ===== Route handler =====
     async function route(){
