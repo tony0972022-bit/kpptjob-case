@@ -2199,7 +2199,7 @@
     let _loanStatMode = "JA"; // "JA"=身障個人, "AG"=中高齡
 
     function _renderLoanStat(){
-      const year = parseInt($("repYear")?.value || new Date().getFullYear());
+      const year = parseInt($("repYear")?.value || (new Date().getFullYear() - 1911));
       const cats = Object.keys(DEV_CATEGORIES); // A-J
 
       // 短標籤（for thead）
@@ -2208,12 +2208,15 @@
         F:"工具類",  G:"環境改建", H:"個人護具", I:"身體擺位", J:"其他就業"
       };
 
-      // 1. 過濾年度 + 模式
+      // 1. 過濾年度（民國年 → 西元年）+ 模式
       // caseTypes 實際值：身障、中高齡、ECFA、單側、勞通
+      const yearAD = year + 1911; // 民國轉西元
       const modeLoans = repLoans.filter(l=>{
         const d = l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null);
-        if(!d || d.getFullYear() !== year) return false;
+        if(!d || d.getFullYear() !== yearAD) return false;
         const ct = (l.caseTypes || "").trim();
+        // 沒連結個案 → 歸入身障
+        if(!ct) return _loanStatMode === "JA";
         if(_loanStatMode === "JA")      return ct.includes("身障") || ct.includes("單側") || ct.includes("JA") || ct.includes("UH");
         else if(_loanStatMode === "AG") return ct.includes("中高齡") || ct.includes("AG");
         else if(_loanStatMode === "EC") return ct.includes("ECFA") || ct.includes("EC");
