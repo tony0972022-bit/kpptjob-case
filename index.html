@@ -492,8 +492,12 @@
                 <select id="devBorrower"></select>
               </div>
               <div>
-                <label>連結個案（可複選 Ctrl+點選，借出自動記錄試用）</label>
-                <select id="devLinkCase" multiple style="height:90px;width:100%;"></select>
+                <label>連結個案（借出自動記錄試用）</label>
+                <div style="border:1px solid var(--b);border-radius:12px;padding:6px;background:var(--bg);">
+                  <input id="devLinkCaseSearch" placeholder="搜尋編號/單位/個案…" style="margin-bottom:4px;font-size:12px;" />
+                  <div id="devLinkCaseList" style="max-height:140px;overflow-y:auto;"></div>
+                </div>
+                <div id="devLinkCaseCount" class="muted" style="font-size:11px;margin-top:2px;"></div>
               </div>
             </div>
             <div class="hr"></div>
@@ -884,8 +888,9 @@
         </div>
       </div>
 
-      <p class="muted" style="margin:0 0 6px;font-size:12px;">欄位對應（<span style="color:var(--danger)">*</span> 必填，其餘留空略過）</p>
-      <div id="rvImportMappingGrid" style="display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:5px 12px;align-items:center;margin-bottom:10px;"></div>
+      <p class="muted" style="margin:0 0 6px;font-size:12px;">欄位名稱可修改 → 對應 Excel 欄位（<span style="color:var(--danger)">*</span> 必填）</p>
+      <div id="rvImportMappingGrid" style="display:grid;grid-template-columns:120px 1fr 120px 1fr;gap:5px 12px;align-items:center;margin-bottom:6px;"></div>
+      <button id="btnRvAddField" style="font-size:12px;padding:4px 10px;margin-bottom:8px;">＋ 新增自訂欄位</button>
 
       <div class="hr"></div>
       <div style="margin-bottom:6px;font-size:13px;font-weight:600;">預覽（前 4 筆）</div>
@@ -935,8 +940,11 @@
           <select id="bbBorrower"></select>
         </div>
         <div>
-          <label>連結個案（可複選 Ctrl+點）</label>
-          <select id="bbLinkCase" multiple style="height:90px;width:100%;"></select>
+          <label>連結個案</label>
+          <div style="border:1px solid var(--b);border-radius:12px;padding:6px;background:var(--bg);">
+            <input id="bbLinkCaseSearch" placeholder="搜尋編號/單位/個案…" style="margin-bottom:4px;font-size:12px;" />
+            <div id="bbLinkCaseList" style="max-height:120px;overflow-y:auto;"></div>
+          </div>
         </div>
       </div>
 
@@ -1025,11 +1033,12 @@
         <span id="devImportRowCount" class="muted"></span>
       </div>
 
-      <p class="muted" style="margin:0 0 8px;font-size:12px;">
-        系統欄位 → Excel 欄位（<span style="color:var(--danger)">*</span> 為必填，其餘留空則不匯入）
+      <p class="muted" style="margin:0 0 6px;font-size:12px;">
+        系統欄位名稱可直接修改 → Excel 欄位（<span style="color:var(--danger)">*</span> 為必填，其餘留空略過）
       </p>
-      <div id="devImportMappingGrid" style="display:grid;grid-template-columns:120px 1fr 120px 1fr;gap:6px 12px;align-items:center;margin-bottom:10px;">
+      <div id="devImportMappingGrid" style="display:grid;grid-template-columns:130px 1fr 130px 1fr;gap:5px 12px;align-items:center;margin-bottom:6px;">
       </div>
+      <button id="btnDiAddField" style="font-size:12px;padding:4px 10px;margin-bottom:8px;">＋ 新增自訂欄位</button>
 
       <div class="hr"></div>
       <div style="margin-bottom:6px;font-size:13px;font-weight:600;">預覽（前 5 筆）</div>
@@ -2169,23 +2178,66 @@
       requestAnimationFrame(_scanQrLoop);
     }
 
-    // ── Populate devLinkCase from current year's cases ──
+    // ── Case link panel (replaces devLinkCase / bbLinkCase selects) ──
+    let _dlcAllCases = [];
+
+    function _renderCaseLinkPanel(listId, searchId, countId, cases, checkClass){
+      const listEl = $(listId);
+      if(!listEl) return;
+      const q = ($(searchId)?.value || "").toLowerCase().trim();
+
+      // sort by updatedAt desc (most recent first)
+      const sorted = [...cases].sort((a,b)=>{
+        const ts = c=> c.updatedAt?.seconds ? c.updatedAt.seconds : (c.updatedAt ? new Date(c.updatedAt).getTime()/1000 : 0);
+        return ts(b) - ts(a);
+      });
+      const filtered = q ? sorted.filter(c=>{
+        const hay = [c.caseNo,c.orgName,c.basic?.orgName,c.clientName,c.basic?.clientName].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      }) : sorted;
+
+      if(countId) $(countId).textContent = `共 ${filtered.length} 筆（依最新更新排序）`;
+
+      const isAgP = c=> (c.caseNo||"").match(/^AG\d{3}$/) || ((c.caseCode||"").startsWith("AG") && (c.caseNo||"").length<=5);
+      const isAgS = c=> (c.caseNo||"").match(/^AG\d{5,}/) || ((c.caseCode||"").startsWith("AG") && (c.caseNo||"").length>5);
+      const agParents = filtered.filter(isAgP);
+      const agSubs    = filtered.filter(isAgS);
+      const others    = filtered.filter(c=>!isAgP(c)&&!isAgS(c));
+
+      const agGroups = {};
+      for(const s of agSubs){ const pk=(s.caseNo||"").slice(0,5); if(!agGroups[pk])agGroups[pk]=[]; agGroups[pk].push(s); }
+
+      const mkRow = (c,cls)=>`<label style="display:flex;align-items:center;gap:5px;padding:3px 6px;cursor:pointer;border-radius:6px;font-size:12px;" onmouseover="this.style.background='var(--chip)'" onmouseout="this.style.background=''">
+        <input type="checkbox" class="${cls}" value="${escapeHtml(c.id)}" style="width:auto;cursor:pointer;" />
+        <span><b>${escapeHtml(c.caseNo||"")}</b> ${escapeHtml(c.clientName||c.basic?.clientName||c.orgName||c.basic?.orgName||"")}</span>
+      </label>`;
+
+      let html = others.map(c=>mkRow(c,checkClass)).join("");
+      for(const [pk,subs] of Object.entries(agGroups)){
+        const parent = agParents.find(p=>p.caseNo===pk);
+        const co = escapeHtml(parent?.orgName||parent?.basic?.orgName||pk);
+        html += `<details style="margin:2px 0;border:1px solid var(--b);border-radius:8px;">
+          <summary style="padding:4px 8px;cursor:pointer;font-size:12px;font-weight:600;list-style:none;display:flex;align-items:center;gap:4px;border-radius:8px;" onmouseover="this.style.background='var(--chip)'" onmouseout="this.style.background=''">
+            📁 ${escapeHtml(pk)} ${co} <span class="muted" style="font-weight:400;">(${subs.length}人)</span>
+          </summary>
+          <div style="padding:2px 2px 4px 14px;">${subs.map(c=>mkRow(c,checkClass)).join("")}</div>
+        </details>`;
+      }
+      for(const p of agParents){ if(!agGroups[p.caseNo]) html+=mkRow(p,checkClass); }
+      if(!html) html=`<div class="muted" style="padding:6px;font-size:12px;">無符合案件</div>`;
+      listEl.innerHTML = html;
+    }
+
     async function populateDevLinkCase(){
-      const sel = $("devLinkCase");
-      sel.innerHTML = `<option value="">(不連結個案)</option>`;
-      try{
-        const year = new Date().getFullYear() - 1911;
-        const cases = await loadCasesYear(String(year));
-        for(const c of cases){
-          const label = `${c.caseNo} ${c.clientName||c.basic?.clientName||c.orgName||""}`.trim();
-          sel.innerHTML += `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
-        }
-      }catch(e){ console.warn("devLinkCase load failed:", e?.message||e); }
+      try{ _dlcAllCases = await loadCasesYear(String(new Date().getFullYear()-1911)); }
+      catch(e){ _dlcAllCases=[]; }
+      _renderCaseLinkPanel("devLinkCaseList","devLinkCaseSearch","devLinkCaseCount",_dlcAllCases,"dlcCheck");
+      $("devLinkCaseSearch")?.addEventListener("input", ()=>
+        _renderCaseLinkPanel("devLinkCaseList","devLinkCaseSearch","devLinkCaseCount",_dlcAllCases,"dlcCheck"));
     }
 
     function getSelectedCaseIds(){
-      const sel = $("devLinkCase");
-      return Array.from(sel.selectedOptions).map(o=>o.value).filter(v=>v && v!=="");
+      return Array.from(document.querySelectorAll("#devLinkCaseList .dlcCheck:checked")).map(el=>el.value).filter(Boolean);
     }
 
     $("btnDevNew").addEventListener("click", ()=> $("deviceModal").classList.add("show"));
@@ -3662,25 +3714,36 @@
       _renderRvPreview(cols);
     }
 
+    let _rvCustomFields = [];
+
     function _renderRvMappingGrid(cols, sheetName=""){
       const grid = $("rvImportMappingGrid");
       const noneOpt = `<option value="">（略過）</option>`;
       const colOpts = cols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      // Standard fields with editable label
       grid.innerHTML = RV_FIELDS.map(f=>`
-        <label style="font-size:12px;text-align:right;padding-right:4px;">${escapeHtml(f.label)}${f.required?'<span style="color:var(--danger)">*</span>':''}</label>
+        <input value="${escapeHtml(f.label)}" data-rv-key="${f.key}" style="font-size:12px;padding:4px 6px;border-radius:8px;" title="可修改欄位顯示名稱" />
         <select id="rvMap_${f.key}">${noneOpt}${colOpts}</select>
       `).join("");
+      // Custom fields
+      _rvCustomFields.forEach((cf,i)=>{
+        grid.insertAdjacentHTML("beforeend",`
+          <input value="${escapeHtml(cf.label)}" data-rv-custom-idx="${i}" style="font-size:12px;padding:4px 6px;border-radius:8px;" placeholder="自訂欄位名稱" />
+          <div style="display:flex;gap:4px;"><select id="rvMapC_${i}" style="flex:1;">${noneOpt}${colOpts}</select>
+            <button onclick="_rvCustomFields.splice(${i},1);_renderRvMappingGrid(${JSON.stringify(cols)},'${sheetName}');" style="padding:2px 8px;font-size:11px;color:var(--danger);">✕</button>
+          </div>
+        `);
+      });
       RV_FIELDS.forEach(f=>{
         const sel = $(`rvMap_${f.key}`);
         if(!sel) return;
-        // special guess: meetingArea from sheet name
-        if(f.key==="meetingArea"){
-          const areaFromSheet = sheetName.includes("屏東")?"屏東縣":sheetName.includes("澎湖")?"澎湖縣":sheetName.includes("高雄")?"高雄市":"";
-          if(areaFromSheet && !cols.some(c=>c.includes("轄區"))){ sel.value = ""; }
-        }
         const g = _guessRvCol(cols, f.aliases);
         if(g) sel.value = g;
         sel.addEventListener("change", ()=> _renderRvPreview(cols));
+      });
+      $("btnRvAddField")?.addEventListener("click", ()=>{
+        _rvCustomFields.push({ label:"自訂欄位" });
+        _renderRvMappingGrid(cols, sheetName);
       });
     }
 
@@ -3959,21 +4022,44 @@
       _renderDiPreview(excelCols);
     }
 
+    let _diCustomFields = []; // { label, colKey }
+
     function _renderDiGrid(excelCols){
       const grid = $("devImportMappingGrid");
       const noneOpt = `<option value="">（略過）</option>`;
       const colOpts = excelCols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+
+      // Standard fields: editable label + col select
       grid.innerHTML = DEV_FIELDS.map(f=>`
-        <label style="font-size:12px;text-align:right;padding-right:4px;">${escapeHtml(f.label)}${f.required?'<span style="color:var(--danger)">*</span>':''}</label>
+        <input value="${escapeHtml(f.label)}" data-field-key="${f.key}" style="font-size:12px;padding:4px 6px;border-radius:8px;"
+          title="可修改欄位顯示名稱" placeholder="欄位名稱" />
         <select id="diMap_${f.key}">${noneOpt}${colOpts}</select>
       `).join("");
-      // auto-guess + reactive preview update
+
+      // Custom fields
+      _diCustomFields.forEach((cf,i)=>{
+        const row = document.createElement("contents");
+        grid.insertAdjacentHTML("beforeend", `
+          <input value="${escapeHtml(cf.label)}" data-custom-idx="${i}" style="font-size:12px;padding:4px 6px;border-radius:8px;" placeholder="自訂欄位名稱" />
+          <div style="display:flex;gap:4px;"><select id="diMapC_${i}" style="flex:1;">${noneOpt}${colOpts}</select>
+            <button onclick="this.closest('#devImportMappingGrid').querySelectorAll('[data-custom-idx]')[${i}]?.closest('*').remove(); _diCustomFields.splice(${i},1);" style="padding:2px 8px;font-size:11px;color:var(--danger);">✕</button>
+          </div>
+        `);
+      });
+
+      // Auto-guess + reactive update
       DEV_FIELDS.forEach(f=>{
         const sel = $(`diMap_${f.key}`);
         if(!sel) return;
         const g = _guessCol(excelCols, f.aliases);
         if(g) sel.value = g;
         sel.addEventListener("change", ()=> _renderDiPreview(excelCols));
+      });
+
+      // Add field button
+      $("btnDiAddField")?.addEventListener("click", ()=>{
+        _diCustomFields.push({ label:"自訂欄位", colKey:"" });
+        _renderDiGrid(excelCols);
       });
     }
 
@@ -4041,10 +4127,21 @@
             const rawId = String(item[idSel.value]||"").replace(/\s+/g,"");
             if(!rawId) continue;
             const payload = { deviceId:rawId, deviceType:typeLabel, updatedAt:new Date() };
-            DEV_FIELDS.forEach(f=>{
+            // Read editable label names from the grid inputs
+            const labelInputs = $("devImportMappingGrid").querySelectorAll("input[data-field-key]");
+            DEV_FIELDS.forEach((f,i)=>{
               if(f.key==="deviceId") return;
               const sel = $(`diMap_${f.key}`);
-              if(sel?.value) payload[f.key] = String(item[sel.value]||"");
+              if(!sel?.value) return;
+              const customKey = labelInputs[i]?.value?.trim().replace(/\s+/g,"_") || f.key;
+              payload[customKey] = String(item[sel.value]||"");
+            });
+            // Custom fields
+            _diCustomFields.forEach((cf,i)=>{
+              const sel = $(`diMapC_${i}`);
+              if(!sel?.value) return;
+              const key = ($("devImportMappingGrid").querySelector(`[data-custom-idx="${i}"]`)?.value||cf.label).trim().replace(/\s+/g,"_")||`custom_${i}`;
+              payload[key] = String(item[sel.value]||"");
             });
             if(!payload.status) payload.status = "可借";
             batch.set(doc(db,"devices",rawId), payload, {merge:true});
@@ -4376,16 +4473,13 @@
           bbBorrower.innerHTML += `<option value="${escapeHtml(d.id)}">${escapeHtml(u.displayName||u.email||d.id)}</option>`;
         });
       }catch(e){}
-      // cases
-      const bbLinkCase = $("bbLinkCase");
-      bbLinkCase.innerHTML = `<option value="">(不連結個案)</option>`;
+      // cases — use same grouped panel
       try{
-        const year = new Date().getFullYear()-1911;
-        const cases = await loadCasesYear(String(year));
-        for(const c of cases){
-          const label = `${c.caseNo} ${c.clientName||c.basic?.clientName||c.orgName||""}`.trim();
-          bbLinkCase.innerHTML += `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
-        }
+        const cases = _dlcAllCases.length ? _dlcAllCases : await loadCasesYear(String(new Date().getFullYear()-1911));
+        _renderCaseLinkPanel("bbLinkCaseList","bbLinkCaseSearch",null,cases,"bbcCheck");
+        $("bbLinkCaseSearch")?.addEventListener("input", ()=>
+          _renderCaseLinkPanel("bbLinkCaseList","bbLinkCaseSearch",null,cases,"bbcCheck"),
+          { once:true });
       }catch(e){}
     }
 
@@ -4404,7 +4498,7 @@
       if(!_bbItems.length){ toast("尚無掃描設備。"); return; }
       const borrowerUid = $("bbBorrower").value;
       if(!borrowerUid){ toast("請選借用者。"); return; }
-      const linkedCaseIds = Array.from($("bbLinkCase").selectedOptions).map(o=>o.value).filter(v=>v);
+      const linkedCaseIds = Array.from(document.querySelectorAll("#bbLinkCaseList .bbcCheck:checked")).map(el=>el.value).filter(Boolean);
       let borrowerName = borrowerUid;
       try{ const us=await getDoc(doc(db,"users",borrowerUid)); if(us.exists()) borrowerName=us.data().displayName||us.data().email||borrowerUid; }catch(e){}
       const today = new Date().toISOString().slice(0,10);
