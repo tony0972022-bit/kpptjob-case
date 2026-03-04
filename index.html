@@ -2487,43 +2487,19 @@
         <div class="grid2">
           <div><label>開案日期</label><input id="cdt_openDate" type="date" value="${escapeHtml(timeline.openDate||"")}" /></div>
           <div>
-            <label>總訪視次數 <button id="btnCalcVisit" style="font-size:0.75em;padding:2px 8px;margin-left:6px;">自動計算</button></label>
+            <label>總訪視次數（自動計算）</label>
             <input id="cdt_totalVisitCount" type="number" value="${escapeHtml(timeline.totalVisitCount||"")}" />
           </div>
           <div><label>訪視評估日期 1</label><input id="cdt_visitDate1" type="date" value="${escapeHtml(timeline.visitDate1||"")}" /></div>
           <div><label>訪視評估日期 2</label><input id="cdt_visitDate2" type="date" value="${escapeHtml(timeline.visitDate2||"")}" /></div>
           <div>
-            <label>審查會日期 1 <button id="btnFetchReviewDate" style="font-size:0.75em;padding:2px 8px;margin-left:6px;">從審查會議抓日期</button></label>
+            <label>審查會日期 1（自動帶入）</label>
             <input id="cdt_reviewDate1" type="date" value="${escapeHtml(timeline.reviewDate1||"")}" />
           </div>
           <div><label>審查會日期 2</label><input id="cdt_reviewDate2" type="date" value="${escapeHtml(timeline.reviewDate2||"")}" /></div>
         </div>
       `);
-      if(cdActiveTab==="timeline"){
-        // 自動計算訪視次數
-        pTimeline.querySelector("#btnCalcVisit")?.addEventListener("click", ()=>{
-          const fields = ["cdt_visitDate1","cdt_visitDate2",
-            "cdt_reviewDate1","cdt_reviewDate2",
-            "cddt_trialDate1","cddt_trialDate2","cddt_trialDate3",
-            "cdtr_trainDate1","cdtr_trainDate2","cdtr_trainDate3"];
-          const count = fields.filter(id=> (document.getElementById(id)?.value||"").trim()).length;
-          $("cdt_totalVisitCount").value = count;
-          toast(`自動計算：共 ${count} 次（${fields.map(id=> document.getElementById(id)?.value||"").filter(Boolean).join("、")}）`);
-        });
-        // 從審查會議抓日期
-        pTimeline.querySelector("#btnFetchReviewDate")?.addEventListener("click", async ()=>{
-          if(!cdDoc?.caseNo){ toast("請先填寫案件編號。"); return; }
-          try{
-            const q = query(collection(db,"reviewMeetings"), where("caseNo","==", cdDoc.caseNo));
-            const snap = await getDocs(q);
-            const dates = snap.docs.map(d=>d.data().meetingDate).filter(Boolean).sort();
-            if(!dates.length){ toast("審查會議中找不到此案件的紀錄。"); return; }
-            $("cdt_reviewDate1").value = dates[0] || "";
-            $("cdt_reviewDate2").value = dates[1] || "";
-            toast(`已帶入審查會日期：${dates.slice(0,2).join("、")}`);
-          }catch(e){ toast("查詢失敗：" + (e?.message||e)); }
-        });
-      }
+      // timeline listeners (auto-calc runs in the unified block at end of renderCasePanels)
 
       // ── 4. 輔具試用（XLS Col 33-50） ──────────────────────────────
       const pDevTrial = showPanel("deviceTrial", `
@@ -2808,28 +2784,22 @@
       // ── 8. 報告管理 ────────────────────────────────────────────────
       const pReport = showPanel("report", `
         <div class="hint" style="margin-bottom:10px;">
-          「報告截止」可依最後訪視日自動推算7個工作日（不含例假日）；「審查會議日期」可從審查會議自動抓。
+          開啟案件時自動計算：報告截止（最後訪視 +7工作日）、審查會議日期（從審查會議紀錄帶入）、成效提醒（審查會後 +1個月）。欄位仍可手動修改。
         </div>
         <div class="grid2">
           <div><label>報告狀態</label><select id="cdr_status"></select></div>
           <div>
-            <label>報告截止日（最後訪視 +7工作日）
-              <button id="btnCalcReportDue" style="font-size:0.75em;padding:2px 6px;margin-left:4px;">自動計算</button>
-            </label>
+            <label>報告截止日（最後訪視 +7工作日，自動計算）</label>
             <input id="cdr_due" type="date" value="${escapeHtml(report.dueDate||"")}" />
           </div>
           <div><label>報告完成日期（實際完成）</label><input id="cdr_completedDate" type="date" value="${escapeHtml(report.completedDate||"")}" /></div>
           <div><label>寄給承辦日期</label><input id="cdr_sentDate" type="date" value="${escapeHtml(report.sentDate||"")}" /></div>
           <div>
-            <label>審查會議日期
-              <button id="btnFetchReportMeetingDate" style="font-size:0.75em;padding:2px 6px;margin-left:4px;">從審查會議抓</button>
-            </label>
+            <label>審查會議日期（自動帶入）</label>
             <input id="cdr_meeting" type="date" value="${escapeHtml(report.meetingDate||"")}" />
           </div>
           <div>
-            <label>成效提醒（審查會後+1個月）
-              <button id="btnCalcEffectDue" style="font-size:0.75em;padding:2px 6px;margin-left:4px;">自動計算</button>
-            </label>
+            <label>成效提醒（審查會後+1個月，自動計算）</label>
             <input id="cdr_effectDue" type="date" value="${escapeHtml(report.effectDue||"")}" />
           </div>
           <div><label>二代系統登打到期</label><input id="cdr_sys2Due" type="date" value="${escapeHtml(report.system2Due||"")}" /></div>
@@ -2837,55 +2807,11 @@
           <div style="grid-column:1/-1;"><label>報告內容摘要</label><textarea id="cdr_summary">${escapeHtml(report.summary||"")}</textarea></div>
         </div>
       `);
-      if(cdActiveTab==="report"){
-        const sSel = pReport.querySelector("#cdr_status");
+      // report panel: populate status select (always, not just when tab is active)
+      const sSel = pReport.querySelector("#cdr_status");
+      if(sSel){
         sSel.innerHTML = (settings.options.reportStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
         sSel.value = report.status || (settings.options.reportStatuses||[])[0] || "未開始";
-
-        // ── 報告截止：最後訪視日 +7 工作日（不含例假日）──
-        pReport.querySelector("#btnCalcReportDue")?.addEventListener("click", ()=>{
-          // 找最後一個訪視日期
-          const dates = [
-            $("cdt_visitDate1")?.value, $("cdt_visitDate2")?.value
-          ].filter(Boolean).sort();
-          if(!dates.length){ toast("請先填寫訪視評估日期。"); return; }
-          const lastVisit = new Date(dates[dates.length-1]);
-          // 加7個工作日（跳過週六=6, 週日=0）
-          let workDays = 0;
-          const cur = new Date(lastVisit);
-          while(workDays < 7){
-            cur.setDate(cur.getDate() + 1);
-            const dow = cur.getDay();
-            if(dow !== 0 && dow !== 6) workDays++;
-          }
-          const result = cur.toISOString().slice(0,10);
-          $("cdr_due").value = result;
-          toast(`報告截止：${result}（最後訪視 ${dates[dates.length-1]} +7工作日）`);
-        });
-
-        // ── 審查會議日期：從 reviewMeetings 自動抓 ──
-        pReport.querySelector("#btnFetchReportMeetingDate")?.addEventListener("click", async ()=>{
-          if(!cdDoc?.caseNo){ toast("請先儲存案件後再查詢。"); return; }
-          try{
-            const q = query(collection(db,"reviewMeetings"), where("caseNo","==",cdDoc.caseNo));
-            const snap = await getDocs(q);
-            const dates = snap.docs.map(d=>d.data().meetingDate).filter(Boolean).sort();
-            if(!dates.length){ toast("審查會議中找不到此案件的紀錄。"); return; }
-            $("cdr_meeting").value = dates[0];
-            toast(`已帶入審查會議日期：${dates[0]}`);
-          }catch(e){ toast("查詢失敗：" + (e?.message||e)); }
-        });
-
-        // ── 成效提醒：審查會日期 +1 個月 ──
-        pReport.querySelector("#btnCalcEffectDue")?.addEventListener("click", ()=>{
-          const meetingDate = $("cdr_meeting")?.value;
-          if(!meetingDate){ toast("請先填寫審查會議日期。"); return; }
-          const d = new Date(meetingDate);
-          d.setMonth(d.getMonth() + 1);
-          const result = d.toISOString().slice(0,10);
-          $("cdr_effectDue").value = result;
-          toast(`成效提醒：${result}（審查會 ${meetingDate} +1個月，記得詢問個案是否採購及約成效）`);
-        });
       }
 
       // ── 9. 審查會議（查詢 reviewMeetings 勾稽） ─────────────────────
@@ -2966,10 +2892,71 @@
         </div>
       `);
 
-      // ── KPI 自動判斷監聽 ──────────────────────────────────────────
-      ["cdStatus","cdt_visitDate1","cdr_completedDate","cdr_sentDate","cdt_reviewDate1","cdr_meeting","cdr_effectDue"]
+      // ── 自動填入（載入即執行，欄位變動也自動重算）────────────────
+      calcVisitCount();
+      calcReportDue();
+      calcEffectDue();
+      // 非同步：從審查會議抓日期（只在欄位空白時才填）
+      if(cdDoc?.caseNo) autoFillReviewDates();
+
+      // 反應式監聽：欄位變動時自動重算
+      ["cdt_visitDate1","cdt_visitDate2"].forEach(id=>
+        document.getElementById(id)?.addEventListener("change", ()=>{ calcReportDue(); calcVisitCount(); autoUpdateKpi(); }));
+      ["cdt_reviewDate1","cdt_reviewDate2","cddt_trialDate1","cddt_trialDate2","cddt_trialDate3",
+       "cdtr_trainDate1","cdtr_trainDate2","cdtr_trainDate3"]
+        .forEach(id=> document.getElementById(id)?.addEventListener("change", ()=>{ calcVisitCount(); autoUpdateKpi(); }));
+      document.getElementById("cdr_meeting")?.addEventListener("change", ()=>{ calcEffectDue(); autoUpdateKpi(); });
+
+      // ── KPI 監聽 ──────────────────────────────────────────────────
+      ["cdStatus","cdr_completedDate","cdr_sentDate","cdr_effectDue"]
         .forEach(id => document.getElementById(id)?.addEventListener("change", autoUpdateKpi));
       autoUpdateKpi();
+    }
+
+    // ── 自動計算函式（standalone，可在任何時間點呼叫）──────────────
+
+    function calcReportDue(){
+      const due = $("cdr_due");
+      if(!due) return;
+      const dates = ["cdt_visitDate1","cdt_visitDate2"].map(id=>$(id)?.value||"").filter(Boolean).sort();
+      if(!dates.length) return;
+      let workDays = 0;
+      const cur = new Date(dates[dates.length-1]);
+      while(workDays < 7){ cur.setDate(cur.getDate()+1); if(cur.getDay()!==0&&cur.getDay()!==6) workDays++; }
+      due.value = cur.toISOString().slice(0,10);
+    }
+
+    function calcEffectDue(){
+      const effectEl = $("cdr_effectDue");
+      if(!effectEl) return;
+      const m = $("cdr_meeting")?.value;
+      if(!m) return;
+      const d = new Date(m); d.setMonth(d.getMonth()+1);
+      effectEl.value = d.toISOString().slice(0,10);
+    }
+
+    function calcVisitCount(){
+      const el = $("cdt_totalVisitCount");
+      if(!el) return;
+      const fields = ["cdt_visitDate1","cdt_visitDate2","cdt_reviewDate1","cdt_reviewDate2",
+        "cddt_trialDate1","cddt_trialDate2","cddt_trialDate3",
+        "cdtr_trainDate1","cdtr_trainDate2","cdtr_trainDate3"];
+      el.value = fields.filter(id=>($(id)?.value||"").trim()).length;
+    }
+
+    async function autoFillReviewDates(){
+      if(!cdDoc?.caseNo) return;
+      try{
+        const q = query(collection(db,"reviewMeetings"), where("caseNo","==",cdDoc.caseNo));
+        const snap = await getDocs(q);
+        const dates = snap.docs.map(d=>d.data().meetingDate).filter(Boolean).sort();
+        if(!dates.length) return;
+        // Timeline tab: 審查會日期
+        if(!$("cdt_reviewDate1")?.value && dates[0]){ $("cdt_reviewDate1").value = dates[0]; calcVisitCount(); autoUpdateKpi(); }
+        if(!$("cdt_reviewDate2")?.value && dates[1]){ $("cdt_reviewDate2").value = dates[1]; }
+        // Report tab: 審查會議日期 + 成效
+        if(!$("cdr_meeting")?.value && dates[0]){ $("cdr_meeting").value = dates[0]; calcEffectDue(); autoUpdateKpi(); }
+      }catch(e){ console.warn("autoFillReviewDates:", e?.message||e); }
     }
 
     function computeKpiStage(){
