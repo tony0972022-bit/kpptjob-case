@@ -97,6 +97,7 @@
         <button id="navReview" data-view="review">審查會議</button>
         <button id="navReports" data-view="reports">統計分析</button>
         <button id="navDevices" data-view="devices">輔具管理</button>
+        <button id="navBorrow" style="background:var(--primary);color:#fff;border-color:var(--primary);" hidden>📷 借出/歸還</button>
       </nav>
 
       <div class="actions">
@@ -453,57 +454,6 @@
           <button id="devTabD">D 耗材</button>
           <button id="devTabLoans">借用紀錄</button>
           <button id="devTabInventory">盤點紀錄</button>
-        </div>
-
-        <div class="hr"></div>
-
-        <!-- 借用 / 歸還（常駐，不受分頁影響） -->
-        <div class="subCard" style="margin-bottom:10px;">
-          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <h2 style="margin:0;">借用 / 歸還</h2>
-          </div>
-          <div class="grid2">
-            <div>
-              <label>設備代碼 / QR（建議就是 deviceId）</label>
-              <div class="row">
-                <input id="devScan" placeholder="DEV-001" style="flex:1;" />
-                <button id="btnDevCamera" title="用相機掃QR碼" style="white-space:nowrap;">📷 掃QR</button>
-              </div>
-            </div>
-            <div>
-              <label>操作</label>
-              <div class="row">
-                <button id="btnDevLoad">載入</button>
-                <button id="btnDevBorrow" class="primary" disabled>借出</button>
-                <button id="btnDevReturn" disabled>歸還</button>
-                <button id="btnBatchBorrow">📷 批次借出</button>
-              </div>
-            </div>
-          </div>
-          <!-- QR camera area -->
-          <div id="qrScanArea" style="display:none;margin-top:10px;">
-            <video id="qrVideo" playsinline muted style="width:100%;max-width:420px;border-radius:8px;background:#000;"></video>
-            <div class="row" style="margin-top:6px;gap:8px;">
-              <span class="muted" style="flex:1;">對準 QR 碼，自動讀取…</span>
-              <button id="btnStopCamera">停止掃描</button>
-            </div>
-          </div>
-          <div class="grid2" style="margin-top:10px;">
-            <div>
-              <label>借用者</label>
-              <select id="devBorrower"></select>
-            </div>
-            <div>
-              <label>連結個案（借出自動記錄試用）</label>
-              <div style="border:1px solid var(--b);border-radius:12px;padding:6px;background:var(--bg);">
-                <input id="devLinkCaseSearch" placeholder="搜尋編號/單位/個案…" style="margin-bottom:4px;font-size:12px;" />
-                <div id="devLinkCaseList" style="max-height:130px;overflow-y:auto;"></div>
-              </div>
-              <div id="devLinkCaseCount" class="muted" style="font-size:11px;margin-top:2px;"></div>
-            </div>
-          </div>
-          <div class="hr"></div>
-          <div class="hint" id="devInfo">尚未載入設備。</div>
         </div>
 
         <!-- A 單位輔具清單面板 -->
@@ -914,6 +864,58 @@
     </div>
   </div>
 
+  <!-- 借出 / 歸還 Modal（獨立，由 nav 按鈕開啟） -->
+  <div class="modalBackdrop" id="borrowModal">
+    <div class="modal" style="max-width:620px;max-height:90vh;overflow-y:auto;">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2 style="margin:0;">📷 借出 / 歸還</h2>
+        <button id="btnCloseBorrowModal">✕ 關閉</button>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>設備代碼 / QR</label>
+          <div class="row">
+            <input id="devScan" placeholder="DEV-001" style="flex:1;" />
+            <button id="btnDevCamera" title="用相機掃QR碼" style="white-space:nowrap;">📷 掃QR</button>
+          </div>
+        </div>
+        <div>
+          <label>操作</label>
+          <div class="row">
+            <button id="btnDevLoad">載入</button>
+            <button id="btnDevBorrow" class="primary" disabled>借出</button>
+            <button id="btnDevReturn" disabled>歸還</button>
+            <button id="btnBatchBorrow">批次借出</button>
+          </div>
+        </div>
+      </div>
+      <!-- QR camera area -->
+      <div id="qrScanArea" style="display:none;margin-top:10px;">
+        <video id="qrVideo" playsinline muted style="width:100%;max-width:420px;border-radius:8px;background:#000;"></video>
+        <div class="row" style="margin-top:6px;gap:8px;">
+          <span class="muted" style="flex:1;">對準 QR 碼，自動讀取…</span>
+          <button id="btnStopCamera">停止掃描</button>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:10px;">
+        <div>
+          <label>借用者</label>
+          <select id="devBorrower"></select>
+        </div>
+        <div>
+          <label>連結個案（借出自動記錄試用）</label>
+          <div style="border:1px solid var(--b);border-radius:12px;padding:6px;background:var(--bg);">
+            <input id="devLinkCaseSearch" placeholder="搜尋編號/單位/個案…" style="margin-bottom:4px;font-size:12px;" />
+            <div id="devLinkCaseList" style="max-height:130px;overflow-y:auto;"></div>
+          </div>
+          <div id="devLinkCaseCount" class="muted" style="font-size:11px;margin-top:2px;"></div>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="hint" id="devInfo">尚未載入設備。</div>
+    </div>
+  </div>
+
   <!-- Batch Borrow Scan modal -->
   <div class="modalBackdrop" id="batchBorrowModal">
     <div class="modal" style="max-width:580px;">
@@ -1046,7 +1048,7 @@
       <p class="muted" style="margin:0 0 6px;font-size:12px;">
         系統欄位名稱可直接修改 → Excel 欄位（<span style="color:var(--danger)">*</span> 為必填，其餘留空略過）
       </p>
-      <div id="devImportMappingGrid" style="display:grid;grid-template-columns:130px 1fr 130px 1fr;gap:5px 12px;align-items:center;margin-bottom:6px;">
+      <div id="devImportMappingGrid" style="display:grid;grid-template-columns:44px 130px 1fr;gap:5px 10px;align-items:center;margin-bottom:6px;">
       </div>
       <button id="btnDiAddField" style="font-size:12px;padding:4px 10px;margin-bottom:8px;">＋ 新增自訂欄位</button>
 
@@ -1298,6 +1300,19 @@
     $("navReview").addEventListener("click", ()=> go("review"));
     $("navReports").addEventListener("click", ()=> go("reports"));
     $("navDevices").addEventListener("click", ()=> go("devices"));
+
+    // ===== Borrow Modal =====
+    function openBorrowModal(){
+      $("borrowModal").classList.add("show");
+      populateDevLinkCase();
+    }
+    function closeBorrowModal(){
+      stopQrCamera();
+      $("borrowModal").classList.remove("show");
+    }
+    $("navBorrow")?.addEventListener("click", openBorrowModal);
+    $("btnCloseBorrowModal")?.addEventListener("click", closeBorrowModal);
+    $("borrowModal")?.addEventListener("click", e=>{ if(e.target===$("borrowModal")) closeBorrowModal(); });
 
     // ===== Settings modal =====
     function setupSettingsModal(){
@@ -2301,7 +2316,7 @@
       for(const d of list.slice(0,500)){
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
-        tr.addEventListener("click", ()=>{ $("devScan").value = d.id; loadDeviceFromScan(); });
+        tr.addEventListener("click", ()=>{ $("borrowModal").classList.add("show"); $("devScan").value = d.id; loadDeviceFromScan(); });
         tr.innerHTML = `<td class="mono">${escapeHtml(d.id)}</td><td>${escapeHtml(d.name||"")}</td><td>${escapeHtml(d.brand||"")}</td><td>${escapeHtml(d.purchaseYear||"")}</td><td>${escapeHtml(d.description||"")}</td><td>${escapeHtml(d.status||"")}</td><td>${escapeHtml(d.currentBorrowerName||"")}</td>`;
         tb.appendChild(tr);
       }
@@ -4033,32 +4048,47 @@
     }
 
     let _diCustomFields = []; // { label, colKey }
+    let _diFieldOrder = null; // null = use DEV_FIELDS default order; array of indices when reordered
 
     function _renderDiGrid(excelCols){
       const grid = $("devImportMappingGrid");
       const noneOpt = `<option value="">（略過）</option>`;
       const colOpts = excelCols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      if(!_diFieldOrder) _diFieldOrder = DEV_FIELDS.map((_,i)=>i);
 
-      // Standard fields: editable label + col select
-      grid.innerHTML = DEV_FIELDS.map(f=>`
-        <input value="${escapeHtml(f.label)}" data-field-key="${f.key}" style="font-size:12px;padding:4px 6px;border-radius:8px;"
-          title="可修改欄位顯示名稱" placeholder="欄位名稱" />
-        <select id="diMap_${f.key}">${noneOpt}${colOpts}</select>
-      `).join("");
+      const btnStyle = "padding:1px 5px;font-size:11px;line-height:1.4;border-radius:6px;";
+
+      grid.innerHTML = "";
+      _diFieldOrder.forEach((fi, pos)=>{
+        const f = DEV_FIELDS[fi];
+        const req = f.required ? `<span style="color:var(--danger)">*</span>` : "";
+        // ↑↓ buttons
+        const upDis = pos===0 ? "disabled" : "";
+        const dnDis = pos===_diFieldOrder.length-1 ? "disabled" : "";
+        grid.insertAdjacentHTML("beforeend", `
+          <div style="display:flex;gap:2px;">
+            <button ${upDis} data-di-up="${pos}" style="${btnStyle}">↑</button>
+            <button ${dnDis} data-di-dn="${pos}" style="${btnStyle}">↓</button>
+          </div>
+          <span style="font-size:12px;padding:4px 6px;">${escapeHtml(f.label)} ${req}</span>
+          <select id="diMap_${f.key}">${noneOpt}${colOpts}</select>
+        `);
+      });
 
       // Custom fields
       _diCustomFields.forEach((cf,i)=>{
-        const row = document.createElement("contents");
         grid.insertAdjacentHTML("beforeend", `
+          <div></div>
           <input value="${escapeHtml(cf.label)}" data-custom-idx="${i}" style="font-size:12px;padding:4px 6px;border-radius:8px;" placeholder="自訂欄位名稱" />
           <div style="display:flex;gap:4px;"><select id="diMapC_${i}" style="flex:1;">${noneOpt}${colOpts}</select>
-            <button onclick="this.closest('#devImportMappingGrid').querySelectorAll('[data-custom-idx]')[${i}]?.closest('*').remove(); _diCustomFields.splice(${i},1);" style="padding:2px 8px;font-size:11px;color:var(--danger);">✕</button>
+            <button data-di-del-c="${i}" style="${btnStyle}color:var(--danger);">✕</button>
           </div>
         `);
       });
 
       // Auto-guess + reactive update
-      DEV_FIELDS.forEach(f=>{
+      _diFieldOrder.forEach(fi=>{
+        const f = DEV_FIELDS[fi];
         const sel = $(`diMap_${f.key}`);
         if(!sel) return;
         const g = _guessCol(excelCols, f.aliases);
@@ -4066,11 +4096,28 @@
         sel.addEventListener("change", ()=> _renderDiPreview(excelCols));
       });
 
+      // Delegate ↑↓ and delete-custom clicks
+      grid.addEventListener("click", e=>{
+        const up = e.target.closest("[data-di-up]");
+        const dn = e.target.closest("[data-di-dn]");
+        const dc = e.target.closest("[data-di-del-c]");
+        if(up){
+          const pos = +up.dataset.diUp;
+          if(pos>0){[_diFieldOrder[pos-1],_diFieldOrder[pos]]=[_diFieldOrder[pos],_diFieldOrder[pos-1]]; _renderDiGrid(excelCols);}
+        } else if(dn){
+          const pos = +dn.dataset.diDn;
+          if(pos<_diFieldOrder.length-1){[_diFieldOrder[pos],_diFieldOrder[pos+1]]=[_diFieldOrder[pos+1],_diFieldOrder[pos]]; _renderDiGrid(excelCols);}
+        } else if(dc){
+          const idx = +dc.dataset.diDelC;
+          _diCustomFields.splice(idx,1); _renderDiGrid(excelCols);
+        }
+      }, { once:true });
+
       // Add field button
       $("btnDiAddField")?.addEventListener("click", ()=>{
         _diCustomFields.push({ label:"自訂欄位", colKey:"" });
         _renderDiGrid(excelCols);
-      });
+      }, { once:true });
     }
 
     function _renderDiPreview(excelCols){
@@ -4112,6 +4159,8 @@
             const typeLabel = devActiveTab;
             const matched = _diWb.SheetNames.find(s=> s.toUpperCase().startsWith(typeLabel) || s.includes(typeLabel));
             if(matched) sheetSel.value = matched;
+            _diFieldOrder = null; // reset order on new import
+            _diCustomFields = [];
             _loadDiSheet(sheetSel.value);
             $("devImportModal").classList.add("show");
           }catch(err){
@@ -4137,14 +4186,11 @@
             const rawId = String(item[idSel.value]||"").replace(/\s+/g,"");
             if(!rawId) continue;
             const payload = { deviceId:rawId, deviceType:typeLabel, updatedAt:new Date() };
-            // Read editable label names from the grid inputs
-            const labelInputs = $("devImportMappingGrid").querySelectorAll("input[data-field-key]");
-            DEV_FIELDS.forEach((f,i)=>{
+            DEV_FIELDS.forEach(f=>{
               if(f.key==="deviceId") return;
               const sel = $(`diMap_${f.key}`);
               if(!sel?.value) return;
-              const customKey = labelInputs[i]?.value?.trim().replace(/\s+/g,"_") || f.key;
-              payload[customKey] = String(item[sel.value]||"");
+              payload[f.key] = String(item[sel.value]||"");
             });
             // Custom fields
             _diCustomFields.forEach((cf,i)=>{
@@ -4620,6 +4666,7 @@
         $("btnLogin").hidden = false;
         $("btnLogout").hidden = true;
         $("btnOpenSettings").hidden = true;
+        $("navBorrow").hidden = true;
 
         $("loginHint").style.display = "block";
         showView("dashboard"); // hidden anyway
@@ -4642,6 +4689,7 @@
       $("btnLogout").hidden = false;
       $("btnOpenSettings").hidden = (currentRole !== "admin");
       $("btnDevNew").hidden = (currentRole !== "admin");
+      $("navBorrow").hidden = false;
 
       $("loginHint").style.display = "none";
 
