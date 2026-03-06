@@ -2488,7 +2488,7 @@
           <td><input type="checkbox" class="caseRowCheck" data-id="${escapeHtml(c.id)}" style="width:auto;cursor:pointer;" /></td>
           <td>${escapeHtml(c.year||"")}</td>
           <td>${escapeHtml(c.caseType||"")}</td>
-          <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?'<span title="跨年追蹤" style="color:var(--warn);margin-left:4px;">🔄</span>':'')}</td>
+          <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?'<span title="跨年追蹤" style="color:var(--warn);margin-left:4px;">🔄</span>':''}</td>
           <td>${escapeHtml(c.orgName || b.orgName || "")}</td>
           <td>${escapeHtml(c.clientName || b.clientName || "")}</td>
           <td>${escapeHtml(b.gender||"")}</td>
@@ -6616,6 +6616,7 @@
   </script>
 </body>
 </html>
+
 
 
 
