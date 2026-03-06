@@ -94,6 +94,7 @@
       <nav class="nav">
         <button id="navDashboard" data-view="dashboard">儀錶板</button>
         <button id="navCases" data-view="cases">案件總覽</button>
+        <button id="navPreview" data-view="preview">個案總資料預覽</button>
         <button id="navReview" data-view="review">審查會議</button>
         <button id="navReports" data-view="reports">統計分析</button>
         <button id="navDevices" data-view="devices">輔具管理</button>
@@ -276,6 +277,7 @@
                 <th style="width:110px;">分群</th>
                 <th style="width:120px;">狀態</th>
                 <th style="width:120px;">報告審查</th>
+                <th style="width:120px;">審閱者</th>
                 <th style="width:120px;">主責人</th>
                 <th style="width:70px;">附件</th>
                 <th style="width:130px;">更新</th>
@@ -292,6 +294,63 @@
       </section>
     </section>
 
+    <!-- Case Full Preview -->
+    <section class="view" id="viewPreview">
+      <section class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <h2>個案總資料預覽</h2>
+            <div class="muted">像 Excel 總表：可篩選、排序、點選列查看完整關聯明細。</div>
+          </div>
+          <div class="row">
+            <button id="btnPvExport" class="primary">匯出 Excel</button>
+            <button id="btnPvRefresh">更新</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid3" style="grid-template-columns:repeat(6,minmax(120px,1fr));">
+          <div><label>年度</label><select id="pvYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select></div>
+          <div><label>案件類別</label><select id="pvType"><option value="">全部</option></select></div>
+          <div><label>報告審查</label><select id="pvReviewStatus"><option value="">全部</option><option value="未送審">未送審</option><option value="待審查">待審查</option><option value="退回修改">退回修改</option><option value="待複審">待複審</option><option value="審查完成">審查完成</option></select></div>
+          <div><label>借用狀態</label><select id="pvLoanOnly"><option value="">全部</option><option value="active">僅借用中</option></select></div>
+          <div><label>排序欄位</label><select id="pvSort"><option value="caseNo">編號</option><option value="updatedAt">更新時間</option><option value="meetingCount">審查會議筆數</option><option value="totalApproved">核定總額</option><option value="loanCount">借用筆數</option></select></div>
+          <div><label>排序方向</label><select id="pvSortDir"><option value="asc">升冪</option><option value="desc">降冪</option></select></div>
+          <div style="grid-column:1/-1;"><label>關鍵字（編號/單位/個案/審閱者）</label><input id="pvQ" placeholder="搜尋..." /></div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="muted" id="pvGridHint">—</div>
+
+        <div class="tableWrap" style="max-height:55vh;margin-top:8px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:90px;">編號</th>
+                <th style="width:90px;">類別</th>
+                <th>單位/個案</th>
+                <th style="width:90px;">主責人</th>
+                <th style="width:110px;">報告審查</th>
+                <th style="width:90px;">審閱者</th>
+                <th style="width:95px;">寄出時間</th>
+                <th style="width:80px;">審查會</th>
+                <th style="width:95px;">核定總額</th>
+                <th style="width:80px;">借用筆數</th>
+                <th style="width:80px;">借用中</th>
+                <th style="width:130px;">更新</th>
+              </tr>
+            </thead>
+            <tbody id="pvGridTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="hr"></div>
+        <div class="subCard">
+          <div id="pvDetail" class="muted">請先在上方總表點選一筆案件。</div>
+        </div>
+      </section>
+    </section>
     <!-- Reports -->
     <section class="view" id="viewReports">
       <section class="card">
@@ -1339,6 +1398,10 @@
         localFilePath: report.localFilePath || "",
         reviewerName: report.reviewerName || "",
         reviewerUid: report.reviewerUid || "",
+        reviewerEmail: report.reviewerEmail || "",
+        reviewerAssignedAt: report.reviewerAssignedAt || null,
+        lastDetectedAt: report.lastDetectedAt || null,
+        movedToDoneAt: report.movedToDoneAt || null,
         pathSnapshot
       };
     }
@@ -1363,8 +1426,47 @@
     function openLocalPath(path){
       const p = String(path || "").trim();
       if(!p){ toast("尚未設定檔案路徑。"); return; }
-      const encoded = p.replaceAll("\\","/");
-      window.open("file:///" + encoded, "_blank");
+      const normalized = p.replaceAll("\\","/");
+      const url = normalized.startsWith("//") ? ("file:" + normalized) : ("file:///" + normalized);
+      window.open(url, "_blank");
+    }
+
+    function hash32(str){
+      let h = 2166136261;
+      const s = String(str || "");
+      for(let i=0;i<s.length;i++){
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619) >>> 0;
+      }
+      return h >>> 0;
+    }
+
+    function getReviewerCandidates(ownerName=""){
+      const owner = String(ownerName||"").trim();
+      const raw = Object.keys(NAME_BY_EMAIL).map(email=>({
+        email,
+        name: NAME_BY_EMAIL[email],
+        role: ROLE_BY_EMAIL[email] || "staff"
+      })).filter(x=>x.name && (x.role==="staff" || x.role==="admin"));
+      const seen = new Set();
+      return raw.filter(x=> x.name !== owner).filter(x=>{
+        if(seen.has(x.name)) return false;
+        seen.add(x.name);
+        return true;
+      });
+    }
+
+    function assignReviewerAuto(report, payload){
+      const out = normalizeReport(report||{}, payload?.year||"");
+      if((out.reviewerName||"").trim()) return out;
+      const pool = getReviewerCandidates(payload?.ownerName||"");
+      if(!pool.length) return out;
+      const seed = `${payload?.year||""}_${payload?.caseNo||""}`;
+      const idx = hash32(seed) % pool.length;
+      out.reviewerName = pool[idx].name;
+      out.reviewerEmail = pool[idx].email;
+      out.reviewerAssignedAt = new Date();
+      return out;
     }
 
     // ===== Settings =====
@@ -1460,13 +1562,14 @@
 
     // ===== Router =====
     function showView(name){
-      const views = ["dashboard","cases","review","reports","devices","case"];
+      const views = ["dashboard","cases","preview","review","reports","devices","case"];
       for(const v of views){
         $("view" + v.charAt(0).toUpperCase() + v.slice(1)).classList.toggle("show", v===name);
       }
       // nav active
       $("navDashboard").classList.toggle("active", name==="dashboard");
       $("navCases").classList.toggle("active", name==="cases");
+      $("navPreview").classList.toggle("active", name==="preview");
       $("navReview").classList.toggle("active", name==="review");
       $("navReports").classList.toggle("active", name==="reports");
       $("navDevices").classList.toggle("active", name==="devices");
@@ -1496,6 +1599,7 @@
 
     $("navDashboard").addEventListener("click", ()=> go("dashboard"));
     $("navCases").addEventListener("click", ()=> go("cases"));
+    $("navPreview").addEventListener("click", ()=> go("preview"));
     $("navReview").addEventListener("click", ()=> go("review"));
     $("navReports").addEventListener("click", ()=> go("reports"));
     $("navDevices").addEventListener("click", ()=> go("devices"));
@@ -2045,6 +2149,7 @@
           <td>${escapeHtml(c.casePhase||"")}</td>
           <td>${escapeHtml(c.caseStatus||"")}</td>
           <td>${escapeHtml(report.reviewStatus||"未送審")}</td>
+          <td>${escapeHtml(report.reviewerName||"")}</td>
           <td>${escapeHtml(c.ownerName||"")}</td>
           <td>${hasFile ? '<button class="caseClipBtn" title="開啟報告" data-path="'+escapeHtml(report.localFilePath||'')+'">📎</button>' : '<span class="muted">—</span>'}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
@@ -2060,7 +2165,7 @@
         tbody.appendChild(tr);
       }
       if(!caseFiltered.length){
-        tbody.innerHTML = `<tr><td colspan="11" class="muted">沒有符合條件的資料。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="muted">沒有符合條件的資料。</td></tr>`;
       }
     }
 
@@ -2079,25 +2184,337 @@
       }
     }
 
-    function exportCasesCsv(){
-      const head = ["年度","類別","編號","單位/個案","KPI","分群","狀態","報告審查","主責人","報告路徑","更新"];
-      const rows = [head];
-      for(const c of caseFiltered){
-        rows.push([
-          c.year||"", c.caseType||"", c.caseNo||"",
-          (c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || ""),
-          c.kpiStage||"", c.casePhase||"", c.caseStatus||"", (normalizeReport(c.report||{}, c.year||"").reviewStatus||""), c.ownerName||"", (normalizeReport(c.report||{}, c.year||"").localFilePath||""), fmtDT(c.updatedAt)||""
+    async function exportCasesCsv(){
+      const btn = $("btnCaseExport");
+      try{
+        if(btn) btn.disabled = true;
+
+        const [allMeetings, allLoans] = await Promise.all([
+          loadReviewMeetings(false),
+          loadLoans(false)
         ]);
+
+        const normCaseKey = (caseNo)=>{
+          const raw = String(caseNo||"").toUpperCase().replace(/\s+/g,"");
+          const m = raw.match(/^(JA|AG|EC|UH|TA)[-_ ]?(\d+)/);
+          if(!m) return raw.replace(/[^A-Z0-9]/g,"");
+          return `${m[1]}${Number(m[2])}`;
+        };
+
+        const sumNum = (arr, field)=> arr.reduce((s,x)=> s + (Number(x?.[field]||0)||0), 0);
+        const toJson = (v)=> { try { return JSON.stringify(v||[]); } catch { return "[]"; } };
+        const csvSafe = (v)=> `"${String(v??"").replaceAll('"','""')}"`;
+
+        const head = [
+          "年度","類別","編號","案件ID","單位","個案姓名","性別","年齡","障礙類別","障礙程度","轉介來源","主責人",
+          "KPI","分群","案件狀態",
+          "報告審查狀態","報告審閱者","報告寄出時間","報告截止日","報告檔案路徑","報告偵測時間",
+          "審查會議筆數","審查日期","審查決議","補助項目","申請總額","核定總額",
+          "試用總次數","試用總件數","試用項目","訓練總次數","訓練總件數","訓練項目",
+          "職再策略次數","職再品項",
+          "借用紀錄筆數","借用中筆數","借用設備清單","最近借出時間",
+          "審查會議明細JSON","借用紀錄明細JSON","個案設備JSON","諮詢紀錄JSON",
+          "備註","更新"
+        ];
+
+        const rows = [head];
+        for(const c of caseFiltered){
+          const basic = c.basic || {};
+          const report = normalizeReport(c.report||{}, c.year||"");
+          const dt = c.deviceTrial || {};
+          const tr = c.deviceTraining || {};
+          const jr = c.jobRedesign || {};
+
+          const cKey = normCaseKey(c.caseNo);
+          const meetings = (allMeetings||[]).filter(r=> normCaseKey(r.caseNo)===cKey);
+          const meetingDates = meetings.map(r=>r.meetingDate).filter(Boolean).sort().join("、");
+          const meetingDecisions = [...new Set(meetings.map(r=>r.meetingDecision).filter(Boolean))].join("、");
+          const meetingItems = meetings.flatMap(r=>r.items||[]).filter(i=>i.itemName);
+          const meetingItemNames = [...new Set(meetingItems.map(i=>i.itemName))].join("、");
+          const totalApplied = sumNum(meetingItems, "appliedAmount");
+          const totalApproved = sumNum(meetingItems, "approvedAmount");
+
+          const loans = (allLoans||[]).filter(l=>{
+            if((l.linkedCaseId && l.linkedCaseId===c.id) || (Array.isArray(l.linkedCaseIds) && l.linkedCaseIds.includes(c.id))) return true;
+            if(normCaseKey(l.caseNo)===cKey) return true;
+            return false;
+          });
+          const loanActive = loans.filter(l=>!l.returnAt).length;
+          const loanDevices = [...new Set(loans.map(l=> l.deviceName ? `${l.deviceName}(${l.deviceId||""})` : (l.deviceId||"")).filter(Boolean))].join("、");
+          const latestBorrow = loans.length
+            ? loans.map(l=> l.borrowAt?.toDate ? l.borrowAt.toDate() : (l.borrowAt ? new Date(l.borrowAt) : null))
+                  .filter(Boolean).sort((a,b)=>b-a)[0]
+            : null;
+
+          rows.push([
+            c.year||"", c.caseType||"", c.caseNo||"", c.id||"",
+            (c.orgName || basic.orgName || ""), (c.clientName || basic.clientName || ""),
+            basic.gender||"", basic.age||"", basic.disabilityType||"", basic.disabilityDegree||"", basic.referralSource||"", c.ownerName||"",
+            c.kpiStage||"", c.casePhase||"", c.caseStatus||"",
+            report.reviewStatus||"", report.reviewerName||"", report.sentDate||"", report.dueDate||"", report.localFilePath||"", fmtDT(report.lastDetectedAt)||"",
+            meetings.length, meetingDates, meetingDecisions, meetingItemNames, totalApplied||"", totalApproved||"",
+            dt.totalCount||"", dt.totalItems||"", [dt.trialItem1,dt.trialItem2,dt.trialItem3].filter(Boolean).join("、"),
+            tr.totalCount||"", tr.totalItems||"", [tr.trainItem1,tr.trainItem2,tr.trainItem3].filter(Boolean).join("、"),
+            jr.strategyCount||"", (jr.items||[]).map(x=>x.itemName).filter(Boolean).join("、"),
+            loans.length, loanActive, loanDevices, latestBorrow ? fmtDT(latestBorrow) : "",
+            toJson(meetings), toJson(loans), toJson(c.caseDevices||[]), toJson(c.consults||[]),
+            c.remarks||"", fmtDT(c.updatedAt)||""
+          ]);
+        }
+
+        const csv = rows.map(r=> r.map(csvSafe).join(",")).join("\n");
+        const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `cases_full_${$("caseYear").value}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast(`已匯出完整總表（${caseFiltered.length} 筆）`);
+      }catch(e){
+        console.error(e);
+        toast("匯出失敗：" + (e?.message || e));
+      }finally{
+        if(btn) btn.disabled = false;
       }
-      const csv = rows.map(r=> r.map(v=> `"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
-      const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `cases_${$("caseYear").value}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+    }
+    // ===== Case Full Preview =====
+    let pvCases = [];
+    let pvMeetings = [];
+    let pvLoans = [];
+    let pvRows = [];
+    let pvFilteredRows = [];
+    let pvSelectedCaseId = "";
+
+    function pvCaseKey(caseNo){
+      const raw = String(caseNo||"").toUpperCase().replace(/\s+/g,"");
+      const m = raw.match(/^(JA|AG|EC|UH|TA)[-_ ]?(\d+)/);
+      if(!m) return raw.replace(/[^A-Z0-9]/g,"");
+      return `${m[1]}${Number(m[2])}`;
     }
 
+    function initPreviewFilters(){
+      const types = settings?.caseCodeRules?.caseTypes || [];
+      if($("pvType")) $("pvType").innerHTML = `<option value="">全部</option>` + types.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+    }
+
+    function buildPreviewRows(){
+      pvRows = pvCases.map(c=>{
+        const basic = c.basic || {};
+        const report = normalizeReport(c.report||{}, c.year||"");
+        const key = pvCaseKey(c.caseNo);
+        const meetings = (pvMeetings||[]).filter(r=> pvCaseKey(r.caseNo)===key);
+        const mtItems = meetings.flatMap(m=>m.items||[]);
+        const totalApproved = mtItems.reduce((s,i)=>s+(Number(i.approvedAmount||0)||0),0);
+        const loans = (pvLoans||[]).filter(l=>
+          (l.linkedCaseId && l.linkedCaseId===c.id) ||
+          (Array.isArray(l.linkedCaseIds) && l.linkedCaseIds.includes(c.id)) ||
+          (pvCaseKey(l.caseNo)===key)
+        );
+        const loanActive = loans.filter(l=>!l.returnAt).length;
+        return {
+          id: c.id,
+          case: c,
+          basic,
+          report,
+          meetings,
+          loans,
+          caseNo: c.caseNo||"",
+          caseType: c.caseType||"",
+          name: c.orgName||basic.orgName||c.clientName||basic.clientName||"",
+          ownerName: c.ownerName||"",
+          reviewStatus: report.reviewStatus||"未送審",
+          reviewerName: report.reviewerName||"",
+          sentDate: report.sentDate||"",
+          meetingCount: meetings.length,
+          totalApproved,
+          loanCount: loans.length,
+          loanActive,
+          updatedAt: c.updatedAt?.toDate ? c.updatedAt.toDate() : (c.updatedAt ? new Date(c.updatedAt) : null)
+        };
+      });
+    }
+
+    function applyPreviewFiltersAndSort(){
+      const q = normalize($("pvQ")?.value || "");
+      const type = $("pvType")?.value || "";
+      const rv = $("pvReviewStatus")?.value || "";
+      const loanOnly = $("pvLoanOnly")?.value || "";
+      const sortKey = $("pvSort")?.value || "caseNo";
+      const dir = $("pvSortDir")?.value || "asc";
+
+      pvFilteredRows = pvRows.filter(r=>{
+        if(currentRole!=="admin" && r.case.ownerUid!==currentUser.uid) return false;
+        if(type && r.caseType!==type) return false;
+        if(rv && r.reviewStatus!==rv) return false;
+        if(loanOnly==="active" && r.loanActive<=0) return false;
+        if(q){
+          const hay = normalize([r.caseNo,r.name,r.ownerName,r.reviewerName,r.case.clientName,r.case.orgName].filter(Boolean).join(" "));
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const numKeys = new Set(["meetingCount","totalApproved","loanCount","loanActive"]);
+      pvFilteredRows.sort((a,b)=>{
+        let va = a[sortKey], vb = b[sortKey];
+        if(sortKey === "updatedAt"){
+          va = va ? va.getTime() : 0;
+          vb = vb ? vb.getTime() : 0;
+        } else if(numKeys.has(sortKey)){
+          va = Number(va||0); vb = Number(vb||0);
+        } else {
+          va = String(va||""); vb = String(vb||"");
+        }
+        const cmp = va>vb ? 1 : va<vb ? -1 : 0;
+        return dir==="asc" ? cmp : -cmp;
+      });
+    }
+
+    function renderPreviewGrid(){
+      applyPreviewFiltersAndSort();
+      if($("pvGridHint")) $("pvGridHint").textContent = `共 ${pvFilteredRows.length} 筆`;
+      const tb = $("pvGridTbody");
+      if(!tb) return;
+      tb.innerHTML = "";
+      for(const r of pvFilteredRows){
+        const tr = document.createElement("tr");
+        tr.style.cursor = "pointer";
+        if(pvSelectedCaseId && pvSelectedCaseId===r.id){ tr.style.background = "#f8fafc"; }
+        tr.innerHTML = `
+          <td class="mono">${escapeHtml(r.caseNo)}</td>
+          <td>${escapeHtml(r.caseType)}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.ownerName)}</td>
+          <td>${escapeHtml(r.reviewStatus)}</td>
+          <td>${escapeHtml(r.reviewerName)}</td>
+          <td>${escapeHtml(r.sentDate)}</td>
+          <td>${r.meetingCount}</td>
+          <td>${r.totalApproved ? r.totalApproved.toLocaleString() : ""}</td>
+          <td>${r.loanCount}</td>
+          <td>${r.loanActive}</td>
+          <td class="muted">${escapeHtml(fmtDT(r.updatedAt))}</td>
+        `;
+        tr.addEventListener("click", ()=>{
+          pvSelectedCaseId = r.id;
+          renderPreviewDetail(r);
+          renderPreviewGrid();
+        });
+        tb.appendChild(tr);
+      }
+      if(!pvFilteredRows.length){
+        tb.innerHTML = `<tr><td colspan="12" class="muted">沒有符合條件的資料。</td></tr>`;
+        $("pvDetail").innerHTML = `<span class="muted">請調整篩選條件。</span>`;
+      } else if(!pvSelectedCaseId || !pvFilteredRows.some(x=>x.id===pvSelectedCaseId)){
+        pvSelectedCaseId = pvFilteredRows[0].id;
+        renderPreviewDetail(pvFilteredRows[0]);
+      }
+    }
+
+    function renderPreviewDetail(row){
+      if(!row){ $("pvDetail").innerHTML = `<span class="muted">請先在上方總表點選一筆案件。</span>`; return; }
+      const c = row.case;
+      const basic = row.basic || {};
+      const report = row.report || {};
+      const meetings = row.meetings || [];
+      const loans = row.loans || [];
+      const mtItems = meetings.flatMap(m=>m.items||[]);
+      const mtApplied = mtItems.reduce((s,i)=>s+(Number(i.appliedAmount||0)||0),0);
+      const mtApproved = mtItems.reduce((s,i)=>s+(Number(i.approvedAmount||0)||0),0);
+
+      $("pvDetail").innerHTML = `
+        <div class="row" style="justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h2 style="margin-bottom:6px;">${escapeHtml(c.caseNo||"")}｜${escapeHtml(c.caseType||"")}</h2>
+            <div class="muted">${escapeHtml(c.orgName||basic.orgName||"")} / ${escapeHtml(c.clientName||basic.clientName||"")}</div>
+          </div>
+          <button onclick="location.hash='case?id=${encodeURIComponent(c.id)}'">開啟個案詳情</button>
+        </div>
+        <div class="hr"></div>
+        <div class="grid2">
+          <div class="subCard"><b>基本資料</b><div class="small muted" style="margin-top:6px;line-height:1.8;">性別：${escapeHtml(basic.gender||"")}<br/>年齡：${escapeHtml(basic.age||"")}<br/>障礙類別：${escapeHtml(basic.disabilityType||"")}<br/>障礙程度：${escapeHtml(basic.disabilityDegree||"")}<br/>轉介來源：${escapeHtml(basic.referralSource||"")}</div></div>
+          <div class="subCard"><b>報告審閱</b><div class="small muted" style="margin-top:6px;line-height:1.8;">審查狀態：${escapeHtml(report.reviewStatus||"")}<br/>審閱者：${escapeHtml(report.reviewerName||"")}<br/>寄出時間：${escapeHtml(report.sentDate||"")}<br/>檔案：${escapeHtml(report.localFilePath||"")}</div></div>
+          <div class="subCard"><b>審查會議</b><div class="small muted" style="margin-top:6px;line-height:1.8;">筆數：${meetings.length}<br/>申請總額：${mtApplied.toLocaleString()}<br/>核定總額：${mtApproved.toLocaleString()}<br/>決議：${escapeHtml([...new Set(meetings.map(m=>m.meetingDecision).filter(Boolean))].join("、"))}</div></div>
+          <div class="subCard"><b>輔具資料</b><div class="small muted" style="margin-top:6px;line-height:1.8;">試用總次數：${escapeHtml((c.deviceTrial||{}).totalCount||"")}<br/>訓練總次數：${escapeHtml((c.deviceTraining||{}).totalCount||"")}<br/>借用紀錄：${loans.length}（借用中 ${row.loanActive}）<br/>職再策略：${escapeHtml((c.jobRedesign||{}).strategyCount||"")}</div></div>
+        </div>
+        <div class="hr"></div>
+        <div class="small muted">審查會議明細 JSON</div>
+        <textarea readonly style="min-height:110px;">${escapeHtml(JSON.stringify(meetings||[], null, 2))}</textarea>
+        <div class="small muted" style="margin-top:8px;">借用紀錄明細 JSON</div>
+        <textarea readonly style="min-height:110px;">${escapeHtml(JSON.stringify(loans||[], null, 2))}</textarea>
+      `;
+    }
+
+    async function refreshPreview(force=false){
+      try{
+        if($("btnPvRefresh")) $("btnPvRefresh").disabled = true;
+        initPreviewFilters();
+        const year = $("pvYear")?.value || $("caseYear")?.value || "115";
+        pvCases = await loadCasesYear(year, force);
+        pvMeetings = await loadReviewMeetings(false);
+        pvLoans = await loadLoans(false);
+        buildPreviewRows();
+        renderPreviewGrid();
+      }catch(e){
+        console.error(e);
+        toast("預覽載入失敗：" + (e?.message||e));
+      }finally{
+        if($("btnPvRefresh")) $("btnPvRefresh").disabled = false;
+      }
+
+    async function exportPreviewExcel(){
+      const btn = $("btnPvExport");
+      try{
+        if(btn) btn.disabled = true;
+        applyPreviewFiltersAndSort();
+        if(!pvFilteredRows.length){ toast("目前沒有可匯出的資料。"); return; }
+
+        if(!window.XLSX){ await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"); }
+        const XL = window.XLSX;
+        const rows = pvFilteredRows.map(r=>({
+          年度: r.case.year||"",
+          類別: r.caseType||"",
+          編號: r.caseNo||"",
+          單位_個案: r.name||"",
+          主責人: r.ownerName||"",
+          報告審查: r.reviewStatus||"",
+          審閱者: r.reviewerName||"",
+          寄出時間: r.sentDate||"",
+          審查會議筆數: r.meetingCount||0,
+          核定總額: r.totalApproved||0,
+          借用筆數: r.loanCount||0,
+          借用中: r.loanActive||0,
+          報告路徑: r.report?.localFilePath||"",
+          更新時間: fmtDT(r.updatedAt)||"",
+          審查會議明細JSON: JSON.stringify(r.meetings||[]),
+          借用紀錄明細JSON: JSON.stringify(r.loans||[]),
+          個案設備JSON: JSON.stringify(r.case?.caseDevices||[]),
+          諮詢紀錄JSON: JSON.stringify(r.case?.consults||[])
+        }));
+
+        const ws = XL.utils.json_to_sheet(rows);
+        ws["!cols"] = [
+          {wch:8},{wch:8},{wch:12},{wch:24},{wch:10},{wch:10},{wch:10},{wch:12},
+          {wch:10},{wch:12},{wch:8},{wch:8},{wch:40},{wch:18},{wch:40},{wch:40},{wch:30},{wch:30}
+        ];
+        const wb = XL.utils.book_new();
+        XL.utils.book_append_sheet(wb, ws, "個案總表");
+        XL.writeFile(wb, `個案總資料預覽_${$("pvYear")?.value||"all"}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        toast(`已匯出 Excel（${pvFilteredRows.length} 筆）`);
+      }catch(e){
+        console.error(e);
+        toast("匯出Excel失敗：" + (e?.message||e));
+      }finally{
+        if(btn) btn.disabled = false;
+      }
+    }
+
+    ["pvQ","pvType","pvReviewStatus","pvLoanOnly","pvSort","pvSortDir"].forEach(id=>{
+      $(id)?.addEventListener("input", renderPreviewGrid);
+      $(id)?.addEventListener("change", renderPreviewGrid);
+    });
+    $("btnPvRefresh")?.addEventListener("click", ()=> refreshPreview(true));
+    $("btnPvExport")?.addEventListener("click", exportPreviewExcel);
+    $("pvYear")?.addEventListener("change", ()=> refreshPreview(true));
     // ===== Excel import =====
     let XLSX = null;
     let importRows = [];
@@ -2253,7 +2670,7 @@
               basic: { orgName: r.orgName || "", clientName: r.clientName || "" },
               employment: {}, timeline: {},
               deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
-              progress: {}, report: normalizeReport({}, r.year),
+              progress: {}, report: assignReviewerAuto(normalizeReport({}, r.year), { year:String(r.year), caseNo:r.caseNo, ownerName:currentName }),
               remarks: "",
               caseDevices: [], consults: [],
               createdAt: new Date(),
@@ -3277,6 +3694,21 @@
           <div><label>報告審閱狀態</label><input id="cdb_reviewStatus" value="${escapeHtml(basic.reviewStatus||"")}" placeholder="例：已審閱" /></div>
           <div><label>審閱者</label><input id="cdb_reviewer" value="${escapeHtml(basic.reviewer||"")}" /></div>
         </div>
+        <div class="hr"></div>
+        <div class="grid2">
+          <div><label>報告審查狀態（同步報告管理）</label>
+            <select id="cdb_reportReviewStatus">
+              <option value="未送審"${(report.reviewStatus||"未送審")==="未送審"?" selected":""}>未送審</option>
+              <option value="待審查"${(report.reviewStatus||"未送審")==="待審查"?" selected":""}>待審查</option>
+              <option value="退回修改"${(report.reviewStatus||"未送審")==="退回修改"?" selected":""}>退回修改</option>
+              <option value="待複審"${(report.reviewStatus||"未送審")==="待複審"?" selected":""}>待複審</option>
+              <option value="審查完成"${(report.reviewStatus||"未送審")==="審查完成"?" selected":""}>審查完成</option>
+            </select>
+          </div>
+          <div><label>報告審閱者（同步報告管理）</label><input id="cdb_reportReviewer" value="${escapeHtml(report.reviewerName||"")}" /></div>
+          <div><label>報告寄出時間（同步報告管理）</label><input id="cdb_reportSentDate" type="date" value="${escapeHtml(report.sentDate||"")}" /></div>
+          <div><label>報告檔案路徑（同步報告管理）</label><input id="cdb_reportPath" value="${escapeHtml(report.localFilePath||"")}" /></div>
+        </div>
       `);
 
       // ── 2. 就業資料（XLS Col 16-17,22-25,82） ─────────────────────
@@ -3598,6 +4030,7 @@
           <div><label>審查流程狀態</label><select id="cdr_reviewStatus"></select></div>
           <div><label>報告檔案路徑（本機/網路磁碟）</label><input id="cdr_localFilePath" value="${escapeHtml(reportNorm.localFilePath||"")}" placeholder="\\\\server\\share\\...\\JA001_報告.docx" /></div>
           <div><label>審查人（姓名）</label><input id="cdr_reviewerName" value="${escapeHtml(reportNorm.reviewerName||"")}" placeholder="例如：蔡凱宇" /></div>
+          <div><label>檔案放置時間（自動記錄）</label><input id="cdr_detectedAt" value="${escapeHtml(fmtDT(reportNorm.lastDetectedAt)||"")}" readonly /></div>
           <div>
             <label>報告截止日（最後訪視 +7工作日，自動計算）</label>
             <input id="cdr_due" type="date" value="${escapeHtml(reportNorm.dueDate||"")}" />
@@ -3639,6 +4072,23 @@
         rsSel.innerHTML = REPORT_REVIEW_STAGES.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
         rsSel.value = reportNorm.reviewStatus || "未送審";
       }
+      // basic <-> report 同步欄位（避免兩頁顯示不一致）
+      const bindSync = (aId, bId)=>{
+        const a = $(aId), b = $(bId);
+        if(!a || !b) return;
+        const syncToB = ()=>{ if(b.value !== a.value) b.value = a.value; };
+        const syncToA = ()=>{ if(a.value !== b.value) a.value = b.value; };
+        a.addEventListener("input", syncToB);
+        a.addEventListener("change", syncToB);
+        b.addEventListener("input", syncToA);
+        b.addEventListener("change", syncToA);
+        // 初始值以報告管理為準
+        syncToA();
+      };
+      bindSync("cdb_reportReviewStatus", "cdr_reviewStatus");
+      bindSync("cdb_reportReviewer", "cdr_reviewerName");
+      bindSync("cdb_reportSentDate", "cdr_sentDate");
+      bindSync("cdb_reportPath", "cdr_localFilePath");
       pReport.querySelector("#btnReportOpenFile")?.addEventListener("click", ()=>{
         openLocalPath($("cdr_localFilePath")?.value || reportNorm.localFilePath || "");
       });
@@ -3960,6 +4410,12 @@
         };
         payload.orgName    = payload.basic.orgName;
         payload.clientName = payload.basic.clientName;
+        // 基本資料頁同步更新報告關鍵欄位
+        payload.report = normalizeReport(payload.report||{}, payload.year);
+        payload.report.reviewStatus = gv("cdb_reportReviewStatus") || payload.report.reviewStatus || "未送審";
+        payload.report.reviewerName = gvt("cdb_reportReviewer") || payload.report.reviewerName || "";
+        payload.report.sentDate = gv("cdb_reportSentDate") || payload.report.sentDate || "";
+        payload.report.localFilePath = gv("cdb_reportPath") || payload.report.localFilePath || "";
       }
 
       // ── Tab: 就業資料 ──
@@ -4061,17 +4517,21 @@
         const yPath = getReportPathByYear(payload.year);
         const oldSnapshot = cdDoc?.report?.pathSnapshot || {};
         payload.report = {
-          status:        cdr_status                  || "",
-          dueDate:       gv("cdr_due")              || "",
-          sentDate:      gv("cdr_sentDate")         || "",
-          meetingDate:   gv("cdr_meeting")          || "",
-          effectDue:     gv("cdr_effectDue")        || "",
-          note:          gvt("cdr_note")            || "",
-          reviewStatus:  gv("cdr_reviewStatus")     || "未送審",
-          reviewComment: gv("cdr_reviewComment")    || "",
-          localFilePath: gv("cdr_localFilePath")    || "",
-          reviewerName:  gvt("cdr_reviewerName")    || "",
-          reviewerUid:   cdDoc?.report?.reviewerUid  || "",
+          status:        cdr_status                   || "",
+          dueDate:       gv("cdr_due")               || "",
+          sentDate:      gv("cdr_sentDate")          || "",
+          meetingDate:   gv("cdr_meeting")           || "",
+          effectDue:     gv("cdr_effectDue")         || "",
+          note:          gvt("cdr_note")             || "",
+          reviewStatus:  gv("cdr_reviewStatus")      || "未送審",
+          reviewComment: gv("cdr_reviewComment")     || "",
+          localFilePath: gv("cdr_localFilePath")     || "",
+          reviewerName:  gvt("cdr_reviewerName")     || "",
+          reviewerUid:   cdDoc?.report?.reviewerUid   || "",
+          reviewerEmail: cdDoc?.report?.reviewerEmail || "",
+          reviewerAssignedAt: cdDoc?.report?.reviewerAssignedAt || null,
+          lastDetectedAt: cdDoc?.report?.lastDetectedAt || null,
+          movedToDoneAt: cdDoc?.report?.movedToDoneAt || null,
           pathSnapshot: {
             year: oldSnapshot.year || String(payload.year||""),
             pendingPath: oldSnapshot.pendingPath || yPath.pendingPath || "",
@@ -4079,6 +4539,7 @@
             fixedAt: oldSnapshot.fixedAt || new Date()
           }
         };
+        payload.report = assignReviewerAuto(payload.report, payload);
       }
 
       // ── Tab: 備註 ──
@@ -5375,6 +5836,12 @@
         await refreshCases(false);
         return;
       }
+      if(view === "preview"){
+        showView("preview");
+        const year = params.get("year"); if(year && $("pvYear")) $("pvYear").value = year;
+        await refreshPreview(false);
+        return;
+      }
       if(view === "review"){
         showView("review");
         const year = params.get("year"); if(year) $("rvYear").value = year;
@@ -5407,6 +5874,7 @@
       if(view==="dashboard"){ refreshDashboard(false); }
       if(view==="cases"){ renderCases(); }
       if(view==="reports"){ renderReports(); }
+      if(view==="preview"){ refreshPreview(false); }
     }
 
     // ===== Auth state observer =====
@@ -5462,6 +5930,26 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
