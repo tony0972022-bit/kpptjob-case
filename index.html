@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
@@ -275,7 +275,9 @@
                 <th style="width:140px;">KPI</th>
                 <th style="width:110px;">分群</th>
                 <th style="width:120px;">狀態</th>
+                <th style="width:120px;">報告審查</th>
                 <th style="width:120px;">主責人</th>
+                <th style="width:70px;">附件</th>
                 <th style="width:130px;">更新</th>
               </tr>
             </thead>
@@ -645,6 +647,7 @@
         <button id="tabRules" class="active">案件代碼與類別</button>
         <button id="tabOptions">下拉選單</button>
         <button id="tabReviewDisplay">審查會議欄位</button>
+        <button id="tabReportPaths">報告路徑</button>
       </div>
 
       <div id="panelRules">
@@ -758,6 +761,32 @@
         <div class="hr"></div>
         <div class="row" style="justify-content:flex-end">
           <button id="btnSaveReviewDisplay" class="primary">儲存欄位設定</button>
+        </div>
+      </div>
+      <div id="panelReportPaths" hidden>
+        <div class="hint">設定每年度報告資料夾。修改後不會覆蓋舊案件已綁定的路徑快照。</div>
+        <div class="hr"></div>
+        <div class="grid3">
+          <div><label>年度</label><input id="rpYear" placeholder="例如：115" /></div>
+          <div><label>待審查資料夾</label><input id="rpPendingPath" placeholder="\\\\server\\share\\...\\待審閱資料夾" /></div>
+          <div><label>完成資料夾</label><input id="rpDonePath" placeholder="\\\\server\\share\\...\\接案評估表" /></div>
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px;">
+          <button id="btnSaveReportPath" class="primary">儲存年度路徑</button>
+        </div>
+        <div class="hr"></div>
+        <div class="tableWrap" style="max-height:36vh;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:80px;">年度</th>
+                <th>待審查資料夾</th>
+                <th>完成資料夾</th>
+                <th style="width:130px;">更新時間</th>
+              </tr>
+            </thead>
+            <tbody id="reportPathTbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1284,6 +1313,60 @@
       await setDoc(ref, data, { merge });
     }
 
+    const REPORT_REVIEW_STAGES = ["未送審","待審查","退回修改","待複審","審查完成"];
+    function getReportPathByYear(year){
+      const y = String(year || "");
+      const byYear = settings?.reportPaths?.byYear || {};
+      return byYear[y] || { pendingPath:"", donePath:"", updatedAt:null, updatedBy:"" };
+    }
+    function normalizeReport(report = {}, year = ""){
+      const yPath = getReportPathByYear(year);
+      const pathSnapshot = report.pathSnapshot || {
+        year: String(year||""),
+        pendingPath: report.pendingPath || yPath.pendingPath || "",
+        donePath: report.donePath || yPath.donePath || "",
+        fixedAt: report.pathFixedAt || null
+      };
+      return {
+        status: report.status || "未開始",
+        dueDate: report.dueDate || "",
+        sentDate: report.sentDate || "",
+        meetingDate: report.meetingDate || "",
+        effectDue: report.effectDue || "",
+        note: report.note || "",
+        reviewStatus: report.reviewStatus || "未送審",
+        reviewComment: report.reviewComment || "",
+        localFilePath: report.localFilePath || "",
+        reviewerName: report.reviewerName || "",
+        reviewerUid: report.reviewerUid || "",
+        pathSnapshot
+      };
+    }
+    async function addNotification({ toUid="", toName="", caseId="", caseNo="", type="", message="" }){
+      try{
+        await addDoc(collection(db,"notifications"), {
+          toUid: toUid || "",
+          toName: toName || "",
+          fromUid: currentUser?.uid || "",
+          fromName: currentName || "",
+          caseId: caseId || "",
+          caseNo: caseNo || "",
+          type: type || "general",
+          message: message || "",
+          status: "unread",
+          createdAt: new Date()
+        });
+      }catch(e){
+        console.warn("notification skipped:", e?.message || e);
+      }
+    }
+    function openLocalPath(path){
+      const p = String(path || "").trim();
+      if(!p){ toast("尚未設定檔案路徑。"); return; }
+      const encoded = p.replaceAll("\\","/");
+      window.open("file:///" + encoded, "_blank");
+    }
+
     // ===== Settings =====
     let settings = null;
     function defaultSettings(){
@@ -1307,6 +1390,10 @@
           disabilityTypes: ["肢體","視覺","聽覺","智能","精神","多重","其他/未填"],
           disabilityDegrees: ["輕度","中度","重度","極重度","未填"],
           referralSources: ["勞動力發展署","社會局","醫院","雇主","個案自行申請","其他"]
+        },
+        reportPaths: {
+          byYear: {},
+          history: []
         }
       };
     }
@@ -1315,11 +1402,13 @@
       const r1 = await safeGetDoc("settings/caseCodeRules");
       const r2 = await safeGetDoc("settings/options");
       const r3 = await safeGetDoc("settings/reviewDisplay");
+      const r4 = await safeGetDoc("settings/reportPaths");
       settings = {
         caseCodeRules: r1 || d.caseCodeRules,
         options: r2 || d.options,
         reviewDisplay: r3 || { meetingDate:true, meetingArea:true, meetingNo:true,
-          itemCount:true, appliedAmount:true, approvedAmount:true, meetingDecision:true }
+          itemCount:true, appliedAmount:true, approvedAmount:true, meetingDecision:true },
+        reportPaths: r4 || d.reportPaths
       };
 
       settings.caseCodeRules.caseTypes = settings.caseCodeRules.caseTypes || d.caseCodeRules.caseTypes;
@@ -1341,6 +1430,9 @@
       o.disabilityTypes = o.disabilityTypes || d.options.disabilityTypes;
       o.disabilityDegrees = o.disabilityDegrees || d.options.disabilityDegrees;
       o.referralSources = o.referralSources || d.options.referralSources;
+      settings.reportPaths = settings.reportPaths || d.reportPaths;
+      settings.reportPaths.byYear = settings.reportPaths.byYear || {};
+      settings.reportPaths.history = Array.isArray(settings.reportPaths.history) ? settings.reportPaths.history : [];
     }
     function detectCaseTypeFromCaseNo(caseNo){
       const code = parseCaseCode(caseNo);
@@ -1430,22 +1522,34 @@
       const tabRulesBtn = $("tabRules");
       const tabOptionsBtn = $("tabOptions");
       const tabRvDispBtn = $("tabReviewDisplay");
+      const tabReportPathsBtn = $("tabReportPaths");
       const panelRules = $("panelRules");
       const panelOptions = $("panelOptions");
       const panelRvDisp = $("panelReviewDisplay");
+      const panelReportPaths = $("panelReportPaths");
 
       function setTab(which){
         tabRulesBtn.classList.toggle("active", which==="rules");
         tabOptionsBtn.classList.toggle("active", which==="options");
         tabRvDispBtn.classList.toggle("active", which==="reviewDisplay");
+        tabReportPathsBtn.classList.toggle("active", which==="reportPaths");
         panelRules.hidden = which!=="rules";
         panelOptions.hidden = which!=="options";
         panelRvDisp.hidden = which!=="reviewDisplay";
+        panelReportPaths.hidden = which!=="reportPaths";
         if(which==="reviewDisplay") loadReviewDisplaySettings();
+        if(which==="reportPaths" && !$("rpYear").value) $("rpYear").value = String(new Date().getFullYear()-1911);
       }
       tabRulesBtn.addEventListener("click", ()=>setTab("rules"));
       tabOptionsBtn.addEventListener("click", ()=>{ setTab("options"); showOptSection("case"); });
       tabRvDispBtn.addEventListener("click", ()=>setTab("reviewDisplay"));
+      tabReportPathsBtn.addEventListener("click", ()=>setTab("reportPaths"));
+      $("rpYear")?.addEventListener("change", ()=>{
+        const y = ($("rpYear")?.value||"").trim();
+        const r = (settings.reportPaths?.byYear||{})[y] || {};
+        if($("rpPendingPath")) $("rpPendingPath").value = r.pendingPath || "";
+        if($("rpDonePath")) $("rpDonePath").value = r.donePath || "";
+      });
       setTab("rules");
 
       // ── 下拉選單分區 Tab ──
@@ -1471,6 +1575,34 @@
           settings.reviewDisplay = picked;
           toast("審查會議欄位設定已儲存。");
         }catch(e){ toast("儲存失敗：" + (e?.message||e)); }
+      });
+
+      $("btnSaveReportPath")?.addEventListener("click", async ()=>{
+        const year = ($("rpYear")?.value||"").trim();
+        const pendingPath = ($("rpPendingPath")?.value||"").trim();
+        const donePath = ($("rpDonePath")?.value||"").trim();
+        if(!year){ toast("請填寫年度。"); return; }
+        if(!pendingPath || !donePath){ toast("請填寫待審查與完成資料夾。"); return; }
+        const byYear = { ...(settings.reportPaths?.byYear||{}) };
+        const prev = byYear[year] || null;
+        byYear[year] = { pendingPath, donePath, updatedAt:new Date(), updatedBy:currentName||currentEmail||"" };
+        const history = Array.isArray(settings.reportPaths?.history) ? [...settings.reportPaths.history] : [];
+        history.unshift({
+          year,
+          pendingPath,
+          donePath,
+          changedAt: new Date(),
+          changedBy: currentName||currentEmail||"",
+          previous: prev
+        });
+        settings.reportPaths = { byYear, history: history.slice(0,300) };
+        try{
+          await safeSetDoc("settings/reportPaths", settings.reportPaths, true);
+          await renderSettingsModal();
+          toast("年度報告路徑已儲存。");
+        }catch(e){
+          toast("儲存失敗：" + (e?.message||e));
+        }
       });
 
       if(openBtn) openBtn.addEventListener("click", async ()=>{
@@ -1561,6 +1693,7 @@
         try{
           await safeSetDoc("settings/caseCodeRules", d.caseCodeRules, true);
           await safeSetDoc("settings/options", d.options, true);
+          await safeSetDoc("settings/reportPaths", d.reportPaths, true);
           await loadSettings();
           toast("已初始化設定。");
           await renderSettingsModal();
@@ -1623,6 +1756,23 @@
       $("opt_disabilityTypes").value = (settings.options.disabilityTypes||[]).join("\n");
       $("opt_disabilityDegrees").value = (settings.options.disabilityDegrees||[]).join("\n");
       $("opt_referralSources").value = (settings.options.referralSources||[]).join("\n");
+
+      const rpTbody = $("reportPathTbody");
+      if(rpTbody){
+        const byYear = settings.reportPaths?.byYear || {};
+        const years = Object.keys(byYear).sort((a,b)=> b.localeCompare(a));
+        rpTbody.innerHTML = years.map(y=>{
+          const r = byYear[y] || {};
+          return `<tr><td>${escapeHtml(y)}</td><td class="mono">${escapeHtml(r.pendingPath||"")}</td><td class="mono">${escapeHtml(r.donePath||"")}</td><td class="muted">${escapeHtml(fmtDT(r.updatedAt)||"")}</td></tr>`;
+        }).join("");
+        if(!years.length) rpTbody.innerHTML = `<tr><td colspan="4" class="muted">尚未設定年度路徑。</td></tr>`;
+      }
+      const defaultYear = String(new Date().getFullYear()-1911);
+      const currentYear = $("rpYear")?.value || defaultYear;
+      if($("rpYear")) $("rpYear").value = currentYear;
+      const currentPath = (settings.reportPaths?.byYear||{})[currentYear] || {};
+      if($("rpPendingPath")) $("rpPendingPath").value = currentPath.pendingPath || "";
+      if($("rpDonePath")) $("rpDonePath").value = currentPath.donePath || "";
     }
 
     // ===== Login buttons =====
@@ -1881,9 +2031,11 @@
       const tbody = $("caseTbody");
       tbody.innerHTML = "";
       for(const c of caseFiltered){
+        const report = normalizeReport(c.report||{}, c.year||"");
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
         tr.addEventListener("click", ()=> go("case", { id: c.id }));
+        const hasFile = !!(report.localFilePath||"").trim();
         tr.innerHTML = `
           <td>${escapeHtml(c.year||"")}</td>
           <td>${escapeHtml(c.caseType||"")}</td>
@@ -1892,13 +2044,23 @@
           <td>${escapeHtml(c.kpiStage||"")}</td>
           <td>${escapeHtml(c.casePhase||"")}</td>
           <td>${escapeHtml(c.caseStatus||"")}</td>
+          <td>${escapeHtml(report.reviewStatus||"未送審")}</td>
           <td>${escapeHtml(c.ownerName||"")}</td>
+          <td>${hasFile ? '<button class="caseClipBtn" title="開啟報告" data-path="'+escapeHtml(report.localFilePath||'')+'">📎</button>' : '<span class="muted">—</span>'}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
         `;
+        const clipBtn = tr.querySelector(".caseClipBtn");
+        if(clipBtn){
+          clipBtn.addEventListener("click", (e)=>{
+            e.preventDefault();
+            e.stopPropagation();
+            openLocalPath(clipBtn.dataset.path || "");
+          });
+        }
         tbody.appendChild(tr);
       }
       if(!caseFiltered.length){
-        tbody.innerHTML = `<tr><td colspan="9" class="muted">沒有符合條件的資料。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="muted">沒有符合條件的資料。</td></tr>`;
       }
     }
 
@@ -1918,13 +2080,13 @@
     }
 
     function exportCasesCsv(){
-      const head = ["年度","類別","編號","單位/個案","KPI","分群","狀態","主責人","更新"];
+      const head = ["年度","類別","編號","單位/個案","KPI","分群","狀態","報告審查","主責人","報告路徑","更新"];
       const rows = [head];
       for(const c of caseFiltered){
         rows.push([
           c.year||"", c.caseType||"", c.caseNo||"",
           (c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || ""),
-          c.kpiStage||"", c.casePhase||"", c.caseStatus||"", c.ownerName||"", fmtDT(c.updatedAt)||""
+          c.kpiStage||"", c.casePhase||"", c.caseStatus||"", (normalizeReport(c.report||{}, c.year||"").reviewStatus||""), c.ownerName||"", (normalizeReport(c.report||{}, c.year||"").localFilePath||""), fmtDT(c.updatedAt)||""
         ]);
       }
       const csv = rows.map(r=> r.map(v=> `"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
@@ -2091,7 +2253,7 @@
               basic: { orgName: r.orgName || "", clientName: r.clientName || "" },
               employment: {}, timeline: {},
               deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
-              progress: {}, report: {},
+              progress: {}, report: normalizeReport({}, r.year),
               remarks: "",
               caseDevices: [], consults: [],
               createdAt: new Date(),
@@ -3425,34 +3587,45 @@
       }
 
       // ── 8. 報告管理 ────────────────────────────────────────────────
+      const reportNorm = normalizeReport(report||{}, d.year||cdDoc?.year||"");
       const pReport = showPanel("report", `
         <div class="hint" style="margin-bottom:10px;">
-          訪視日期過後自動顯示「撰寫中」。截止日 = 最後訪視 +7工作日（自動計算）。報告完成時填入寄給承辦日期即完成。
+          訪視日期過後自動顯示「撰寫中」。截止日 = 最後訪視 +7工作日（自動計算）。可在此管理送審、退回修改、複審與完成。
         </div>
-        <input id="cdr_effectDue" type="hidden" value="${escapeHtml(report.effectDue||"")}" />
+        <input id="cdr_effectDue" type="hidden" value="${escapeHtml(reportNorm.effectDue||"")}" />
         <div class="grid2">
           <div><label>報告狀態</label><select id="cdr_status"></select></div>
+          <div><label>審查流程狀態</label><select id="cdr_reviewStatus"></select></div>
+          <div><label>報告檔案路徑（本機/網路磁碟）</label><input id="cdr_localFilePath" value="${escapeHtml(reportNorm.localFilePath||"")}" placeholder="\\\\server\\share\\...\\JA001_報告.docx" /></div>
+          <div><label>審查人（姓名）</label><input id="cdr_reviewerName" value="${escapeHtml(reportNorm.reviewerName||"")}" placeholder="例如：蔡凱宇" /></div>
           <div>
             <label>報告截止日（最後訪視 +7工作日，自動計算）</label>
-            <input id="cdr_due" type="date" value="${escapeHtml(report.dueDate||"")}" />
+            <input id="cdr_due" type="date" value="${escapeHtml(reportNorm.dueDate||"")}" />
           </div>
           <div>
             <label>報告完成（寄給承辦）日期</label>
-            <input id="cdr_sentDate" type="date" value="${escapeHtml(report.sentDate||"")}" />
+            <input id="cdr_sentDate" type="date" value="${escapeHtml(reportNorm.sentDate||"")}" />
           </div>
           <div>
             <label>審查會議日期（自動帶入）</label>
-            <input id="cdr_meeting" type="date" value="${escapeHtml(report.meetingDate||"")}" />
+            <input id="cdr_meeting" type="date" value="${escapeHtml(reportNorm.meetingDate||"")}" />
           </div>
-          <div><label>備註</label><input id="cdr_note" value="${escapeHtml(report.note||"")}" /></div>
+          <div><label>一般備註</label><input id="cdr_note" value="${escapeHtml(reportNorm.note||"")}" /></div>
+          <div style="grid-column:1/-1;"><label>審查備註（退回修改原因）</label><textarea id="cdr_reviewComment">${escapeHtml(reportNorm.reviewComment||"")}</textarea></div>
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px;gap:8px;">
+          <button id="btnReportOpenFile">📎 開啟報告</button>
+          <button id="btnReportToReview">送審</button>
+          <button id="btnReportNeedFix" class="danger">退回修改</button>
+          <button id="btnReportResubmit">通知複審</button>
+          <button id="btnReportApprove" class="primary">審查完成</button>
         </div>
       `);
       // report panel: populate status select (always, not just when tab is active)
       const sSel = pReport.querySelector("#cdr_status");
       if(sSel){
         sSel.innerHTML = ["未開始","撰寫中","完成寄件"].map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
-        sSel.value = report.status || "未開始";
-        // auto-set to "撰寫中" if visit date has passed and status is still "未開始"
+        sSel.value = reportNorm.status || "未開始";
         if(sSel.value === "未開始"){
           const today = new Date().toISOString().slice(0,10);
           const v1 = $("cdt_visitDate1")?.value || "";
@@ -3461,6 +3634,53 @@
           if(lastVisit && lastVisit <= today) sSel.value = "撰寫中";
         }
       }
+      const rsSel = pReport.querySelector("#cdr_reviewStatus");
+      if(rsSel){
+        rsSel.innerHTML = REPORT_REVIEW_STAGES.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+        rsSel.value = reportNorm.reviewStatus || "未送審";
+      }
+      pReport.querySelector("#btnReportOpenFile")?.addEventListener("click", ()=>{
+        openLocalPath($("cdr_localFilePath")?.value || reportNorm.localFilePath || "");
+      });
+      pReport.querySelector("#btnReportToReview")?.addEventListener("click", async ()=>{
+        $("cdr_reviewStatus").value = "待審查";
+        await saveCaseDetail();
+        toast("已標記為待審查。");
+      });
+      pReport.querySelector("#btnReportNeedFix")?.addEventListener("click", async ()=>{
+        if(!($("cdr_reviewComment")?.value||"").trim()){ toast("請填寫審查備註後再退回。"); return; }
+        $("cdr_reviewStatus").value = "退回修改";
+        await saveCaseDetail();
+        await addNotification({
+          toUid: cdDoc?.ownerUid || "",
+          toName: cdDoc?.ownerName || "",
+          caseId: cdId || "",
+          caseNo: cdDoc?.caseNo || "",
+          type: "report_need_fix",
+          message: `案件 ${cdDoc?.caseNo||""} 報告需修改：${($("cdr_reviewComment")?.value||"").trim()}`
+        });
+        toast("已通知填寫人修改。");
+      });
+      pReport.querySelector("#btnReportResubmit")?.addEventListener("click", async ()=>{
+        $("cdr_reviewStatus").value = "待複審";
+        await saveCaseDetail();
+        await addNotification({
+          toUid: "",
+          toName: $("cdr_reviewerName")?.value || "審查人",
+          caseId: cdId || "",
+          caseNo: cdDoc?.caseNo || "",
+          type: "report_resubmit",
+          message: `案件 ${cdDoc?.caseNo||""} 已完成修改，請複審。`
+        });
+        toast("已通知審查人複審。");
+      });
+      pReport.querySelector("#btnReportApprove")?.addEventListener("click", async ()=>{
+        $("cdr_reviewStatus").value = "審查完成";
+        if(!$("cdr_sentDate").value) $("cdr_sentDate").value = new Date().toISOString().slice(0,10);
+        $("cdr_status").value = "完成寄件";
+        await saveCaseDetail();
+        toast("已標記審查完成。下一階段可由 Agent 自動搬移檔案。")
+      });
 
       // ── 9. 審查會議（查詢 reviewMeetings 勾稽） ─────────────────────
       const pReview = showPanel("review", `
@@ -3556,7 +3776,7 @@
       document.getElementById("cdr_meeting")?.addEventListener("change", ()=>{ calcEffectDue(); autoUpdateKpi(); });
 
       // ── KPI 監聽 ──────────────────────────────────────────────────
-      ["cdStatus","cdr_sentDate"]
+      ["cdStatus","cdr_sentDate","cdr_reviewStatus"]
         .forEach(id => document.getElementById(id)?.addEventListener("change", autoUpdateKpi));
       autoUpdateKpi();
     }
@@ -3613,7 +3833,9 @@
       const reviewDate1 = $("cdt_reviewDate1")?.value   || "";
       const meetingDate = $("cdr_meeting")?.value        || "";
       const sentDate    = $("cdr_sentDate")?.value       || "";
+      const reviewFlow  = $("cdr_reviewStatus")?.value   || "";
       const visitDate1  = $("cdt_visitDate1")?.value     || "";
+      if(["待審查","退回修改","待複審"].includes(reviewFlow)) return "報告審查中";
       if(reviewDate1 || meetingDate) return "待成效";
       if(sentDate)                   return "待審查會議";
       if(visitDate1)                 return "撰寫報告中";
@@ -3643,7 +3865,7 @@
           ownerName: currentName,
           basic: {}, employment: {}, timeline: {},
           deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
-          progress: {}, report: {},
+          progress: {}, report: normalizeReport({}, $("cdYear").value),
           remarks: "",
           caseDevices: [], consults: []
         };
@@ -3660,6 +3882,7 @@
         return;
       }
       cdDoc = { id: cdId, ...snap.data() };
+      cdDoc.report = normalizeReport(cdDoc.report||{}, cdDoc.year||"");
 
       $("cdYear").value = cdDoc.year || $("cdYear").value;
       $("cdCaseNo").value = cdDoc.caseNo || "";
@@ -3835,13 +4058,26 @@
       // ── Tab: 報告管理 ──
       const cdr_status = gv("cdr_status");
       if(cdr_status !== undefined){
+        const yPath = getReportPathByYear(payload.year);
+        const oldSnapshot = cdDoc?.report?.pathSnapshot || {};
         payload.report = {
-          status:      cdr_status              || "",
-          dueDate:     gv("cdr_due")           || "",
-          sentDate:    gv("cdr_sentDate")      || "",
-          meetingDate: gv("cdr_meeting")       || "",
-          effectDue:   gv("cdr_effectDue")     || "",
-          note:        gvt("cdr_note")         || "",
+          status:        cdr_status                  || "",
+          dueDate:       gv("cdr_due")              || "",
+          sentDate:      gv("cdr_sentDate")         || "",
+          meetingDate:   gv("cdr_meeting")          || "",
+          effectDue:     gv("cdr_effectDue")        || "",
+          note:          gvt("cdr_note")            || "",
+          reviewStatus:  gv("cdr_reviewStatus")     || "未送審",
+          reviewComment: gv("cdr_reviewComment")    || "",
+          localFilePath: gv("cdr_localFilePath")    || "",
+          reviewerName:  gvt("cdr_reviewerName")    || "",
+          reviewerUid:   cdDoc?.report?.reviewerUid  || "",
+          pathSnapshot: {
+            year: oldSnapshot.year || String(payload.year||""),
+            pendingPath: oldSnapshot.pendingPath || yPath.pendingPath || "",
+            donePath: oldSnapshot.donePath || yPath.donePath || "",
+            fixedAt: oldSnapshot.fixedAt || new Date()
+          }
         };
       }
 
@@ -5226,3 +5462,32 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
