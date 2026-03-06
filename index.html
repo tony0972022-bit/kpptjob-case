@@ -238,13 +238,12 @@
           </div>
           <div class="row">
             <button id="btnCaseNew">新增案件</button>
-            <button id="btnCaseExport">匯出 CSV</button>
+            <button id="btnCaseExport">下載目前分析 Excel</button>
             <button id="btnCaseImport">Excel 匯入</button>
             <button id="btnCaseRefresh">更新</button>
           </div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="grid3">
           <div><label>年度</label><select id="caseYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select></div>
@@ -259,7 +258,6 @@
           </div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="row" style="justify-content:space-between;">
           <div class="muted" id="caseHint">—</div>
@@ -308,7 +306,6 @@
           </div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="grid3" style="grid-template-columns:repeat(6,minmax(120px,1fr));">
           <div><label>年度</label><select id="pvYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select></div>
@@ -320,7 +317,6 @@
           <div style="grid-column:1/-1;"><label>關鍵字（編號/單位/個案/審閱者）</label><input id="pvQ" placeholder="搜尋..." /></div>
         </div>
 
-        <div class="hr"></div>
         <div class="muted" id="pvGridHint">—</div>
 
         <div class="tableWrap" style="max-height:55vh;margin-top:8px;">
@@ -345,7 +341,6 @@
           </table>
         </div>
 
-        <div class="hr"></div>
         <div class="subCard">
           <div id="pvDetail" class="muted">請先在上方總表點選一筆案件。</div>
         </div>
@@ -365,72 +360,135 @@
               <select id="repYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select>
             </div>
             <button id="btnRepRefresh">更新</button>
-            <button id="btnRepExport" class="primary">匯出 CSV</button>
+            <button id="btnRepExport" class="primary">下載目前分析 Excel</button>
           </div>
         </div>
 
-        <div class="hr"></div>
 
-        <div class="grid2">
-          <div class="subCard">
-            <h2 style="margin-bottom:6px;">(A) 執行狀況（分群 × 類別）</h2>
-            <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
-              <table>
-                <thead><tr><th style="width:110px;">分群</th><th style="width:120px;">類別</th><th style="width:90px;">家數</th><th style="width:90px;">案數</th></tr></thead>
-                <tbody id="repPhaseTbody"></tbody>
-              </table>
+        <div class="tabs" id="repTabs" style="margin:8px 0 10px 0;">
+          <button id="btnRepA" class="active">A 執行狀況</button>
+          <button id="btnRepB">B 輔具試用</button>
+          <button id="btnRepC">C 性別</button>
+          <button id="btnRepD">D 障礙類別</button>
+          <button id="btnRepE">E 借用統計</button>
+          <button id="btnRepF">F 審查會議分析</button>
+        </div>
+
+        <div id="repPanelA" class="subCard">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h2 style="margin-bottom:0;">(A) 執行狀況（分群 × 類別）</h2>
+            <button class="btnRepPanelExport" data-panel="A">下載 Excel</button>
+          </div>
+          <div class="tableWrap" style="max-height:52vh;margin-top:10px;">
+            <table>
+              <thead><tr><th style="width:110px;">分群</th><th style="width:120px;">類別</th><th style="width:90px;">家數</th><th style="width:90px;">案數</th></tr></thead>
+              <tbody id="repPhaseTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="repPanelB" class="subCard" style="display:none;">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h2 style="margin-bottom:0;">(B) 輔具試用（借用次數 Top30）</h2>
+            <button class="btnRepPanelExport" data-panel="B">下載 Excel</button>
+          </div>
+          <div class="tableWrap" style="max-height:52vh;margin-top:10px;">
+            <table>
+              <thead><tr><th>輔具</th><th style="width:110px;">借用次數</th><th style="width:110px;">借用中</th></tr></thead>
+              <tbody id="repLoanTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="repPanelC" class="subCard" style="display:none;">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h2 style="margin-bottom:0;">(C) 性別</h2>
+            <button class="btnRepPanelExport" data-panel="C">下載 Excel</button>
+          </div>
+          <div class="tableWrap" style="max-height:52vh;margin-top:10px;">
+            <table>
+              <thead><tr><th>性別</th><th style="width:120px;">件數</th></tr></thead>
+              <tbody id="repGenderTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="repPanelD" class="subCard" style="display:none;">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h2 style="margin-bottom:0;">(D) 障礙類別</h2>
+            <button class="btnRepPanelExport" data-panel="D">下載 Excel</button>
+          </div>
+          <div class="tableWrap" style="max-height:52vh;margin-top:10px;">
+            <table>
+              <thead><tr><th>障礙類別</th><th style="width:120px;">件數</th></tr></thead>
+              <tbody id="repDisTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="repPanelE" class="subCard" style="display:none;">
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+            <h2 style="margin-bottom:0;">(E) 輔具借用統計（月份 × 分類）</h2>
+            <div class="row" style="gap:4px;">
+              <button class="btnRepPanelExport" data-panel="E">下載 Excel</button>
+              <button id="btnLoanStatJA" class="primary" style="font-size:12px;padding:4px 12px;border-radius:20px;">身障</button>
+              <button id="btnLoanStatAG" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">中高齡</button>
+              <button id="btnLoanStatEC" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">ECFA</button>
+              <button id="btnLoanStatLT" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">勞通</button>
             </div>
           </div>
-
-          <div class="subCard">
-            <h2 style="margin-bottom:6px;">(B) 輔具試用（借用次數 Top30）</h2>
-            <div class="tableWrap" style="max-height:42vh;margin-top:10px;">
-              <table>
-                <thead><tr><th>輔具</th><th style="width:110px;">借用次數</th><th style="width:110px;">借用中</th></tr></thead>
-                <tbody id="repLoanTbody"></tbody>
-              </table>
-            </div>
+          <div class="tableWrap" style="overflow-x:auto;max-height:55vh;margin-top:4px;">
+            <table id="repLoanStatTable" style="font-size:12px;white-space:nowrap;min-width:700px;">
+              <thead id="repLoanStatHead"></thead>
+              <tbody id="repLoanStatTbody"></tbody>
+            </table>
           </div>
+        </div>
 
-          <div class="subCard">
-            <h2 style="margin-bottom:6px;">(C) 性別</h2>
-            <div class="tableWrap" style="max-height:30vh;margin-top:10px;">
-              <table>
-                <thead><tr><th>性別</th><th style="width:120px;">件數</th></tr></thead>
-                <tbody id="repGenderTbody"></tbody>
-              </table>
-            </div>
+        <div id="repPanelF" class="subCard" style="display:none;">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h2 style="margin-bottom:0;">(F) 審查會議統計分析</h2>
+            <button class="btnRepPanelExport" data-panel="F">下載 Excel</button>
           </div>
-
-          <div class="subCard">
-            <h2 style="margin-bottom:6px;">(D) 障礙類別</h2>
-            <div class="tableWrap" style="max-height:30vh;margin-top:10px;">
-              <table>
-                <thead><tr><th>障礙類別</th><th style="width:120px;">件數</th></tr></thead>
-                <tbody id="repDisTbody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="subCard" style="grid-column:1/-1;">
-            <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-              <h2 style="margin-bottom:0;">(E) 輔具借用統計（月份 × 分類）</h2>
-              <div class="row" style="gap:4px;">
-                <button id="btnLoanStatJA" class="primary" style="font-size:12px;padding:4px 12px;border-radius:20px;">身障</button>
-                <button id="btnLoanStatAG" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">中高齡</button>
-                <button id="btnLoanStatEC" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">ECFA</button>
-                <button id="btnLoanStatLT" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);">勞通</button>
+          <div class="grid2" style="margin-top:10px;">
+            <div class="subCard">
+              <h2 style="margin-bottom:6px;">1. 轄區案件統計</h2>
+              <div class="tableWrap" style="max-height:30vh;">
+                <table>
+                  <thead><tr><th>轄區</th><th style="width:90px;">案件數</th><th style="width:90px;">會議筆數</th></tr></thead>
+                  <tbody id="repRvAreaTbody"></tbody>
+                </table>
               </div>
             </div>
-            <div class="tableWrap" style="overflow-x:auto;max-height:55vh;margin-top:4px;">
-              <table id="repLoanStatTable" style="font-size:12px;white-space:nowrap;min-width:700px;">
-                <thead id="repLoanStatHead"></thead>
-                <tbody id="repLoanStatTbody"></tbody>
-              </table>
+            <div class="subCard">
+              <h2 style="margin-bottom:6px;">2. 轄區及改善策略統計</h2>
+              <div class="tableWrap" style="max-height:30vh;">
+                <table>
+                  <thead><tr><th>轄區</th><th>改善策略/補助分類</th><th style="width:90px;">次數</th></tr></thead>
+                  <tbody id="repRvStrategyTbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="subCard" style="grid-column:1/-1;">
+              <h2 style="margin-bottom:6px;">3. 審查決議與補助通過率</h2>
+              <div class="tableWrap" style="max-height:30vh;">
+                <table>
+                  <thead><tr><th>決議</th><th style="width:90px;">件數</th><th style="width:110px;">獲補助件數</th><th style="width:110px;">通過率</th><th style="width:120px;">核定總額</th></tr></thead>
+                  <tbody id="repRvDecisionTbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="subCard" style="grid-column:1/-1;">
+              <h2 style="margin-bottom:6px;">4. 轄區承辦基本資料</h2>
+              <div class="tableWrap" style="max-height:30vh;">
+                <table>
+                  <thead><tr><th>轄區</th><th style="width:90px;">類別</th><th style="width:90px;">承辦人</th><th>mail</th><th style="width:140px;">電話</th></tr></thead>
+                  <tbody id="repRvContactTbody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-
         <div class="hint" style="margin-top:12px;">
           <div style="font-weight:800;margin-bottom:6px;">效能提示</div>
           <div class="muted">目前報表採「前端讀取年度案件 → 前端聚合」。若資料量很大，再改成 aggregates（Cloud Functions）會更快。</div>
@@ -454,7 +512,6 @@
           </div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="grid3" style="margin-bottom:10px;">
           <div><label>年度</label>
@@ -595,7 +652,6 @@
 
         <!-- 借用紀錄面板 -->
         <div id="devPanelLoans">
-        <div class="hr"></div>
 
         <div class="subCard">
           <h2 style="margin-bottom:6px;">借用紀錄（最近 200 筆）</h2>
@@ -662,7 +718,6 @@
           </div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="grid3">
           <div><label>年度</label><select id="cdYear"><option value="115">115</option><option value="114">114</option><option value="113">113</option></select></div>
@@ -677,11 +732,9 @@
           </div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="tabs" id="cdTabs"></div>
 
-        <div class="hr"></div>
 
         <div id="cdPanels"></div>
       </section>
@@ -707,6 +760,7 @@
         <button id="tabOptions">下拉選單</button>
         <button id="tabReviewDisplay">審查會議欄位</button>
         <button id="tabReportPaths">報告路徑</button>
+        <button id="tabOwners">主責人</button>
       </div>
 
       <div id="panelRules">
@@ -715,7 +769,6 @@
           <div><span class="tagWarn">●</span> 新增代碼只需在此新增規則即可，無須改程式。</div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="row" style="justify-content:space-between">
           <div>
@@ -727,7 +780,6 @@
           </div>
         </div>
 
-        <div class="hr"></div>
 
         <div class="row" style="justify-content:space-between">
           <div style="font-weight:800">代碼規則</div>
@@ -756,7 +808,6 @@
 
       <div id="panelOptions" hidden>
         <div class="hint">點選分類按鈕切換區塊，每行一個選項可調整順序。</div>
-        <div class="hr"></div>
 
         <!-- 分類 Tab 按鈕 -->
         <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px;">
@@ -794,7 +845,6 @@
           </div>
         </div>
 
-        <div class="hr"></div>
         <div class="row" style="justify-content:flex-end">
           <button id="btnSaveOptions" class="primary">儲存下拉選單</button>
         </div>
@@ -802,7 +852,6 @@
 
       <div id="panelReviewDisplay" hidden>
         <div class="hint">勾選要在「個案詳情 → 審查會議」Tab 顯示的欄位。</div>
-        <div class="hr"></div>
         <div class="grid2">
           <label><input type="checkbox" id="rvd_meetingDate" /> 審查日期</label>
           <label><input type="checkbox" id="rvd_meetingArea" /> 轄區</label>
@@ -817,14 +866,12 @@
           <label><input type="checkbox" id="rvd_getsSubsidy" /> 獲得補助</label>
           <label><input type="checkbox" id="rvd_meetingDecision" /> 審查決議</label>
         </div>
-        <div class="hr"></div>
         <div class="row" style="justify-content:flex-end">
           <button id="btnSaveReviewDisplay" class="primary">儲存欄位設定</button>
         </div>
       </div>
       <div id="panelReportPaths" hidden>
         <div class="hint">設定每年度報告資料夾。修改後不會覆蓋舊案件已綁定的路徑快照。</div>
-        <div class="hr"></div>
         <div class="grid3">
           <div><label>年度</label><input id="rpYear" placeholder="例如：115" /></div>
           <div><label>待審查資料夾</label><input id="rpPendingPath" placeholder="\\\\server\\share\\...\\待審閱資料夾" /></div>
@@ -833,7 +880,6 @@
         <div class="row" style="justify-content:flex-end;margin-top:10px;">
           <button id="btnSaveReportPath" class="primary">儲存年度路徑</button>
         </div>
-        <div class="hr"></div>
         <div class="tableWrap" style="max-height:36vh;">
           <table>
             <thead>
@@ -845,6 +891,29 @@
               </tr>
             </thead>
             <tbody id="reportPathTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="panelOwners" hidden>
+        <div class="hint">管理主責人名單（顯示姓名、信箱、角色、職稱）。會影響：接案人員清單與報告審閱自動分派。</div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px;">
+          <button id="btnAddOwner">新增主責人</button>
+          <button id="btnSaveOwners" class="primary">儲存主責人名單</button>
+        </div>
+        <div class="tableWrap" style="max-height:40vh;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:140px;">姓名</th>
+                <th style="width:220px;">Email</th>
+                <th style="width:90px;">角色</th>
+                <th style="width:100px;">職稱</th>
+                <th style="width:80px;">啟用</th>
+                <th style="width:80px;">排序</th>
+                <th style="width:80px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="ownerTbody"></tbody>
           </table>
         </div>
       </div>
@@ -860,6 +929,7 @@
           <div class="muted">預覽→驗證→批次寫入。</div>
         </div>
         <div class="row">
+          <button id="btnCaseTemplate">下載範本</button>
           <button id="btnCloseImport">關閉</button>
         </div>
       </div>
@@ -955,7 +1025,10 @@
     <div class="modal" style="max-width:700px;max-height:92vh;overflow-y:auto;">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
         <div><h3>📊 審查會議 Excel 匯入 — 欄位對應</h3><div class="muted">選工作表 → 對應欄位 → 預覽確認</div></div>
-        <button id="btnCloseReviewImport">關閉</button>
+        <div class="row">
+          <button id="btnRvImportTemplate">下載範本</button>
+          <button id="btnCloseReviewImport">關閉</button>
+        </div>
       </div>
       <div class="hr"></div>
       <div class="grid2" style="margin-bottom:10px;">
@@ -1164,6 +1237,7 @@
           <h3>📊 匯入 Excel — 欄位對應</h3>
           <div class="muted">選擇工作表，再設定每個系統欄位要對到 Excel 哪一欄</div>
         </div>
+        <button id="btnDevImportTemplateInModal">下載模板</button>
         <button id="btnCloseDevImport">關閉</button>
       </div>
       <div class="hr"></div>
@@ -1326,6 +1400,30 @@
       "yilun1208@gmail.com": "盧怡倫"
     };
 
+    function defaultOwners(){
+      return Object.keys(NAME_BY_EMAIL).map((email,idx)=>( {
+        email,
+        name: NAME_BY_EMAIL[email] || email,
+        role: ROLE_BY_EMAIL[email] || "staff",
+        title: (ROLE_BY_EMAIL[email]==="admin" ? "管理員" : "專員"),
+        enabled: true,
+        sort: (idx+1)*10
+      }));
+    }
+
+    function getOwnerProfiles(){
+      const arr = settings?.owners?.profiles;
+      if(Array.isArray(arr) && arr.length){
+        return arr.filter(x=>x && x.enabled!==false).sort((a,b)=>(a.sort??999)-(b.sort??999));
+      }
+      return defaultOwners();
+    }
+
+    function findOwnerByEmail(email){
+      const e = String(email||"").toLowerCase();
+      return getOwnerProfiles().find(x=> String(x.email||"").toLowerCase()===e) || null;
+    }
+
     // ===== App init =====
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -1443,11 +1541,11 @@
 
     function getReviewerCandidates(ownerName=""){
       const owner = String(ownerName||"").trim();
-      const raw = Object.keys(NAME_BY_EMAIL).map(email=>({
-        email,
-        name: NAME_BY_EMAIL[email],
-        role: ROLE_BY_EMAIL[email] || "staff"
-      })).filter(x=>x.name && (x.role==="staff" || x.role==="admin"));
+      const raw = getOwnerProfiles().map(x=>({
+        email: x.email || "",
+        name: x.name || "",
+        role: x.role || "staff"
+      })).filter(x=>x.name && (x.role==="staff" || x.role==="admin" || x.role==="leader"));
       const seen = new Set();
       return raw.filter(x=> x.name !== owner).filter(x=>{
         if(seen.has(x.name)) return false;
@@ -1496,6 +1594,9 @@
         reportPaths: {
           byYear: {},
           history: []
+        },
+        owners: {
+          profiles: defaultOwners()
         }
       };
     }
@@ -1505,12 +1606,14 @@
       const r2 = await safeGetDoc("settings/options");
       const r3 = await safeGetDoc("settings/reviewDisplay");
       const r4 = await safeGetDoc("settings/reportPaths");
+      const r5 = await safeGetDoc("settings/owners");
       settings = {
         caseCodeRules: r1 || d.caseCodeRules,
         options: r2 || d.options,
         reviewDisplay: r3 || { meetingDate:true, meetingArea:true, meetingNo:true,
           itemCount:true, appliedAmount:true, approvedAmount:true, meetingDecision:true },
-        reportPaths: r4 || d.reportPaths
+        reportPaths: r4 || d.reportPaths,
+        owners: r5 || d.owners
       };
 
       settings.caseCodeRules.caseTypes = settings.caseCodeRules.caseTypes || d.caseCodeRules.caseTypes;
@@ -1535,6 +1638,16 @@
       settings.reportPaths = settings.reportPaths || d.reportPaths;
       settings.reportPaths.byYear = settings.reportPaths.byYear || {};
       settings.reportPaths.history = Array.isArray(settings.reportPaths.history) ? settings.reportPaths.history : [];
+      settings.owners = settings.owners || d.owners;
+      settings.owners.profiles = Array.isArray(settings.owners.profiles) ? settings.owners.profiles : defaultOwners();
+      settings.owners.profiles = settings.owners.profiles.map((x,idx)=>({
+        name: (x.name||"").trim(),
+        email: (x.email||"").trim().toLowerCase(),
+        role: x.role||"staff",
+        title: x.title||"",
+        enabled: x.enabled!==false,
+        sort: x.sort ?? ((idx+1)*10)
+      })).filter(x=>x.name || x.email).sort((a,b)=>(a.sort??999)-(b.sort??999));
     }
     function detectCaseTypeFromCaseNo(caseNo){
       const code = parseCaseCode(caseNo);
@@ -1627,33 +1740,65 @@
       const tabOptionsBtn = $("tabOptions");
       const tabRvDispBtn = $("tabReviewDisplay");
       const tabReportPathsBtn = $("tabReportPaths");
+      const tabOwnersBtn = $("tabOwners");
       const panelRules = $("panelRules");
       const panelOptions = $("panelOptions");
       const panelRvDisp = $("panelReviewDisplay");
       const panelReportPaths = $("panelReportPaths");
+      const panelOwners = $("panelOwners");
 
       function setTab(which){
         tabRulesBtn.classList.toggle("active", which==="rules");
         tabOptionsBtn.classList.toggle("active", which==="options");
         tabRvDispBtn.classList.toggle("active", which==="reviewDisplay");
         tabReportPathsBtn.classList.toggle("active", which==="reportPaths");
+        tabOwnersBtn.classList.toggle("active", which==="owners");
         panelRules.hidden = which!=="rules";
         panelOptions.hidden = which!=="options";
         panelRvDisp.hidden = which!=="reviewDisplay";
         panelReportPaths.hidden = which!=="reportPaths";
+        panelOwners.hidden = which!=="owners";
         if(which==="reviewDisplay") loadReviewDisplaySettings();
         if(which==="reportPaths" && !$("rpYear").value) $("rpYear").value = String(new Date().getFullYear()-1911);
+        if(which==="owners") renderSettingsModal();
       }
       tabRulesBtn.addEventListener("click", ()=>setTab("rules"));
       tabOptionsBtn.addEventListener("click", ()=>{ setTab("options"); showOptSection("case"); });
       tabRvDispBtn.addEventListener("click", ()=>setTab("reviewDisplay"));
       tabReportPathsBtn.addEventListener("click", ()=>setTab("reportPaths"));
+      tabOwnersBtn.addEventListener("click", ()=>setTab("owners"));
       $("rpYear")?.addEventListener("change", ()=>{
         const y = ($("rpYear")?.value||"").trim();
         const r = (settings.reportPaths?.byYear||{})[y] || {};
         if($("rpPendingPath")) $("rpPendingPath").value = r.pendingPath || "";
         if($("rpDonePath")) $("rpDonePath").value = r.donePath || "";
       });
+
+      const ownerTbody = $("ownerTbody");
+      if(ownerTbody){
+        ownerTbody.innerHTML = "";
+        const rows = getOwnerProfiles();
+        for(const o of rows){
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><input data-k="name" value="${escapeHtml(o.name||"")}" /></td>
+            <td><input data-k="email" value="${escapeHtml(o.email||"")}" /></td>
+            <td><select data-k="role">
+              <option value="staff">staff</option>
+              <option value="admin">admin</option>
+              <option value="leader">leader</option>
+            </select></td>
+            <td><input data-k="title" value="${escapeHtml(o.title||"")}" /></td>
+            <td><select data-k="enabled"><option value="true">啟用</option><option value="false">停用</option></select></td>
+            <td><input data-k="sort" type="number" value="${escapeHtml(o.sort ?? 999)}" /></td>
+            <td><button class="danger" data-act="delOwner">刪除</button></td>
+          `;
+          tr.querySelector("select[data-k=role]").value = o.role || "staff";
+          tr.querySelector("select[data-k=enabled]").value = (o.enabled!==false) ? "true" : "false";
+          tr.querySelector("button[data-act=delOwner]")?.addEventListener("click", ()=> tr.remove());
+          ownerTbody.appendChild(tr);
+        }
+      }
       setTab("rules");
 
       // ── 下拉選單分區 Tab ──
@@ -1708,7 +1853,48 @@
           toast("儲存失敗：" + (e?.message||e));
         }
       });
+      $("btnAddOwner")?.addEventListener("click", async ()=>{
+        const tbody = $("ownerTbody");
+        if(!tbody) return;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input data-k="name" value="" placeholder="姓名" /></td>
+          <td><input data-k="email" value="" placeholder="name@email.com" /></td>
+          <td><select data-k="role"><option value="staff">staff</option><option value="admin">admin</option><option value="leader">leader</option></select></td>
+          <td><input data-k="title" value="專員" placeholder="職稱" /></td>
+          <td><select data-k="enabled"><option value="true">啟用</option><option value="false">停用</option></select></td>
+          <td><input data-k="sort" type="number" value="999" /></td>
+          <td><button class="danger" data-act="delOwner">刪除</button></td>
+        `;
+        tr.querySelector("button[data-act=delOwner]")?.addEventListener("click", ()=> tr.remove());
+        tbody.appendChild(tr);
+      });
 
+      $("btnSaveOwners")?.addEventListener("click", async ()=>{
+        const rows = Array.from($("ownerTbody")?.querySelectorAll("tr") || []);
+        const profiles = [];
+        for(const r of rows){
+          const name = (r.querySelector('[data-k="name"]')?.value || "").trim();
+          const email = (r.querySelector('[data-k="email"]')?.value || "").trim().toLowerCase();
+          const role = (r.querySelector('[data-k="role"]')?.value || "staff").trim();
+          const title = (r.querySelector('[data-k="title"]')?.value || "").trim();
+          const enabled = (r.querySelector('[data-k="enabled"]')?.value || "true") === "true";
+          const sort = Number(r.querySelector('[data-k="sort"]')?.value || 999);
+          if(!name && !email) continue;
+          profiles.push({ name, email, role, title, enabled, sort });
+        }
+        settings.owners = { profiles: profiles.sort((a,b)=>(a.sort??999)-(b.sort??999)) };
+        try{
+          await safeSetDoc("settings/owners", settings.owners, true);
+          await loadSettings();
+          await renderSettingsModal();
+          toast("主責人名單已儲存。");
+          refreshAllViewsLight();
+        }catch(e){
+          console.error(e);
+          toast("儲存失敗：" + (e?.message||e));
+        }
+      });
       if(openBtn) openBtn.addEventListener("click", async ()=>{
         await renderSettingsModal();
         backdrop.classList.add("show");
@@ -1798,6 +1984,7 @@
           await safeSetDoc("settings/caseCodeRules", d.caseCodeRules, true);
           await safeSetDoc("settings/options", d.options, true);
           await safeSetDoc("settings/reportPaths", d.reportPaths, true);
+          await safeSetDoc("settings/owners", d.owners, true);
           await loadSettings();
           toast("已初始化設定。");
           await renderSettingsModal();
@@ -1860,6 +2047,31 @@
       $("opt_disabilityTypes").value = (settings.options.disabilityTypes||[]).join("\n");
       $("opt_disabilityDegrees").value = (settings.options.disabilityDegrees||[]).join("\n");
       $("opt_referralSources").value = (settings.options.referralSources||[]).join("\n");
+
+      const ownerTbody = $("ownerTbody");
+      if(ownerTbody){
+        ownerTbody.innerHTML = "";
+        for(const o of (settings.owners?.profiles || [])){
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><input data-k="name" value="${escapeHtml(o.name||"")}" /></td>
+            <td><input data-k="email" value="${escapeHtml(o.email||"")}" /></td>
+            <td><select data-k="role">
+              <option value="staff">staff</option>
+              <option value="admin">admin</option>
+              <option value="leader">leader</option>
+            </select></td>
+            <td><input data-k="title" value="${escapeHtml(o.title||"")}" /></td>
+            <td><select data-k="enabled"><option value="true">啟用</option><option value="false">停用</option></select></td>
+            <td><input data-k="sort" type="number" value="${escapeHtml(o.sort ?? 999)}" /></td>
+            <td><button class="danger" data-act="delOwner">刪除</button></td>
+          `;
+          tr.querySelector('select[data-k="role"]').value = o.role || "staff";
+          tr.querySelector('select[data-k="enabled"]').value = (o.enabled!==false) ? "true" : "false";
+          tr.querySelector("button[data-act=delOwner]")?.addEventListener("click", ()=> tr.remove());
+          ownerTbody.appendChild(tr);
+        }
+      }
 
       const rpTbody = $("reportPathTbody");
       if(rpTbody){
@@ -2213,7 +2425,7 @@
           "試用總次數","試用總件數","試用項目","訓練總次數","訓練總件數","訓練項目",
           "職再策略次數","職再品項",
           "借用紀錄筆數","借用中筆數","借用設備清單","最近借出時間",
-          "審查會議明細JSON","借用紀錄明細JSON","個案設備JSON","諮詢紀錄JSON",
+          "個案設備JSON","諮詢紀錄JSON",
           "備註","更新"
         ];
 
@@ -2257,7 +2469,7 @@
             tr.totalCount||"", tr.totalItems||"", [tr.trainItem1,tr.trainItem2,tr.trainItem3].filter(Boolean).join("、"),
             jr.strategyCount||"", (jr.items||[]).map(x=>x.itemName).filter(Boolean).join("、"),
             loans.length, loanActive, loanDevices, latestBorrow ? fmtDT(latestBorrow) : "",
-            toJson(meetings), toJson(loans), toJson(c.caseDevices||[]), toJson(c.consults||[]),
+            toJson(c.caseDevices||[]), toJson(c.consults||[]),
             c.remarks||"", fmtDT(c.updatedAt)||""
           ]);
         }
@@ -2429,18 +2641,12 @@
           </div>
           <button onclick="location.hash='case?id=${encodeURIComponent(c.id)}'">開啟個案詳情</button>
         </div>
-        <div class="hr"></div>
         <div class="grid2">
           <div class="subCard"><b>基本資料</b><div class="small muted" style="margin-top:6px;line-height:1.8;">性別：${escapeHtml(basic.gender||"")}<br/>年齡：${escapeHtml(basic.age||"")}<br/>障礙類別：${escapeHtml(basic.disabilityType||"")}<br/>障礙程度：${escapeHtml(basic.disabilityDegree||"")}<br/>轉介來源：${escapeHtml(basic.referralSource||"")}</div></div>
           <div class="subCard"><b>報告審閱</b><div class="small muted" style="margin-top:6px;line-height:1.8;">審查狀態：${escapeHtml(report.reviewStatus||"")}<br/>審閱者：${escapeHtml(report.reviewerName||"")}<br/>寄出時間：${escapeHtml(report.sentDate||"")}<br/>檔案：${escapeHtml(report.localFilePath||"")}</div></div>
           <div class="subCard"><b>審查會議</b><div class="small muted" style="margin-top:6px;line-height:1.8;">筆數：${meetings.length}<br/>申請總額：${mtApplied.toLocaleString()}<br/>核定總額：${mtApproved.toLocaleString()}<br/>決議：${escapeHtml([...new Set(meetings.map(m=>m.meetingDecision).filter(Boolean))].join("、"))}</div></div>
           <div class="subCard"><b>輔具資料</b><div class="small muted" style="margin-top:6px;line-height:1.8;">試用總次數：${escapeHtml((c.deviceTrial||{}).totalCount||"")}<br/>訓練總次數：${escapeHtml((c.deviceTraining||{}).totalCount||"")}<br/>借用紀錄：${loans.length}（借用中 ${row.loanActive}）<br/>職再策略：${escapeHtml((c.jobRedesign||{}).strategyCount||"")}</div></div>
         </div>
-        <div class="hr"></div>
-        <div class="small muted">審查會議明細 JSON</div>
-        <textarea readonly style="min-height:110px;">${escapeHtml(JSON.stringify(meetings||[], null, 2))}</textarea>
-        <div class="small muted" style="margin-top:8px;">借用紀錄明細 JSON</div>
-        <textarea readonly style="min-height:110px;">${escapeHtml(JSON.stringify(loans||[], null, 2))}</textarea>
       `;
     }
 
@@ -2486,8 +2692,6 @@
           借用中: r.loanActive||0,
           報告路徑: r.report?.localFilePath||"",
           更新時間: fmtDT(r.updatedAt)||"",
-          審查會議明細JSON: JSON.stringify(r.meetings||[]),
-          借用紀錄明細JSON: JSON.stringify(r.loans||[]),
           個案設備JSON: JSON.stringify(r.case?.caseDevices||[]),
           諮詢紀錄JSON: JSON.stringify(r.case?.consults||[])
         }));
@@ -2529,6 +2733,32 @@
       await loadExcelFile(f);
     });
     $("btnImportRun").addEventListener("click", runImport);
+    $("btnCaseTemplate")?.addEventListener("click", downloadCaseImportTemplate);
+
+    async function downloadCaseImportTemplate(){
+      try{
+        if(!window.XLSX){ await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"); }
+        const XL = window.XLSX;
+        const headers = [
+          "年度","編號","單位名稱","個案姓名","KPI狀態",
+          "性別","年齡","生日","障礙類別","障礙程度","轉介來源",
+          "接案人員","訪視委員","聯絡人1","聯絡電話1","聯絡人2","聯絡電話2"
+        ];
+        const sample = [
+          "115","JA001","範例公司","王小明",(settings.options.kpiStages||[])[0]||"待訪視",
+          "男","35","1990-01-01","肢體","中度","勞動力發展署",
+          "蔡凱宇","委員甲","聯絡人A","0912345678","聯絡人B","072345678"
+        ];
+        const ws = XL.utils.aoa_to_sheet([headers, sample]);
+        ws["!cols"] = headers.map(()=>({wch:14}));
+        const wb = XL.utils.book_new();
+        XL.utils.book_append_sheet(wb, ws, "案件匯入模板");
+        XL.writeFile(wb, `案件匯入模板_${new Date().toISOString().slice(0,10)}.xlsx`);
+      }catch(e){
+        console.error(e);
+        toast("下載範本失敗：" + (e?.message||e));
+      }
+    }
 
     async function openImportModal(){
       $("importModal").classList.add("show");
@@ -2548,20 +2778,36 @@
       if(saved){
         try{ return JSON.parse(saved); }catch{}
       }
-      const guess = (keys)=> cols.find(c=> keys.some(k=>c.includes(k))) || "";
+      const guess = (keys)=> cols.find(c=> keys.some(k=> String(c).includes(k))) || "";
       return {
         year: guess(["年度","year"]),
         caseNo: guess(["編號","案號","caseNo"]),
-        orgName: guess(["單位","公司","org"]),
-        clientName: guess(["姓名","個案","client"]),
-        kpiStage: guess(["KPI","階段"])
+        orgName: guess(["單位名稱","單位","公司","org"]),
+        clientName: guess(["個案姓名","姓名","個案","client"]),
+        kpiStage: guess(["KPI狀態","KPI","階段"]),
+        gender: guess(["性別"]),
+        age: guess(["年齡"]),
+        birthDate: guess(["生日","出生"]),
+        disabilityType: guess(["障礙類別"]),
+        disabilityDegree: guess(["障礙程度"]),
+        referralSource: guess(["轉介來源"]),
+        assignedStaff: guess(["接案人員","主責人員","承辦"]),
+        visitCommittee: guess(["訪視委員"]),
+        contactPerson1: guess(["聯絡人1"]),
+        contactPhone1: guess(["聯絡電話1","電話1"]),
+        contactPerson2: guess(["聯絡人2"]),
+        contactPhone2: guess(["聯絡電話2","電話2"])
       };
     }
 
     function renderMapping(cols, mapping){
       const area = $("mappingArea");
       area.innerHTML = "";
-      const fields = [["year","年度(必)"],["caseNo","編號(必)"],["orgName","單位(建議)"],["clientName","個案(選)"],["kpiStage","KPI(選)"]];
+      const fields = [
+        ["year","年度(必)"],["caseNo","編號(必)"],["orgName","單位名稱(建議)"],["clientName","個案姓名(建議)"],["kpiStage","KPI狀態(選)"],
+        ["gender","性別(選)"],["age","年齡(選)"],["birthDate","生日(選)"],["disabilityType","障礙類別(選)"],["disabilityDegree","障礙程度(選)"],["referralSource","轉介來源(選)"],
+        ["assignedStaff","接案人員(選)"],["visitCommittee","訪視委員(選)"],["contactPerson1","聯絡人1(選)"],["contactPhone1","聯絡電話1(選)"],["contactPerson2","聯絡人2(選)"],["contactPhone2","聯絡電話2(選)"]
+      ];
       for(const [k,label] of fields){
         const div = document.createElement("div");
         div.innerHTML = `<label>${label}</label><select id="map_${k}"><option value="">（不對應）</option>${cols.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}</select>`;
@@ -2591,13 +2837,28 @@
         const kpiStage = String(rowVal(r, mapping.kpiStage) || "").trim() || kpiDefault;
         const { caseType } = detectCaseTypeFromCaseNo(caseNo);
 
+        const basic = {
+          gender: String(rowVal(r, mapping.gender)||"").trim(),
+          age: String(rowVal(r, mapping.age)||"").trim(),
+          birthDate: String(rowVal(r, mapping.birthDate)||"").trim(),
+          disabilityType: String(rowVal(r, mapping.disabilityType)||"").trim(),
+          disabilityDegree: String(rowVal(r, mapping.disabilityDegree)||"").trim(),
+          referralSource: String(rowVal(r, mapping.referralSource)||"").trim(),
+          assignedStaff: String(rowVal(r, mapping.assignedStaff)||"").trim(),
+          visitCommittee: String(rowVal(r, mapping.visitCommittee)||"").trim(),
+          contactPerson1: String(rowVal(r, mapping.contactPerson1)||"").trim(),
+          contactPhone1: String(rowVal(r, mapping.contactPhone1)||"").trim(),
+          contactPerson2: String(rowVal(r, mapping.contactPerson2)||"").trim(),
+          contactPhone2: String(rowVal(r, mapping.contactPhone2)||"").trim(),
+        };
+
         const errors = [];
         if(!year) errors.push("缺年度");
         if(!caseNo) errors.push("缺編號");
         if(!orgName && !clientName) errors.push("需單位或個案");
         if(kpiStage && !(settings.options.kpiStages||[]).includes(kpiStage)) errors.push("KPI 不在選單");
 
-        return { _idx:idx, _ok:errors.length===0, _errors:errors, year, caseNo, orgName, clientName, caseType, kpiStage };
+        return { _idx:idx, _ok:errors.length===0, _errors:errors, year, caseNo, orgName, clientName, caseType, kpiStage, basic };
       });
       renderPreviewTable();
     }
@@ -2668,7 +2929,7 @@
               ownerName: currentName,
               orgName: r.orgName || "",
               clientName: r.clientName || "",
-              basic: { orgName: r.orgName || "", clientName: r.clientName || "" },
+              basic: { orgName: r.orgName || "", clientName: r.clientName || "", ...(r.basic||{}) },
               employment: {}, timeline: {},
               deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
               progress: {}, report: assignReviewerAuto(normalizeReport({}, r.year), { year:String(r.year), caseNo:r.caseNo, ownerName:currentName }),
@@ -2693,14 +2954,35 @@
       }
     }
 
-    // ===== Views: Reports =====
+        // ===== Views: Reports =====
     let repCases = [];
     let repLoans = [];
-    let repExportRows = [];
+    let repMeetings = [];
+    let repActivePanel = "A";
+    let repRowsA = [];
+    let repRowsB = [];
+    let repRowsC = [];
+    let repRowsD = [];
+    let repRowsF1 = [];
+    let repRowsF2 = [];
+    let repRowsF3 = [];
+    let repRowsF4 = [];
+
+    const repAreaContacts = [
+      { 轄區:"高雄", 類別:"身障", 承辦人:"張世立", mail:"lili341341@gmail.com", 電話:"" },
+      { 轄區:"屏東", 類別:"身障", 承辦人:"洪錦蓉", mail:"a250245@oa.pthg.gov.tw", 電話:"" },
+      { 轄區:"台東", 類別:"身障", 承辦人:"廖彥斐", mail:"n3116@taitung.gov.tw", 電話:"" },
+      { 轄區:"澎湖", 類別:"身障", 承辦人:"蔡秀英", mail:"fs30901@mail.penghu.gov.tw", 電話:"" },
+      { 轄區:"岡山訓就", 類別:"中高", 承辦人:"顏雅玲", mail:"alinyan1975@gmail.com", 電話:"07-6228321#222" },
+      { 轄區:"高屏澎東銀髮", 類別:"中高", 承辦人:"林益青", mail:"kimlatte@wda.gov.tw", 電話:"07-7252586#118" },
+      { 轄區:"鳳山訓就", 類別:"中高", 承辦人:"胡婉祥", mail:"papa54928@gmail.com", 電話:"" },
+      { 轄區:"高屏澎東", 類別:"分署承辦", 承辦人:"黃弦綺", mail:"irichiuang@wda.gov.tw", 電話:"" }
+    ];
 
     $("btnRepRefresh").addEventListener("click", ()=> refreshReports(true));
     $("repYear").addEventListener("change", ()=> refreshReports(true));
-    $("btnRepExport").addEventListener("click", exportReportsCsv);
+    $("btnRepExport").addEventListener("click", ()=> exportReportPanelExcel(repActivePanel));
+
     const _loanStatBtns = ["btnLoanStatJA","btnLoanStatAG","btnLoanStatEC","btnLoanStatLT"];
     const _loanStatOff = "font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--fg);border:1px solid var(--b);";
     const _loanStatOn  = "font-size:12px;padding:4px 12px;border-radius:20px;";
@@ -2711,17 +2993,32 @@
         else { b.className=""; b.style.cssText=_loanStatOff; }
       });
     }
-    $("btnLoanStatJA").addEventListener("click", ()=>{ _loanStatMode="JA"; _setLoanStatBtn("btnLoanStatJA"); _renderLoanStat(); });
-    $("btnLoanStatAG").addEventListener("click", ()=>{ _loanStatMode="AG"; _setLoanStatBtn("btnLoanStatAG"); _renderLoanStat(); });
-    $("btnLoanStatEC").addEventListener("click", ()=>{ _loanStatMode="EC"; _setLoanStatBtn("btnLoanStatEC"); _renderLoanStat(); });
-    $("btnLoanStatLT").addEventListener("click", ()=>{ _loanStatMode="LT"; _setLoanStatBtn("btnLoanStatLT"); _renderLoanStat(); });
+    $("btnLoanStatJA")?.addEventListener("click", ()=>{ _loanStatMode="JA"; _setLoanStatBtn("btnLoanStatJA"); _renderLoanStat(); });
+    $("btnLoanStatAG")?.addEventListener("click", ()=>{ _loanStatMode="AG"; _setLoanStatBtn("btnLoanStatAG"); _renderLoanStat(); });
+    $("btnLoanStatEC")?.addEventListener("click", ()=>{ _loanStatMode="EC"; _setLoanStatBtn("btnLoanStatEC"); _renderLoanStat(); });
+    $("btnLoanStatLT")?.addEventListener("click", ()=>{ _loanStatMode="LT"; _setLoanStatBtn("btnLoanStatLT"); _renderLoanStat(); });
+
+    ["A","B","C","D","E","F"].forEach(k=>{
+      $("btnRep"+k)?.addEventListener("click", ()=> setRepPanel(k));
+    });
+    document.querySelectorAll(".btnRepPanelExport").forEach(btn=>{
+      btn.addEventListener("click", ()=> exportReportPanelExcel(btn.dataset.panel || repActivePanel));
+    });
+
+    function setRepPanel(panel){
+      repActivePanel = panel;
+      ["A","B","C","D","E","F"].forEach(k=>{
+        $("btnRep"+k)?.classList.toggle("active", k===panel);
+        const p = $("repPanel"+k);
+        if(p) p.style.display = (k===panel) ? "" : "none";
+      });
+    }
 
     async function loadLoans(force=false){
       if(!force && cacheLoans.length) return cacheLoans;
       const snap = await getDocs(query(collection(db,"deviceLoans"), limit(5000)));
       const items = [];
       snap.forEach(d=> items.push({ id:d.id, ...d.data() }));
-      // sort newest first
       items.sort((a,b)=> {
         const ta = a.borrowAt?.toDate ? a.borrowAt.toDate() : (a.borrowAt?new Date(a.borrowAt):new Date(0));
         const tb = b.borrowAt?.toDate ? b.borrowAt.toDate() : (b.borrowAt?new Date(b.borrowAt):new Date(0));
@@ -2732,17 +3029,13 @@
     }
 
     function renderReports(){
-      repExportRows = [];
-
       // (A) phase x type
       const phases = settings.options.casePhases || [];
       const types = settings.caseCodeRules.caseTypes || [];
       const map = {};
       for(const ph of phases){
         map[ph] = {};
-        for(const t of types){
-          map[ph][t] = { caseCount:0, orgSet:new Set() };
-        }
+        for(const t of types) map[ph][t] = { caseCount:0, orgSet:new Set() };
       }
       for(const c of repCases){
         const ph = c.casePhase || "";
@@ -2752,18 +3045,19 @@
         const org = (c.orgName || c.basic?.orgName || "").trim();
         if(org) map[ph][t].orgSet.add(org);
       }
-
+      repRowsA = [];
       const phaseTb = $("repPhaseTbody");
-      phaseTb.innerHTML = "";
-      repExportRows.push(["報表","分群","類別","家數","案數"]);
+      if(phaseTb) phaseTb.innerHTML = "";
       for(const ph of phases){
         for(const t of types){
           const cell = map[ph][t];
           const orgCount = (t==="中高齡") ? cell.orgSet.size : (cell.caseCount ? 1 : 0);
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${escapeHtml(ph)}</td><td>${escapeHtml(t)}</td><td>${orgCount}</td><td>${cell.caseCount}</td>`;
-          phaseTb.appendChild(tr);
-          repExportRows.push(["執行狀況", ph, t, String(orgCount), String(cell.caseCount)]);
+          repRowsA.push({ 分群:ph, 類別:t, 家數:orgCount, 案數:cell.caseCount });
+        }
+      }
+      if(phaseTb){
+        for(const r of repRowsA){
+          phaseTb.innerHTML += `<tr><td>${escapeHtml(r.分群)}</td><td>${escapeHtml(r.類別)}</td><td>${r.家數}</td><td>${r.案數}</td></tr>`;
         }
       }
 
@@ -2771,21 +3065,18 @@
       const by = new Map();
       for(const l of repLoans){
         const name = l.deviceName || l.deviceId || "未命名";
-        if(!by.has(name)) by.set(name, { name, count:0, active:0 });
+        if(!by.has(name)) by.set(name, { 輔具:name, 借用次數:0, 借用中:0 });
         const it = by.get(name);
-        it.count += 1;
-        if(!l.returnAt) it.active += 1;
+        it.借用次數 += 1;
+        if(!l.returnAt) it.借用中 += 1;
       }
-      const top = Array.from(by.values()).sort((a,b)=> b.count-a.count).slice(0,30);
+      repRowsB = Array.from(by.values()).sort((a,b)=> b.借用次數-a.借用次數).slice(0,30);
       const loanTb = $("repLoanTbody");
-      loanTb.innerHTML = "";
-      for(const it of top){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${escapeHtml(it.name)}</td><td>${it.count}</td><td>${it.active}</td>`;
-        loanTb.appendChild(tr);
-        repExportRows.push(["輔具試用","", it.name, "", String(it.count)]);
+      if(loanTb){
+        loanTb.innerHTML = "";
+        for(const r of repRowsB) loanTb.innerHTML += `<tr><td>${escapeHtml(r.輔具)}</td><td>${r.借用次數}</td><td>${r.借用中}</td></tr>`;
+        if(!repRowsB.length) loanTb.innerHTML = `<tr><td colspan="3" class="muted">尚無借用資料。</td></tr>`;
       }
-      if(!top.length) loanTb.innerHTML = `<tr><td colspan="3" class="muted">尚無借用資料。</td></tr>`;
 
       // (C) gender
       const gMap = new Map();
@@ -2793,11 +3084,11 @@
         const g = (c.basic?.gender || "").trim() || "其他/未填";
         gMap.set(g, (gMap.get(g)||0)+1);
       }
+      repRowsC = Array.from(gMap.entries()).sort((a,b)=> b[1]-a[1]).map(([k,v])=>({ 性別:k, 件數:v }));
       const gTb = $("repGenderTbody");
-      gTb.innerHTML = "";
-      for(const [g,n] of Array.from(gMap.entries()).sort((a,b)=> b[1]-a[1])){
-        gTb.innerHTML += `<tr><td>${escapeHtml(g)}</td><td>${n}</td></tr>`;
-        repExportRows.push(["性別", "", g, "", String(n)]);
+      if(gTb){
+        gTb.innerHTML = "";
+        for(const r of repRowsC) gTb.innerHTML += `<tr><td>${escapeHtml(r.性別)}</td><td>${r.件數}</td></tr>`;
       }
 
       // (D) disability
@@ -2806,15 +3097,95 @@
         const t = (c.basic?.disabilityType || "").trim() || "其他/未填";
         dMap.set(t, (dMap.get(t)||0)+1);
       }
+      repRowsD = Array.from(dMap.entries()).sort((a,b)=> b[1]-a[1]).map(([k,v])=>({ 障礙類別:k, 件數:v }));
       const dTb = $("repDisTbody");
-      dTb.innerHTML = "";
-      for(const [t,n] of Array.from(dMap.entries()).sort((a,b)=> b[1]-a[1])){
-        dTb.innerHTML += `<tr><td>${escapeHtml(t)}</td><td>${n}</td></tr>`;
-        repExportRows.push(["障礙類別", "", t, "", String(n)]);
+      if(dTb){
+        dTb.innerHTML = "";
+        for(const r of repRowsD) dTb.innerHTML += `<tr><td>${escapeHtml(r.障礙類別)}</td><td>${r.件數}</td></tr>`;
       }
 
       // (E) loan stat by case type
       _renderLoanStat();
+
+      // (F) review meetings statistics
+      const y = String($("repYear")?.value||"");
+      const rv = (repMeetings||[]).filter(r=> String(r.year||"")===y);
+
+      // F1 轄區案件統計
+      const areaMap = new Map();
+      for(const r of rv){
+        const area = r.meetingArea || "未填";
+        if(!areaMap.has(area)) areaMap.set(area,{ cases:new Set(), meetings:0 });
+        const it = areaMap.get(area);
+        it.meetings += 1;
+        if(r.caseNo) it.cases.add(r.caseNo);
+      }
+      repRowsF1 = Array.from(areaMap.entries()).map(([area,v])=>({ 轄區:area, 案件數:v.cases.size, 會議筆數:v.meetings }))
+        .sort((a,b)=> b.案件數-a.案件數 || b.會議筆數-a.會議筆數);
+      const rvAreaTb = $("repRvAreaTbody");
+      if(rvAreaTb){
+        rvAreaTb.innerHTML = "";
+        for(const r of repRowsF1) rvAreaTb.innerHTML += `<tr><td>${escapeHtml(r.轄區)}</td><td>${r.案件數}</td><td>${r.會議筆數}</td></tr>`;
+        if(!repRowsF1.length) rvAreaTb.innerHTML = `<tr><td colspan="3" class="muted">本年度尚無資料。</td></tr>`;
+      }
+
+      // F2 轄區及改善策略統計
+      const strategyMap = new Map();
+      for(const r of rv){
+        const area = r.meetingArea || "未填";
+        const items = r.items||[];
+        for(const it of items){
+          const st = (it.subsidyCategory||"").trim() || "未填";
+          const k = `${area}__${st}`;
+          strategyMap.set(k, (strategyMap.get(k)||0)+1);
+        }
+      }
+      repRowsF2 = Array.from(strategyMap.entries()).map(([k,v])=>{
+        const [area, st] = k.split("__");
+        return { 轄區:area, 改善策略:st, 次數:v };
+      }).sort((a,b)=> b.次數-a.次數);
+      const rvStrTb = $("repRvStrategyTbody");
+      if(rvStrTb){
+        rvStrTb.innerHTML = "";
+        for(const r of repRowsF2) rvStrTb.innerHTML += `<tr><td>${escapeHtml(r.轄區)}</td><td>${escapeHtml(r.改善策略)}</td><td>${r.次數}</td></tr>`;
+        if(!repRowsF2.length) rvStrTb.innerHTML = `<tr><td colspan="3" class="muted">本年度尚無資料。</td></tr>`;
+      }
+
+      // F3 審查決議與補助通過率（建議新增）
+      const decisionMap = new Map();
+      for(const r of rv){
+        const d = (r.meetingDecision||"").trim() || "未填";
+        if(!decisionMap.has(d)) decisionMap.set(d, { 件數:0, 獲補助件數:0, 核定總額:0 });
+        const it = decisionMap.get(d);
+        it.件數 += 1;
+        if((r.getsSubsidy||"").trim()==="是") it.獲補助件數 += 1;
+        const approved = (r.items||[]).reduce((s,x)=> s + (parseFloat(x.approvedAmount||0)||0), 0);
+        it.核定總額 += approved;
+      }
+      repRowsF3 = Array.from(decisionMap.entries()).map(([d,v])=>({
+        決議:d,
+        件數:v.件數,
+        獲補助件數:v.獲補助件數,
+        通過率: v.件數 ? `${Math.round((v.獲補助件數/v.件數)*100)}%` : "0%",
+        核定總額:v.核定總額
+      })).sort((a,b)=> b.件數-a.件數);
+      const rvDecTb = $("repRvDecisionTbody");
+      if(rvDecTb){
+        rvDecTb.innerHTML = "";
+        for(const r of repRowsF3){
+          rvDecTb.innerHTML += `<tr><td>${escapeHtml(r.決議)}</td><td>${r.件數}</td><td>${r.獲補助件數}</td><td>${escapeHtml(r.通過率)}</td><td>${r.核定總額.toLocaleString()}</td></tr>`;
+        }
+        if(!repRowsF3.length) rvDecTb.innerHTML = `<tr><td colspan="5" class="muted">本年度尚無資料。</td></tr>`;
+      }
+      repRowsF4 = repAreaContacts.map(x=>({ ...x }));
+      const rvContactTb = $("repRvContactTbody");
+      if(rvContactTb){
+        rvContactTb.innerHTML = "";
+        for(const r of repRowsF4){
+          rvContactTb.innerHTML += `<tr><td>${escapeHtml(r.轄區)}</td><td>${escapeHtml(r.類別)}</td><td>${escapeHtml(r.承辦人)}</td><td>${escapeHtml(r.mail)}</td><td>${escapeHtml(r.電話)}</td></tr>`;
+        }
+      }
+
     }
 
     let _loanStatMode = "JA"; // "JA"=身障, "AG"=中高齡, "EC"=ECFA, "LT"=勞通
@@ -2825,7 +3196,6 @@
     };
     const _loanModeLabel = { JA:"身障", AG:"中高齡", EC:"ECFA", LT:"勞通" };
 
-    // 純計算：回傳 { grid, catTotals, monthTotals, grandTotal }
     function _calcLoanStat(mode){
       const year   = parseInt($("repYear")?.value || (new Date().getFullYear() - 1911));
       const yearAD = year + 1911;
@@ -2898,7 +3268,9 @@
         const year = $("repYear").value;
         repCases = await loadCasesYear(year, force);
         repLoans = await loadLoans(force);
+        repMeetings = await loadReviewMeetings(force);
         renderReports();
+        setRepPanel(repActivePanel || "A");
         toast("已更新。");
       }catch(e){
         console.error(e);
@@ -2908,30 +3280,49 @@
       }
     }
 
-    function exportReportsCsv(){
-      // (E) 四個模式全部加進去
-      const cats = Object.keys(DEV_CATEGORIES);
-      const monthNames = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
-      for(const mode of ["JA","AG","EC","LT"]){
-        const label = _loanModeLabel[mode];
-        const { grid, catTotals, monthTotals, grandTotal } = _calcLoanStat(mode);
-        repExportRows.push([`(E)借用統計-${label}`, "輔具分類", ...monthNames, "合計"]);
-        for(const c of cats){
-          repExportRows.push(["", `${c} ${_loanCatShort[c]||""}`, ...Array.from({length:12},(_,i)=>String(grid[i+1][c]||"")), String(catTotals[c]||"")]);
-        }
-        repExportRows.push(["", "合計", ...Array.from({length:12},(_,i)=>String(monthTotals[i+1]||"")), String(grandTotal)]);
-        repExportRows.push([]); // 空行分隔
-      }
-      const csv = repExportRows.map(r=> r.map(v=> `"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
-      const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `reports_${$("repYear").value}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
+    async function exportReportPanelExcel(panel){
+      try{
+        if(!window.XLSX) await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+        const XL = window.XLSX;
+        const wb = XL.utils.book_new();
 
-    // ===== Views: Devices =====
+        if(panel === "A"){
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsA), "A_執行狀況");
+        } else if(panel === "B"){
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsB), "B_輔具試用");
+        } else if(panel === "C"){
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsC), "C_性別");
+        } else if(panel === "D"){
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsD), "D_障礙類別");
+        } else if(panel === "E"){
+          const cats = Object.keys(DEV_CATEGORIES);
+          const { grid, catTotals, monthTotals, grandTotal } = _calcLoanStat(_loanStatMode);
+          const rows = [];
+          for(const c of cats){
+            const row = { 分類:`${c} ${_loanCatShort[c]||""}` };
+            for(let m=1;m<=12;m++) row[`${m}月`] = grid[m][c]||0;
+            row["合計"] = catTotals[c]||0;
+            rows.push(row);
+          }
+          const totalRow = { 分類:"合計" };
+          for(let m=1;m<=12;m++) totalRow[`${m}月`] = monthTotals[m]||0;
+          totalRow["合計"] = grandTotal;
+          rows.push(totalRow);
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(rows), `E_借用統計_${_loanModeLabel[_loanStatMode]}`);
+        } else if(panel === "F"){
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF1), "F1_轄區案件統計");
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF2), "F2_轄區策略統計");
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF3), "F3_決議通過率");
+          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF4), "F4_轄區承辦");
+        }
+
+        XL.writeFile(wb, `統計分析_${panel}_${$("repYear")?.value||"all"}_${new Date().toISOString().slice(0,10)}.xlsx`);
+      }catch(e){
+        console.error(e);
+        toast("匯出Excel失敗：" + (e?.message||e));
+      }
+    }
+// ===== Views: Devices =====
     $("btnDevRefresh").addEventListener("click", ()=> refreshDevices(true));
     $("devQ").addEventListener("input", renderDevices);
     $("devStatus").addEventListener("change", renderDevices);
@@ -3681,21 +4072,18 @@
           <div><label>轉介來源</label><select id="cdb_referralSource"><option value="">請選擇</option>${selOpts(settings.options.referralSources||[], basic.referralSource||"")}</select></div>
           <div><label>接案人員</label><input id="cdb_assignedStaff" value="${escapeHtml(basic.assignedStaff||"")}" list="staffList" /></div>
           <div><label>訪視委員</label><input id="cdb_visitCommittee" value="${escapeHtml(basic.visitCommittee||"")}" /></div>
-          <datalist id="staffList"><option value="蔡凱宇"/><option value="黃國裕"/><option value="高湘怡"/><option value="方姿云"/><option value="陳秋媚"/><option value="盧怡倫"/></datalist>
+          <datalist id="staffList">${getOwnerProfiles().map(x=>`<option value="${escapeHtml(x.name||"")}"/>`).join("")}</datalist>
         </div>
-        <div class="hr"></div>
         <div class="grid2">
           <div><label>聯絡人1</label><input id="cdb_contactPerson1" value="${escapeHtml(basic.contactPerson1||"")}" /></div>
           <div><label>聯絡電話1</label><input id="cdb_contactPhone1" value="${escapeHtml(basic.contactPhone1||"")}" /></div>
           <div><label>聯絡人2</label><input id="cdb_contactPerson2" value="${escapeHtml(basic.contactPerson2||"")}" /></div>
           <div><label>聯絡電話2</label><input id="cdb_contactPhone2" value="${escapeHtml(basic.contactPhone2||"")}" /></div>
         </div>
-        <div class="hr"></div>
         <div class="grid2">
           <div><label>報告審閱狀態</label><input id="cdb_reviewStatus" value="${escapeHtml(basic.reviewStatus||"")}" placeholder="例：已審閱" /></div>
           <div><label>審閱者</label><input id="cdb_reviewer" value="${escapeHtml(basic.reviewer||"")}" /></div>
         </div>
-        <div class="hr"></div>
         <div class="grid2">
           <div><label>報告審查狀態（同步報告管理）</label>
             <select id="cdb_reportReviewStatus">
@@ -3762,7 +4150,6 @@
           <div><label>試用總次數（自動計算）</label><input id="cddt_totalCount" type="number" value="${escapeHtml(deviceTrial.totalCount||"")}" /></div>
           <div><label>試用總件數（自動計算）</label><input id="cddt_totalItems" type="number" value="${escapeHtml(deviceTrial.totalItems||"")}" /></div>
         </div>
-        <div class="hr"></div>
         <div style="font-weight:700;margin-bottom:8px;">輔具試用分類（A-J，設備分類欄為單字母時自動帶入）</div>
         <div class="grid2">
           <div><label>A 類（聽覺輔具）</label><input id="cddt_catA" value="${escapeHtml(deviceTrial.catA||"")}" /></div>
@@ -3838,7 +4225,6 @@
           <div><label>訓練總次數</label><input id="cdtr_totalCount" type="number" value="${escapeHtml(deviceTraining.totalCount||"")}" /></div>
           <div><label>訓練總件數</label><input id="cdtr_totalItems" type="number" value="${escapeHtml(deviceTraining.totalItems||"")}" /></div>
         </div>
-        <div class="hr"></div>
         <div style="font-weight:700;margin-bottom:8px;">輔具訓練分類（A-J）</div>
         <div class="grid2">
           <div><label>A 類（聽覺輔具）</label><input id="cdtr_catA" value="${escapeHtml(deviceTraining.catA||"")}" /></div>
@@ -3886,7 +4272,6 @@
           <button id="btnJrAddItem" style="font-size:0.8em;padding:2px 10px;">+ 新增品項</button>
         </div>
         <div id="jrItemsArea"></div>
-        <div class="hr"></div>
         <div class="grid2">
           <div style="grid-column:1/-1;"><label>職再建議細目（報告摘要）</label><textarea id="cdjr_recommendDetail">${escapeHtml(jobRedesign.recommendDetail||"")}</textarea></div>
           <div><label>資源連結</label><input id="cdjr_resourceLink" value="${escapeHtml(jobRedesign.resourceLink||"")}" /></div>
@@ -3896,7 +4281,6 @@
             </select>
           </div>
         </div>
-        <div class="hr"></div>
         <div style="font-weight:700;margin-bottom:8px;">職訓案時間（TA 類）</div>
         <div class="grid2">
           <div><label>職訓開始日期</label><input id="cdjr_vocTrainStart" type="date" value="${escapeHtml(jobRedesign.vocTrainStart||"")}" /></div>
@@ -4927,8 +5311,25 @@
       $("btnRvImportRun").disabled = !idSel?.value;
     }
 
+        async function downloadReviewImportTemplate(){
+      try{
+        if(!window.XLSX) await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+        const XL = window.XLSX;
+        const headers = ["年度","轄區","審查日期","場次","案件編號","姓名","補助項目","申請金額","核定金額","補助分類","是否回收","符合建議","獲得補助","審查決議","備註"];
+        const sample = ["115","高雄市","2026-03-06","第一次","JA001","王小明","升降桌",20000,15000,"改善工作條件","否","是","是","是","範例"];
+        const ws = XL.utils.aoa_to_sheet([headers,sample]);
+        ws["!cols"] = headers.map(()=>({wch:14}));
+        const wb = XL.utils.book_new();
+        XL.utils.book_append_sheet(wb, ws, "審查會議匯入模板");
+        XL.writeFile(wb, `審查會議匯入模板_${new Date().toISOString().slice(0,10)}.xlsx`);
+      }catch(err){
+        console.error(err); toast("下載範本失敗：" + (err?.message||err));
+      }
+    }
+
     function setupReviewImportModal(){
       $("btnReviewImport").addEventListener("click", ()=> $("reviewImportModal").classList.add("show"));
+      $("btnRvImportTemplate")?.addEventListener("click", downloadReviewImportTemplate);
       $("btnCloseReviewImport").addEventListener("click", ()=> $("reviewImportModal").classList.remove("show"));
       $("reviewImportModal").addEventListener("click", e=>{ if(e.target===$("reviewImportModal")) $("reviewImportModal").classList.remove("show"); });
 
@@ -5333,6 +5734,7 @@
       const btn = $("btnDevImportExcel");
       if(!btn) return;
       $("btnDevTemplate")?.addEventListener("click", downloadDevTemplate);
+      $("btnDevImportTemplateInModal")?.addEventListener("click", downloadDevTemplate);
       btn.addEventListener("click", ()=>{
         const input = document.createElement("input");
         input.type = "file";
@@ -5896,15 +6298,18 @@
       }
 
       const email = (user.email || "").toLowerCase();
-      if(!ALLOW_EMAILS.has(email)){
+      await loadSettings();
+      const ownerProfile = findOwnerByEmail(email);
+      const isAllowed = ALLOW_EMAILS.has(email) || !!ownerProfile;
+      if(!isAllowed){
         toast("此帳號不在允許名單，已自動登出：" + email);
         await signOut(auth);
         return;
       }
 
       currentEmail = email;
-      currentRole = ROLE_BY_EMAIL[email] || "staff";
-      currentName = NAME_BY_EMAIL[email] || (user.displayName || email);
+      currentRole = ownerProfile?.role || ROLE_BY_EMAIL[email] || "staff";
+      currentName = ownerProfile?.name || NAME_BY_EMAIL[email] || (user.displayName || email);
 
       $("userPill").innerHTML = `<span>${escapeHtml(currentName)}</span> <span class="muted">(${escapeHtml(email)})</span> <span class="pill">${escapeHtml(currentRole)}</span>`;
       $("btnLogin").hidden = true;
@@ -5915,7 +6320,6 @@
 
       $("loginHint").style.display = "none";
 
-      await loadSettings();
       await upsertUserDoc();
       setupSettingsModal();
 
@@ -5931,6 +6335,36 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
