@@ -1454,6 +1454,44 @@
       const d = v?.toDate ? v.toDate() : (v instanceof Date ? v : new Date(v));
       try { return d.toLocaleString("zh-TW",{hour12:false}); } catch { return ""; }
     }
+    function rocYearNow(){
+      return String(new Date().getFullYear() - 1911);
+    }
+
+    function setupYearSelect(id, includeAll=false){
+      const el = $(id);
+      if(!el) return;
+      const now = parseInt(rocYearNow(),10);
+      const numeric = Array.from(el.options).map(o=>String(o.value||""))
+        .filter(v=>/^\d+$/.test(v)).map(v=>parseInt(v,10));
+      const pool = new Set([now, now-1, now-2, ...numeric]);
+      const years = Array.from(pool).filter(n=>Number.isFinite(n) && n>0).sort((a,b)=>b-a).map(String);
+      const oldVal = String(el.value||"");
+      el.innerHTML = "";
+      for(const y of years){
+        const opt = document.createElement("option");
+        opt.value = y; opt.textContent = y;
+        el.appendChild(opt);
+      }
+      if(includeAll){
+        const optAll = document.createElement("option");
+        optAll.value = ""; optAll.textContent = "全部";
+        el.appendChild(optAll);
+      }
+      if(oldVal && Array.from(el.options).some(o=>o.value===oldVal)) el.value = oldVal;
+      else el.value = String(now);
+    }
+
+    function initYearSelects(){
+      setupYearSelect("dashYear", false);
+      setupYearSelect("caseYear", false);
+      setupYearSelect("repYear", false);
+      setupYearSelect("pvYear", false);
+      setupYearSelect("cdYear", false);
+      setupYearSelect("rv_year", false);
+      setupYearSelect("rvYear", true);
+    }
+
     function parseCaseCode(caseNo){
       const raw = (caseNo || "").trim();
       if(!raw) return "";
@@ -2318,6 +2356,94 @@
       $("caseType").innerHTML = `<option value="">全部</option>` + (settings.caseCodeRules.caseTypes||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
       $("casePhase").innerHTML = `<option value="">全部</option>` + (settings.options.casePhases||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
       $("caseStatus").innerHTML = `<option value="">全部</option>` + (settings.options.caseStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      ensureCaseOverviewHeader();
+      ensureCaseBulkUi();
+    }
+
+    function ensureCaseBulkUi(){
+      const actionRow = $("btnCaseRefresh")?.parentElement;
+      if(!actionRow) return;
+      if(!$("btnCaseToggleSelect")){
+        const btnT = document.createElement("button");
+        btnT.id = "btnCaseToggleSelect";
+        btnT.textContent = "全選/取消";
+        btnT.addEventListener("click", ()=>{
+          const boxes = Array.from(document.querySelectorAll("#caseTbody .caseRowCheck"));
+          if(!boxes.length) return;
+          const allChecked = boxes.every(b=>b.checked);
+          boxes.forEach(b=> b.checked = !allChecked);
+          if($("caseCheckAll")) $("caseCheckAll").checked = !allChecked;
+        });
+        actionRow.insertBefore(btnT, $("btnCaseRefresh"));
+      }
+      if(!$("btnCaseDeleteSelected")){
+        const btnD = document.createElement("button");
+        btnD.id = "btnCaseDeleteSelected";
+        btnD.textContent = "刪除勾選";
+        btnD.className = "danger";
+        btnD.addEventListener("click", deleteSelectedCases);
+        actionRow.insertBefore(btnD, $("btnCaseRefresh"));
+      }
+      if($("btnCaseDeleteSelected")) $("btnCaseDeleteSelected").disabled = (currentRole!=="admin");
+    }
+
+    async function deleteSelectedCases(){
+      if(currentRole!=="admin"){ toast("僅管理員可批次刪除案件。"); return; }
+      const ids = Array.from(document.querySelectorAll("#caseTbody .caseRowCheck:checked")).map(x=>x.dataset.id).filter(Boolean);
+      if(!ids.length){ toast("請先勾選要刪除的案件。"); return; }
+      if(!confirm(`確定刪除 ${ids.length} 筆案件？此操作不可復原。`)) return;
+      try{
+        for(const id of ids){
+          await deleteDoc(doc(db,"cases", id));
+        }
+        cacheCasesByYear.clear();
+        toast(`已刪除 ${ids.length} 筆案件。`);
+        await refreshCases(true);
+      }catch(e){
+        console.error(e);
+        toast("批次刪除失敗：" + (e?.message||e));
+      }
+    }
+
+    function ensureCaseOverviewHeader(){
+      const tr = document.querySelector("#viewCases thead tr");
+      if(!tr) return;
+      tr.innerHTML = `
+        <th style="width:44px;"><input id="caseCheckAll" type="checkbox" style="width:auto;cursor:pointer;" title="全選" /></th>
+        <th style="width:80px;">年度</th>
+        <th style="width:90px;">類別</th>
+        <th style="width:110px;">編號</th>
+        <th style="width:130px;">單位</th>
+        <th style="width:100px;">個案姓名</th>
+        <th style="width:70px;">性別</th>
+        <th style="width:70px;">年齡</th>
+        <th style="width:110px;">生日</th>
+        <th style="width:90px;">障礙類別</th>
+        <th style="width:90px;">障礙程度</th>
+        <th style="width:110px;">轉介來源</th>
+        <th style="width:90px;">接案人員</th>
+        <th style="width:90px;">承辦</th>
+        <th style="width:90px;">訪視委員</th>
+        <th style="width:90px;">聯絡人1</th>
+        <th style="width:100px;">聯絡電話1</th>
+        <th style="width:90px;">聯絡人2</th>
+        <th style="width:100px;">聯絡電話2</th>
+        <th style="width:110px;">KPI</th>
+        <th style="width:90px;">分群</th>
+        <th style="width:90px;">狀態</th>
+        <th style="width:90px;">報告審查</th>
+        <th style="width:90px;">審閱者</th>
+        <th style="width:90px;">主責人</th>
+        <th style="width:60px;">附件</th>
+        <th style="width:130px;">更新</th>
+      `;
+      const all = $("caseCheckAll");
+      if(all){
+        all.addEventListener("change", (e)=>{
+          const checked = !!e.target.checked;
+          document.querySelectorAll("#caseTbody .caseRowCheck").forEach(x=> x.checked = checked);
+        });
+      }
     }
 
     function renderCases(){
@@ -2336,7 +2462,12 @@
         if(status && (c.caseStatus||"")!==status) return false;
         if(carryOnly && !c.isCarryOver) return false;
         if(q){
-          const hay = normalize([c.caseNo,c.caseType,c.orgName,c.basic?.orgName,c.clientName,c.basic?.clientName,c.ownerName].filter(Boolean).join(" "));
+          const b = c.basic||{};
+          const hay = normalize([
+            c.caseNo,c.caseType,c.orgName,b.orgName,c.clientName,b.clientName,c.ownerName,
+            b.gender,b.age,b.birthDate,b.disabilityType,b.disabilityDegree,b.referralSource,b.assignedStaff,b.visitCommittee,
+            b.contactPerson1,b.contactPhone1,b.contactPerson2,b.contactPhone2
+          ].filter(Boolean).join(" "));
           if(!hay.includes(q)) return false;
         }
         return true;
@@ -2347,16 +2478,32 @@
       const tbody = $("caseTbody");
       tbody.innerHTML = "";
       for(const c of caseFiltered){
+        const b = c.basic || {};
         const report = normalizeReport(c.report||{}, c.year||"");
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
         tr.addEventListener("click", ()=> go("case", { id: c.id }));
         const hasFile = !!(report.localFilePath||"").trim();
         tr.innerHTML = `
+          <td><input type="checkbox" class="caseRowCheck" data-id="${escapeHtml(c.id)}" style="width:auto;cursor:pointer;" /></td>
           <td>${escapeHtml(c.year||"")}</td>
           <td>${escapeHtml(c.caseType||"")}</td>
-          <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?'<span title="跨年追蹤" style="color:var(--warn);margin-left:4px;">🔄</span>':''}</td>
-          <td>${escapeHtml(c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || "")}</td>
+          <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?'<span title="跨年追蹤" style="color:var(--warn);margin-left:4px;">🔄</span>':'')}</td>
+          <td>${escapeHtml(c.orgName || b.orgName || "")}</td>
+          <td>${escapeHtml(c.clientName || b.clientName || "")}</td>
+          <td>${escapeHtml(b.gender||"")}</td>
+          <td>${escapeHtml(b.age||"")}</td>
+          <td>${escapeHtml(b.birthDate||"")}</td>
+          <td>${escapeHtml(b.disabilityType||"")}</td>
+          <td>${escapeHtml(b.disabilityDegree||"")}</td>
+          <td>${escapeHtml(b.referralSource||"")}</td>
+          <td>${escapeHtml(b.assignedStaff||"")}</td>
+          <td>${escapeHtml(b.handler||"")}</td>
+          <td>${escapeHtml(b.visitCommittee||"")}</td>
+          <td>${escapeHtml(b.contactPerson1||"")}</td>
+          <td>${escapeHtml(b.contactPhone1||"")}</td>
+          <td>${escapeHtml(b.contactPerson2||"")}</td>
+          <td>${escapeHtml(b.contactPhone2||"")}</td>
           <td>${escapeHtml(c.kpiStage||"")}</td>
           <td>${escapeHtml(c.casePhase||"")}</td>
           <td>${escapeHtml(c.caseStatus||"")}</td>
@@ -2366,6 +2513,14 @@
           <td>${hasFile ? '<button class="caseClipBtn" title="開啟報告" data-path="'+escapeHtml(report.localFilePath||'')+'">📎</button>' : '<span class="muted">—</span>'}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
         `;
+        const ck = tr.querySelector(".caseRowCheck");
+        if(ck){
+          ck.addEventListener("click", (e)=>{
+            e.preventDefault();
+            e.stopPropagation();
+            ck.checked = !ck.checked;
+          });
+        }
         const clipBtn = tr.querySelector(".caseClipBtn");
         if(clipBtn){
           clipBtn.addEventListener("click", (e)=>{
@@ -2377,8 +2532,9 @@
         tbody.appendChild(tr);
       }
       if(!caseFiltered.length){
-        tbody.innerHTML = `<tr><td colspan="12" class="muted">沒有符合條件的資料。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="27" class="muted">沒有符合條件的資料。</td></tr>`;
       }
+      if($("caseCheckAll")) $("caseCheckAll").checked = false;
     }
 
     async function refreshCases(force=false){
@@ -2654,7 +2810,7 @@
       try{
         if($("btnPvRefresh")) $("btnPvRefresh").disabled = true;
         initPreviewFilters();
-        const year = $("pvYear")?.value || $("caseYear")?.value || "115";
+        const year = $("pvYear")?.value || $("caseYear")?.value || rocYearNow();
         pvCases = await loadCasesYear(year, force);
         pvMeetings = await loadReviewMeetings(false);
         pvLoans = await loadLoans(false);
@@ -2781,22 +2937,32 @@
       const guess = (keys)=> cols.find(c=> keys.some(k=> String(c).includes(k))) || "";
       return {
         year: guess(["年度","year"]),
-        caseNo: guess(["編號","案號","caseNo"]),
-        orgName: guess(["單位名稱","單位","公司","org"]),
+        caseNo: guess(["編號","個人編號","案號","caseNo"]),
+        orgName: guess(["單位名稱","廠商名稱","單位","公司","org"]),
         clientName: guess(["個案姓名","姓名","個案","client"]),
         kpiStage: guess(["KPI狀態","KPI","階段"]),
         gender: guess(["性別"]),
         age: guess(["年齡"]),
-        birthDate: guess(["生日","出生"]),
-        disabilityType: guess(["障礙類別"]),
-        disabilityDegree: guess(["障礙程度"]),
-        referralSource: guess(["轉介來源"]),
-        assignedStaff: guess(["接案人員","主責人員","承辦"]),
+        birthDate: guess(["生日","出生年月日","出生"]),
+        disabilityType: guess(["障別","障礙類別"]),
+        disabilityDegree: guess(["障度","障礙程度"]),
+        referralSource: guess(["轉介來源","轉介單位"]),
+        assignedStaff: guess(["接案人員","主責人員"]),
+        handler: guess(["承辦","訪視承辦"]),
         visitCommittee: guess(["訪視委員"]),
-        contactPerson1: guess(["聯絡人1"]),
-        contactPhone1: guess(["聯絡電話1","電話1"]),
-        contactPerson2: guess(["聯絡人2"]),
-        contactPhone2: guess(["聯絡電話2","電話2"])
+        contactPerson1: guess(["主要聯絡人","聯絡人1"]),
+        contactPhone1: guess(["連絡電話(一)","聯絡電話1","電話1"]),
+        contactPerson2: guess(["次要聯絡人","聯絡人2"]),
+        contactPhone2: guess(["連絡電話(二)","聯絡電話2","電話2"]),
+        industryType: guess(["行業類別"]),
+        startDate: guess(["到職日"]),
+        salary: guess(["本職位的工作月資","月資","薪資"]),
+        jobTitle: guess(["職稱"]),
+        occupationType: guess(["職業類別"]),
+        vocTrainEnd: guess(["職訓案結訓日期"]),
+        openDate: guess(["開案日期"]),
+        visitDate1: guess(["訪視評估日期(一)","訪視評估日期一"]),
+        visitDate2: guess(["訪視評估日期(二)","訪視評估日期二"])
       };
     }
 
@@ -2805,8 +2971,10 @@
       area.innerHTML = "";
       const fields = [
         ["year","年度(必)"],["caseNo","編號(必)"],["orgName","單位名稱(建議)"],["clientName","個案姓名(建議)"],["kpiStage","KPI狀態(選)"],
-        ["gender","性別(選)"],["age","年齡(選)"],["birthDate","生日(選)"],["disabilityType","障礙類別(選)"],["disabilityDegree","障礙程度(選)"],["referralSource","轉介來源(選)"],
-        ["assignedStaff","接案人員(選)"],["visitCommittee","訪視委員(選)"],["contactPerson1","聯絡人1(選)"],["contactPhone1","聯絡電話1(選)"],["contactPerson2","聯絡人2(選)"],["contactPhone2","聯絡電話2(選)"]
+        ["gender","性別(選)"],["age","年齡(選)"],["birthDate","生日(選)"],["disabilityType","障別(選)"],["disabilityDegree","障度(選)"],["referralSource","轉介來源(選)"],
+        ["assignedStaff","接案人員(選)"],["handler","承辦(選)"],["visitCommittee","訪視委員(選)"],["contactPerson1","主要聯絡人(選)"],["contactPhone1","連絡電話(一)(選)"],["contactPerson2","次要聯絡人(選)"],["contactPhone2","連絡電話(二)(選)"],
+        ["industryType","行業類別(選)"],["startDate","到職日(選)"],["salary","本職位的工作月資(選)"],["jobTitle","職稱(選)"],["occupationType","職業類別(選)"],
+        ["vocTrainEnd","職訓案結訓日期(選)"],["openDate","開案日期(選)"],["visitDate1","訪視評估日期(一)(選)"],["visitDate2","訪視評估日期(二)(選)"]
       ];
       for(const [k,label] of fields){
         const div = document.createElement("div");
@@ -2882,11 +3050,30 @@
           disabilityDegree: String(rowVal(r, mapping.disabilityDegree)||"").trim(),
           referralSource: String(rowVal(r, mapping.referralSource)||"").trim(),
           assignedStaff: String(rowVal(r, mapping.assignedStaff)||"").trim(),
+          handler: String(rowVal(r, mapping.handler)||"").trim(),
           visitCommittee: String(rowVal(r, mapping.visitCommittee)||"").trim(),
           contactPerson1: String(rowVal(r, mapping.contactPerson1)||"").trim(),
           contactPhone1: String(rowVal(r, mapping.contactPhone1)||"").trim(),
           contactPerson2: String(rowVal(r, mapping.contactPerson2)||"").trim(),
           contactPhone2: String(rowVal(r, mapping.contactPhone2)||"").trim(),
+        };
+
+        const employment = {
+          industryType: String(rowVal(r, mapping.industryType)||"").trim(),
+          startDate: String(rowVal(r, mapping.startDate)||"").trim(),
+          salary: String(rowVal(r, mapping.salary)||"").trim(),
+          jobTitle: String(rowVal(r, mapping.jobTitle)||"").trim(),
+          occupationType: String(rowVal(r, mapping.occupationType)||"").trim(),
+        };
+
+        const timeline = {
+          openDate: String(rowVal(r, mapping.openDate)||"").trim(),
+          visitDate1: String(rowVal(r, mapping.visitDate1)||"").trim(),
+          visitDate2: String(rowVal(r, mapping.visitDate2)||"").trim(),
+        };
+
+        const jobRedesign = {
+          vocTrainEnd: String(rowVal(r, mapping.vocTrainEnd)||"").trim(),
         };
 
         const errors = [];
@@ -2895,7 +3082,7 @@
         if(!orgName && !clientName) errors.push("需單位或個案");
         if(kpiStage && !(settings.options.kpiStages||[]).includes(kpiStage)) errors.push("KPI 不在選單");
 
-        return { _idx:idx, _ok:errors.length===0, _errors:errors, year, caseNo, orgName, clientName, caseType, kpiStage, basic };
+        return { _idx:idx, _ok:errors.length===0, _errors:errors, year, caseNo, orgName, clientName, caseType, kpiStage, basic, employment, timeline, jobRedesign };
       });
       renderPreviewTable();
     }
@@ -2967,8 +3154,8 @@
               orgName: r.orgName || "",
               clientName: r.clientName || "",
               basic: { orgName: r.orgName || "", clientName: r.clientName || "", ...(r.basic||{}) },
-              employment: {}, timeline: {},
-              deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
+              employment: r.employment || {}, timeline: r.timeline || {},
+              deviceTrial: {}, deviceTraining: {}, jobRedesign: r.jobRedesign || {},
               progress: {}, report: assignReviewerAuto(normalizeReport({}, r.year), { year:String(r.year), caseNo:r.caseNo, ownerName:currentName }),
               remarks: "",
               caseDevices: [], consults: [],
@@ -4622,7 +4809,7 @@
         pReview.querySelector("#btnCdGoReview")?.addEventListener("click", ()=> go("review", {year:cdDoc.year}));
       } else {
         const goBtn = pReview.querySelector("#btnCdGoReview");
-        if(goBtn) goBtn.addEventListener("click", ()=> go("review", {year: cdDoc?.year || "115"}));
+        if(goBtn) goBtn.addEventListener("click", ()=> go("review", {year: cdDoc?.year || rocYearNow()}));
       }
 
       // ── 10. 備註 ────────────────────────────────────────────────────
@@ -4735,8 +4922,8 @@
           caseStatus: $("cdStatus").value,
           ownerUid: currentUser.uid,
           ownerName: currentName,
-          basic: {}, employment: {}, timeline: {},
-          deviceTrial: {}, deviceTraining: {}, jobRedesign: {},
+          basic: {}, employment: r.employment || {}, timeline: r.timeline || {},
+          deviceTrial: {}, deviceTraining: {}, jobRedesign: r.jobRedesign || {},
           progress: {}, report: normalizeReport({}, $("cdYear").value),
           remarks: "",
           caseDevices: [], consults: []
@@ -5039,6 +5226,48 @@
       return cacheReviewMeetings;
     }
 
+    function ensureReviewBulkUi(){
+      const actionRow = $("btnReviewRefresh")?.parentElement;
+      if(actionRow && !$("btnRvToggleSelect")){
+        const btnT = document.createElement("button");
+        btnT.id = "btnRvToggleSelect";
+        btnT.textContent = "全選/取消";
+        btnT.addEventListener("click", ()=>{
+          const boxes = Array.from(document.querySelectorAll("#rvTbody .rvRowCheck"));
+          if(!boxes.length) return;
+          const allChecked = boxes.every(b=>b.checked);
+          boxes.forEach(b=> b.checked = !allChecked);
+          const head = $("rvCheckAll"); if(head) head.checked = !allChecked;
+        });
+        actionRow.insertBefore(btnT, $("btnReviewRefresh"));
+      }
+      if(actionRow && !$("btnRvDeleteSelected")){
+        const btnD = document.createElement("button");
+        btnD.id = "btnRvDeleteSelected";
+        btnD.textContent = "刪除勾選";
+        btnD.className = "danger";
+        btnD.addEventListener("click", deleteSelectedReviewMeetings);
+        actionRow.insertBefore(btnD, $("btnReviewRefresh"));
+      }
+    }
+
+    async function deleteSelectedReviewMeetings(){
+      const ids = Array.from(document.querySelectorAll("#rvTbody .rvRowCheck:checked")).map(x=>x.dataset.id).filter(Boolean);
+      if(!ids.length){ toast("請先勾選要刪除的審查會議資料。") ; return; }
+      if(!confirm(`確定刪除 ${ids.length} 筆審查會議紀錄？`)) return;
+      try{
+        for(const id of ids){
+          await deleteDoc(doc(db,"reviewMeetings", id));
+        }
+        cacheReviewMeetings = null;
+        toast(`已刪除 ${ids.length} 筆。`);
+        await refreshReviewMeetings(true);
+      }catch(e){
+        console.error(e);
+        toast("批次刪除失敗：" + (e?.message||e));
+      }
+    }
+
     function renderReviewMeetings(){
       const year = $("rvYear").value;
       const area = $("rvArea").value;
@@ -5050,12 +5279,25 @@
       list = [...list].sort((a,b)=> (b.meetingDate||"").localeCompare(a.meetingDate||""));
       const tbody = $("rvTbody");
       tbody.innerHTML = "";
-      if(!list.length){ tbody.innerHTML = `<tr><td colspan="13" class="muted">尚無紀錄。</td></tr>`; return; }
+      ensureReviewBulkUi();
+      const headRow = document.querySelector("#viewReview thead tr");
+      if(headRow && !$("rvCheckAll")){
+        const th = document.createElement("th");
+        th.style.width = "44px";
+        th.innerHTML = "<input id=\"rvCheckAll\" type=\"checkbox\" style=\"width:auto;cursor:pointer;\" title=\"全選\" />";
+        headRow.insertBefore(th, headRow.firstElementChild);
+        th.querySelector("#rvCheckAll")?.addEventListener("change", (e)=>{
+          const checked = !!e.target.checked;
+          document.querySelectorAll("#rvTbody .rvRowCheck").forEach(x=> x.checked = checked);
+        });
+      }
+      if(!list.length){ tbody.innerHTML = `<tr><td colspan="14" class="muted">尚無紀錄。</td></tr>`; return; }
       for(const r of list){
         const totalApplied = (r.items||[]).reduce((s,i)=>s+(parseFloat(i.appliedAmount||0)||0),0);
         const totalApproved = (r.items||[]).reduce((s,i)=>s+(parseFloat(i.approvedAmount||0)||0),0);
         const itemNames = (r.items||[]).map(i=>i.itemName||"").filter(Boolean).join("、") || "—";
         tbody.innerHTML += `<tr>
+          <td><input type="checkbox" class="rvRowCheck" data-id="${escapeHtml(r.id)}" style="width:auto;cursor:pointer;" /></td>
           <td>${escapeHtml(String(r.year||""))}</td>
           <td>${escapeHtml(r.meetingArea||"")}</td>
           <td class="muted">${escapeHtml(r.meetingNo||"")}</td>
@@ -5071,6 +5313,7 @@
           <td><button onclick="openReviewModal('${escapeHtml(r.id)}')">編輯</button></td>
         </tr>`;
       }
+      if($("rvCheckAll")) $("rvCheckAll").checked = false;
     }
 
     async function refreshReviewMeetings(force=true){
@@ -5154,7 +5397,7 @@
         const snap = await getDoc(doc(db,"reviewMeetings", id));
         if(!snap.exists()){ toast("找不到紀錄。"); return; }
         const r = snap.data();
-        $("rv_year").value = r.year || "115";
+        $("rv_year").value = r.year || rocYearNow();
         $("rv_area").value = r.meetingArea || "高雄市";
         $("rv_date").value = r.meetingDate || "";
         $("rv_no").value = r.meetingNo || "";
@@ -5172,7 +5415,7 @@
           $("rvItemsArea").appendChild(buildRvItemRow(item));
         }
       } else {
-        $("rv_year").value = "115";
+        $("rv_year").value = rocYearNow();
         $("rv_area").value = "高雄市";
         $("rv_date").value = new Date().toISOString().slice(0,10);
         $("rv_no").value = "";
@@ -5388,7 +5631,7 @@
       $("btnRvImportRun").addEventListener("click", async ()=>{
         const idSel = $("rvMap_caseNo");
         if(!idSel?.value){ toast("請先選擇【案件編號】對應欄位。"); return; }
-        const defaultYear = $("rvYear").value || "115";
+        const defaultYear = $("rvYear").value || rocYearNow();
         const sheetName = $("rvImportSheet").value;
         // Guess area from sheet name if meetingArea col not mapped
         const areaSel = $("rvMap_meetingArea");
@@ -6337,6 +6580,7 @@
       const email = (user.email || "").toLowerCase();
       await loadSettings();
       const ownerProfile = findOwnerByEmail(email);
+      initYearSelects();
       const isAllowed = ALLOW_EMAILS.has(email) || !!ownerProfile;
       if(!isAllowed){
         toast("此帳號不在允許名單，已自動登出：" + email);
@@ -6372,6 +6616,13 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 
