@@ -189,7 +189,7 @@
                   <th>單位／個案</th>
                   <th style="width:100px;">截止日</th>
                   <th style="width:80px;">狀態</th>
-                  <th style="width:80px;">主責人</th>
+                  <th style="width:80px;">接案人員</th>
                 </tr>
               </thead>
               <tbody id="dashReportTbody">
@@ -216,7 +216,7 @@
                   <th style="width:90px;">編號</th>
                   <th>單位／個案</th>
                   <th style="width:110px;">KPI</th>
-                  <th style="width:80px;">主責人</th>
+                  <th style="width:80px;">接案人員</th>
                 </tr>
               </thead>
               <tbody id="dashCarryTbody">
@@ -276,7 +276,7 @@
                 <th style="width:120px;">狀態</th>
                 <th style="width:120px;">報告審查</th>
                 <th style="width:120px;">審閱者</th>
-                <th style="width:120px;">主責人</th>
+                <th style="width:120px;">接案人員</th>
                 <th style="width:70px;">附件</th>
                 <th style="width:130px;">更新</th>
               </tr>
@@ -326,7 +326,8 @@
                 <th style="width:90px;">編號</th>
                 <th style="width:90px;">類別</th>
                 <th>單位/個案</th>
-                <th style="width:90px;">主責人</th>
+                <th style="width:90px;">接案人員</th>
+                <th style="width:90px;">轉介來源</th>
                 <th style="width:110px;">報告審查</th>
                 <th style="width:90px;">審閱者</th>
                 <th style="width:95px;">寄出時間</th>
@@ -751,7 +752,7 @@
         <button id="tabOptions">下拉選單</button>
         <button id="tabReviewDisplay">審查會議欄位</button>
         <button id="tabReportPaths">報告路徑</button>
-        <button id="tabOwners">主責人</button>
+        <button id="tabOwners">接案人員</button>
         <button id="tabAreaContacts">轄區承辦</button>
       </div>
 
@@ -888,10 +889,10 @@
       </div>
 
       <div id="panelOwners" hidden>
-        <div class="hint">管理主責人名單（顯示姓名、信箱、角色、職稱）。會影響：接案人員清單與報告審閱自動分派。</div>
+        <div class="hint">管理接案人員名單（顯示姓名、信箱、角色、職稱）。會影響：接案人員清單與報告審閱自動分派。</div>
         <div class="row" style="justify-content:flex-end;margin-top:10px;">
-          <button id="btnAddOwner">新增主責人</button>
-          <button id="btnSaveOwners" class="primary">儲存主責人名單</button>
+          <button id="btnAddOwner">新增接案人員</button>
+          <button id="btnSaveOwners" class="primary">儲存接案人員名單</button>
         </div>
         <div class="tableWrap" style="max-height:40vh;">
           <table>
@@ -1460,6 +1461,14 @@
         return arr.slice().sort((a,b)=>(a.sort??999)-(b.sort??999));
       }
       return defaultAreaContacts();
+    }
+    function getReferralSourceOptions(){
+      const areaNames = getAreaContacts().map(x=>String(x.area||"").trim()).filter(Boolean);
+      const fromSettings = (settings?.options?.referralSources||[]).map(x=>String(x||"").trim()).filter(Boolean);
+      return Array.from(new Set([...areaNames, ...fromSettings]));
+    }
+    function getAssignedStaffOptions(){
+      return Array.from(new Set(getOwnerProfiles().map(x=>String(x.name||"").trim()).filter(Boolean)));
     }
 
     function findAreaContactByHandler(handlerName){
@@ -2037,7 +2046,7 @@
           await safeSetDoc("settings/owners", settings.owners, true);
           await loadSettings();
           await renderSettingsModal();
-          toast("主責人名單已儲存。");
+          toast("接案人員名單已儲存。");
           refreshAllViewsLight();
         }catch(e){
           console.error(e);
@@ -2106,16 +2115,13 @@
       });
 
       $("btnSaveOptions").addEventListener("click", async ()=>{
-        function lines(id){ return $(id).value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); }
-        function parseColorMap(id){
-          const txt = $(id)?.value || "";
+        function lines(id){ return ($(id)?.value || "").split(/\r?\n/).map(x=>x.trim()).filter(Boolean); }
+        function collectColorMap(group){
           const out = {};
-          txt.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).forEach(line=>{
-            const parts = line.split("|");
-            if(parts.length<2) return;
-            const name = (parts[0]||"").trim();
-            const color = (parts[1]||"").trim();
-            if(name && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) out[name] = color;
+          document.querySelectorAll(`[data-color-group="${group}"]`).forEach(inp=>{
+            const k = String(inp.dataset.colorName||"").trim();
+            const v = String(inp.value||"").trim();
+            if(k && /^#([0-9a-fA-F]{6})$/.test(v)) out[k] = v;
           });
           return out;
         }
@@ -2126,44 +2132,25 @@
         settings.options.genders = lines("opt_genders");
         settings.options.disabilityTypes = lines("opt_disabilityTypes");
         settings.options.disabilityDegrees = lines("opt_disabilityDegrees");
-        settings.options.referralSources = lines("opt_referralSources");
+        settings.options.referralSources = getReferralSourceOptions();
         settings.options.tagColors = {
-          referralSource: parseColorMap("opt_referralColors"),
-          assignedStaff: parseColorMap("opt_assignedColors")
+          referralSource: collectColorMap("referralSource"),
+          assignedStaff: collectColorMap("assignedStaff")
         };
         try{
           await safeSetDoc("settings/options", settings.options, true);
-          toast("已儲存下拉選單。");
           await loadSettings();
+          await renderSettingsModal();
           refreshAllViewsLight();
+          toast("已儲存下拉選單與顏色設定。");
         }catch(e){
           console.error(e);
           toast("儲存失敗：" + (e?.message || e));
         }
       });
-
-      initBtn.addEventListener("click", async ()=>{
-        if(!confirm("要初始化設定嗎？（若 Firestore 尚未建立 settings 文件）")) return;
-        const d = defaultSettings();
-        try{
-          await safeSetDoc("settings/caseCodeRules", d.caseCodeRules, true);
-          await safeSetDoc("settings/options", d.options, true);
-          await safeSetDoc("settings/reportPaths", d.reportPaths, true);
-          await safeSetDoc("settings/owners", d.owners, true);
-          await safeSetDoc("settings/areaContacts", d.areaContacts, true);
-          await loadSettings();
-          toast("已初始化設定。");
-          await renderSettingsModal();
-          refreshAllViewsLight();
-        }catch(e){
-          console.error(e);
-          toast("初始化失敗：" + (e?.message || e));
-        }
-      });
     }
 
     async function renderSettingsModal(){
-      // types list
       const typeList = $("caseTypeList");
       typeList.innerHTML = "";
       for(const t of (settings.caseCodeRules.caseTypes || [])){
@@ -2178,7 +2165,6 @@
         typeList.appendChild(row);
       }
 
-      // prefixes
       const tbody = $("prefixTbody");
       tbody.innerHTML = "";
       const types = settings.caseCodeRules.caseTypes || [];
@@ -2204,7 +2190,6 @@
         tbody.appendChild(tr);
       }
 
-      // options
       $("opt_kpiStages").value = (settings.options.kpiStages||[]).join("\n");
       $("opt_reportStatuses").value = (settings.options.reportStatuses||[]).join("\n");
       $("opt_caseStatuses").value = (settings.options.caseStatuses||[]).join("\n");
@@ -2212,21 +2197,43 @@
       $("opt_genders").value = (settings.options.genders||[]).join("\n");
       $("opt_disabilityTypes").value = (settings.options.disabilityTypes||[]).join("\n");
       $("opt_disabilityDegrees").value = (settings.options.disabilityDegrees||[]).join("\n");
-      $("opt_referralSources").value = (settings.options.referralSources||[]).join("\n");
+
+      const referralAreas = getReferralSourceOptions();
+      if($("opt_referralSources")){
+        $("opt_referralSources").value = referralAreas.join("\n");
+        $("opt_referralSources").readOnly = true;
+        $("opt_referralSources").title = "轉介來源由『轄區承辦』中的轄區自動帶入";
+      }
+
       const optCaseSec = $("optSection_case");
-      if(optCaseSec && !$("opt_referralColors")){
+      if(optCaseSec && !$("optColorWrap")){
         const colorWrap = document.createElement("div");
-        colorWrap.className = "grid2";
+        colorWrap.id = "optColorWrap";
         colorWrap.style.marginTop = "8px";
         colorWrap.innerHTML = `
-          <div><label>轉介來源顏色（每行：名稱|#RRGGBB）</label><textarea id="opt_referralColors" class="mono" placeholder="例如：醫院|#FDE68A"></textarea></div>
-          <div><label>接案人員顏色（每行：名稱|#RRGGBB）</label><textarea id="opt_assignedColors" class="mono" placeholder="例如：蔡凱宇|#BFDBFE"></textarea></div>
+          <div class="hint" style="margin-bottom:8px;">色彩標籤設定：直接選色後儲存</div>
+          <div class="grid2">
+            <div class="subCard"><label>轉介來源顏色</label><div id="optReferralColorList" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;"></div></div>
+            <div class="subCard"><label>接案人員顏色</label><div id="optAssignedColorList" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;"></div></div>
+          </div>
         `;
         optCaseSec.appendChild(colorWrap);
       }
-      const mapToLines = (m)=> Object.entries(m||{}).map(([k,v])=>`${k}|${v}`).join("\n");
-      if($("opt_referralColors")) $("opt_referralColors").value = mapToLines(settings.options.tagColors?.referralSource || {});
-      if($("opt_assignedColors")) $("opt_assignedColors").value = mapToLines(settings.options.tagColors?.assignedStaff || {});
+      const rc = settings.options.tagColors?.referralSource || {};
+      const ac = settings.options.tagColors?.assignedStaff || {};
+      if($("optReferralColorList")){
+        $("optReferralColorList").innerHTML = referralAreas.map(n=>{
+          const v = /^#([0-9a-fA-F]{6})$/.test(String(rc[n]||"")) ? rc[n] : "#e2e8f0";
+          return `<label class="row" style="justify-content:space-between;"><span>${escapeHtml(n)}</span><input type="color" data-color-group="referralSource" data-color-name="${escapeHtml(n)}" value="${escapeHtml(v)}" /></label>`;
+        }).join("");
+      }
+      const staffNames = getAssignedStaffOptions();
+      if($("optAssignedColorList")){
+        $("optAssignedColorList").innerHTML = staffNames.map(n=>{
+          const v = /^#([0-9a-fA-F]{6})$/.test(String(ac[n]||"")) ? ac[n] : "#e2e8f0";
+          return `<label class="row" style="justify-content:space-between;"><span>${escapeHtml(n)}</span><input type="color" data-color-group="assignedStaff" data-color-name="${escapeHtml(n)}" value="${escapeHtml(v)}" /></label>`;
+        }).join("");
+      }
 
       const ownerTbody = $("ownerTbody");
       if(ownerTbody){
@@ -2236,23 +2243,29 @@
           tr.innerHTML = `
             <td><input data-k="name" value="${escapeHtml(o.name||"")}" /></td>
             <td><input data-k="email" value="${escapeHtml(o.email||"")}" /></td>
-            <td><select data-k="role">
-              <option value="staff">staff</option>
-              <option value="admin">admin</option>
-              <option value="leader">leader</option>
-            </select></td>
+            <td>
+              <select data-k="role">
+                <option value="staff">staff</option>
+                <option value="admin">admin</option>
+                <option value="leader">leader</option>
+              </select>
+            </td>
             <td><input data-k="title" value="${escapeHtml(o.title||"")}" /></td>
-            <td><select data-k="enabled"><option value="true">啟用</option><option value="false">停用</option></select></td>
+            <td>
+              <select data-k="enabled">
+                <option value="true">啟用</option>
+                <option value="false">停用</option>
+              </select>
+            </td>
             <td><input data-k="sort" type="number" value="${escapeHtml(o.sort ?? 999)}" /></td>
             <td><button class="danger" data-act="delOwner">刪除</button></td>
           `;
-          tr.querySelector('select[data-k="role"]').value = o.role || "staff";
-          tr.querySelector('select[data-k="enabled"]').value = (o.enabled!==false) ? "true" : "false";
+          tr.querySelector("select[data-k=role]").value = o.role || "staff";
+          tr.querySelector("select[data-k=enabled]").value = (o.enabled!==false) ? "true" : "false";
           tr.querySelector("button[data-act=delOwner]")?.addEventListener("click", ()=> tr.remove());
           ownerTbody.appendChild(tr);
         }
       }
-
 
       const areaContactTbody = $("areaContactTbody");
       if(areaContactTbody){
@@ -2272,6 +2285,7 @@
           areaContactTbody.appendChild(tr);
         }
       }
+
       const rpTbody = $("reportPathTbody");
       if(rpTbody){
         const byYear = settings.reportPaths?.byYear || {};
@@ -2289,7 +2303,6 @@
       if($("rpPendingPath")) $("rpPendingPath").value = currentPath.pendingPath || "";
       if($("rpDonePath")) $("rpDonePath").value = currentPath.donePath || "";
     }
-
     // ===== Login buttons =====
     $("btnLogin").addEventListener("click", async ()=>{
       try{ await signInWithPopup(auth, provider); }
@@ -2609,6 +2622,7 @@
         <th style="width:100px;">KPI狀態</th>
         <th style="width:90px;">報告審查</th>
         <th style="width:90px;">審閱者</th>
+        <th style="width:70px;">檔案</th>
         <th style="width:130px;">更新</th>
       `;
       const all = $("caseCheckAll");
@@ -2667,6 +2681,8 @@
         const e = c.employment || {};
         const t = c.timeline || {};
         const report = normalizeReport(c.report||{}, c.year||"");
+        const hasFile = !!(report.localFilePath||"").trim();
+
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
         tr.addEventListener("click", ()=> go("case", { id: c.id }));
@@ -2699,9 +2715,11 @@
           <td>${escapeHtml(c.kpiStage||"")}</td>
           <td>${escapeHtml(report.reviewStatus||"未送審")}</td>
           <td>${escapeHtml(report.reviewerName||"")}</td>
+          <td>${hasFile ? '<button class="caseClipBtn" title="開啟報告檔案" data-path="'+escapeHtml(report.localFilePath||'')+'">📎</button>' : '<span class="muted">—</span>'}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
         `;
         tr.querySelectorAll(".caseExtraCol").forEach(td=> td.style.display = caseShowExtra ? "table-cell" : "none");
+
         const ck = tr.querySelector(".caseRowCheck");
         if(ck){
           ck.addEventListener("click", (e)=>{
@@ -2710,6 +2728,7 @@
             ck.checked = !ck.checked;
           });
         }
+
         const handlerBtn = tr.querySelector(".caseHandlerBtn");
         if(handlerBtn){
           handlerBtn.addEventListener("click", (e)=>{
@@ -2718,11 +2737,21 @@
             showAreaContactInfo(handlerBtn.dataset.handler || "");
           });
         }
+
+        const clipBtn = tr.querySelector(".caseClipBtn");
+        if(clipBtn){
+          clipBtn.addEventListener("click", (e)=>{
+            e.preventDefault();
+            e.stopPropagation();
+            openLocalPath(clipBtn.dataset.path || "");
+          });
+        }
+
         tbody.appendChild(tr);
       }
       document.querySelectorAll("#viewCases thead .caseExtraCol").forEach(th=> th.style.display = caseShowExtra ? "table-cell" : "none");
       if(!caseFiltered.length){
-        tbody.innerHTML = `<tr><td colspan="29" class="muted">沒有符合條件的資料。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="30" class="muted">沒有符合條件的資料。</td></tr>`;
       }
       if($("caseCheckAll")) $("caseCheckAll").checked = false;
     }
@@ -2889,7 +2918,8 @@
           caseNo: c.caseNo||"",
           caseType: c.caseType||"",
           name: c.orgName||basic.orgName||c.clientName||basic.clientName||"",
-          ownerName: c.ownerName||"",
+          ownerName: basic.assignedStaff||c.ownerName||"",
+          referralSource: basic.referralSource||"",
           reviewStatus: report.reviewStatus||"未送審",
           reviewerName: report.reviewerName||"",
           sentDate: report.sentDate||"",
@@ -2953,7 +2983,8 @@
           <td class="mono">${escapeHtml(r.caseNo)}</td>
           <td>${escapeHtml(r.caseType)}</td>
           <td>${escapeHtml(r.name)}</td>
-          <td>${escapeHtml(r.ownerName)}</td>
+          <td>${renderColorTag("assignedStaff", r.ownerName||"")}</td>
+          <td>${renderColorTag("referralSource", r.referralSource||"")}</td>
           <td>${escapeHtml(r.reviewStatus)}</td>
           <td>${escapeHtml(r.reviewerName)}</td>
           <td>${escapeHtml(r.sentDate)}</td>
@@ -2971,7 +3002,7 @@
         tb.appendChild(tr);
       }
       if(!pvFilteredRows.length){
-        tb.innerHTML = `<tr><td colspan="12" class="muted">沒有符合條件的資料。</td></tr>`;
+        tb.innerHTML = `<tr><td colspan="13" class="muted">沒有符合條件的資料。</td></tr>`;
         $("pvDetail").innerHTML = `<span class="muted">請調整篩選條件。</span>`;
       } else if(!pvSelectedCaseId || !pvFilteredRows.some(x=>x.id===pvSelectedCaseId)){
         pvSelectedCaseId = pvFilteredRows[0].id;
@@ -2999,7 +3030,7 @@
           <button onclick="location.hash='case?id=${encodeURIComponent(c.id)}'">開啟個案詳情</button>
         </div>
         <div class="grid2">
-          <div class="subCard"><b>基本資料</b><div class="small muted" style="margin-top:6px;line-height:1.8;">性別：${escapeHtml(basic.gender||"")}<br/>年齡：${escapeHtml(basic.age||"")}<br/>障礙類別：${escapeHtml(basic.disabilityType||"")}<br/>障礙程度：${escapeHtml(basic.disabilityDegree||"")}<br/>轉介來源：${escapeHtml(basic.referralSource||"")}</div></div>
+          <div class="subCard"><b>基本資料</b><div class="small muted" style="margin-top:6px;line-height:1.8;">性別：${escapeHtml(basic.gender||"")}<br/>年齡：${escapeHtml(basic.age||"")}<br/>障礙類別：${escapeHtml(basic.disabilityType||"")}<br/>障礙程度：${escapeHtml(basic.disabilityDegree||"")}<br/>接案人員：${renderColorTag("assignedStaff", basic.assignedStaff||"")}<br/>轉介來源：${renderColorTag("referralSource", basic.referralSource||"")}</div></div>
           <div class="subCard"><b>報告審閱</b><div class="small muted" style="margin-top:6px;line-height:1.8;">審查狀態：${escapeHtml(report.reviewStatus||"")}<br/>審閱者：${escapeHtml(report.reviewerName||"")}<br/>寄出時間：${escapeHtml(report.sentDate||"")}<br/>檔案：${escapeHtml(report.localFilePath||"")}</div></div>
           <div class="subCard"><b>審查會議</b><div class="small muted" style="margin-top:6px;line-height:1.8;">筆數：${meetings.length}<br/>申請總額：${mtApplied.toLocaleString()}<br/>核定總額：${mtApproved.toLocaleString()}<br/>決議：${escapeHtml([...new Set(meetings.map(m=>m.meetingDecision).filter(Boolean))].join("、"))}</div></div>
           <div class="subCard"><b>輔具資料</b><div class="small muted" style="margin-top:6px;line-height:1.8;">試用總次數：${escapeHtml((c.deviceTrial||{}).totalCount||"")}<br/>訓練總次數：${escapeHtml((c.deviceTraining||{}).totalCount||"")}<br/>借用紀錄：${loans.length}（借用中 ${row.loanActive}）<br/>職再策略：${escapeHtml((c.jobRedesign||{}).strategyCount||"")}</div></div>
@@ -3039,7 +3070,8 @@
           類別: r.caseType||"",
           編號: r.caseNo||"",
           單位_個案: r.name||"",
-          主責人: r.ownerName||"",
+          接案人員: r.ownerName||"",
+          轉介來源: r.referralSource||"",
           報告審查: r.reviewStatus||"",
           審閱者: r.reviewerName||"",
           寄出時間: r.sentDate||"",
@@ -3149,7 +3181,7 @@
         disabilityType: guess(["障別","障礙類別"]),
         disabilityDegree: guess(["障度","障礙程度"]),
         referralSource: guess(["轉介來源","轉介單位"]),
-        assignedStaff: guess(["接案人員","主責人員"]),
+        assignedStaff: guess(["接案人員","接案人員"]),
         handler: guess(["承辦","訪視承辦"]),
         visitCommittee: guess(["訪視委員"]),
         contactPerson1: guess(["主要聯絡人","聯絡人1"]),
@@ -4552,8 +4584,8 @@
           <div><label>生日</label><input id="cdb_birthDate" type="date" value="${escapeHtml(basic.birthDate||"")}" /></div>
           <div><label>障礙類別</label><select id="cdb_disabilityType">${selOpts(settings.options.disabilityTypes, basic.disabilityType||"其他/未填")}</select></div>
           <div><label>障礙程度</label><select id="cdb_disabilityDegree">${selOpts(settings.options.disabilityDegrees||[], basic.disabilityDegree||"")}</select></div>
-          <div><label>轉介來源</label><select id="cdb_referralSource"><option value="">請選擇</option>${selOpts(settings.options.referralSources||[], basic.referralSource||"")}</select></div>
-          <div><label>接案人員</label><input id="cdb_assignedStaff" value="${escapeHtml(basic.assignedStaff||"")}" list="staffList" /></div>
+          <div><label>轉介來源</label><select id="cdb_referralSource"><option value="">請選擇</option>${selOpts(getReferralSourceOptions(), basic.referralSource||"")}</select></div>
+          <div><label>接案人員</label><select id="cdb_assignedStaff"><option value="">請選擇</option>${selOpts(getAssignedStaffOptions(), basic.assignedStaff||"")}</select></div>
           <div><label>承辦</label><input id="cdb_handler" value="${escapeHtml(basic.handler||"")}" list="handlerList" /></div>
           <div><label>訪視委員</label><input id="cdb_visitCommittee" value="${escapeHtml(basic.visitCommittee||"")}" /></div>
           <datalist id="staffList">${getOwnerProfiles().map(x=>`<option value="${escapeHtml(x.name||"")}"/>`).join("")}</datalist>
@@ -6893,6 +6925,16 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
 
