@@ -88,6 +88,8 @@
     .small{font-size:12px}
     #viewCases.dense th,#viewCases.dense td{font-size:12px;padding:5px 6px;line-height:1.25}
     #viewCases.dense .pill{padding:2px 8px}
+    #viewCases table th,#viewCases table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #viewCases table th{vertical-align:middle}
     .clip4{display:inline-block;max-width:4.2em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
     .caseColorText{font-size:inherit;line-height:inherit}
     #qrVideo{display:block;border:2px solid var(--b);background:#000;}
@@ -1563,6 +1565,27 @@
       const m = raw.match(/^([A-Z]{2})/);
       return m ? m[1] : "";
     }
+    function fmtMonthOnly(v){
+      const s = String(v||"").trim();
+      if(!s) return "";
+      const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+      if(m) return String(parseInt(m[2],10));
+      const d = new Date(s);
+      if(!Number.isNaN(d.getTime())) return String(d.getMonth()+1);
+      return s;
+    }
+    function calcSeniority(rocYear, startDate){
+      const y = parseInt(String(rocYear||""),10);
+      if(!Number.isFinite(y)) return "";
+      const s = String(startDate||"").trim();
+      const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+      if(!m) return "";
+      const startAd = parseInt(m[1],10);
+      if(!Number.isFinite(startAd)) return "";
+      const startRoc = startAd - 1911;
+      const years = y - startRoc;
+      return years>=0 ? String(years) : "";
+    }
     async function safeGetDoc(path){
       const ref = doc(db, ...path.split("/"));
       const snap = await getDoc(ref);
@@ -2642,8 +2665,8 @@
         <th class="caseExtraCol" style="width:100px;">次要聯絡人</th>
         <th class="caseExtraCol" style="width:110px;">連絡電話(二)</th>
         <th class="caseExtraCol" style="width:110px;">生日</th>
-        <th style="width:110px;">到職日</th>
-        <th style="width:120px;">本職位工作月資</th>
+        
+        <th style="width:90px;">年資</th>
         <th style="width:90px;">職稱</th>
         <th style="width:120px;">職業類別</th>
         <th style="width:120px;">職訓案結訓日期</th>
@@ -2761,14 +2784,14 @@
           <td class="caseExtraCol">${renderClip(b.contactPerson2||"",4)}</td>
           <td class="caseExtraCol">${renderClip(b.contactPhone2||"",8)}</td>
           <td class="caseExtraCol">${escapeHtml(b.birthDate||"")}</td>
-          <td>${escapeHtml(e.startDate||"")}</td>
-          <td>${escapeHtml(e.salary||"")}</td>
+          
+          <td>${escapeHtml(calcSeniority(c.year||"", e.startDate||""))}</td>
           <td>${renderClip(e.jobTitle||"",4)}</td>
           <td>${renderClip(e.occupationType||"",6)}</td>
-          <td>${escapeHtml(c.jobRedesign?.vocTrainEnd||"")}</td>
-          <td>${escapeHtml(t.openDate||"")}</td>
-          <td>${escapeHtml(t.visitDate1||"")}</td>
-          <td>${escapeHtml(t.visitDate2||"")}</td>
+          <td>${fmtMonthOnly(c.jobRedesign?.vocTrainEnd||"")}</td>
+          <td>${fmtMonthOnly(t.openDate||"")}</td>
+          <td>${fmtMonthOnly(t.visitDate1||"")}</td>
+          <td>${fmtMonthOnly(t.visitDate2||"")}</td>
           <td>${renderClip(c.kpiStage||"",4)}</td>
           <td>${renderClip(report.reviewStatus||"未送審",4)}</td>
           <td>${renderClip(report.reviewerName||"",4)}</td>
@@ -2801,7 +2824,7 @@
       document.querySelectorAll("#viewCases thead .caseExtraCol").forEach(th=> th.style.display = caseShowExtra ? "table-cell" : "none");
       $("viewCases")?.classList.toggle("dense", !!caseDense);
       if(!caseFiltered.length){
-        tbody.innerHTML = `<tr><td colspan="30" class="muted">沒有符合條件的資料。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="29" class="muted">沒有符合條件的資料。</td></tr>`;
       }
       if($("caseCheckAll")) $("caseCheckAll").checked = false;
     }
@@ -6975,6 +6998,10 @@
   </script>
 </body>
 </html>
+
+
+
+
 
 
 
