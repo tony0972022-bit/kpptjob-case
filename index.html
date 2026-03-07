@@ -330,7 +330,7 @@
                 <th style="width:110px;">報告審查</th>
                 <th style="width:90px;">審閱者</th>
                 <th style="width:95px;">寄出時間</th>
-                <th style="width:80px;">審查會</th>
+                <th style="width:240px;">審查會</th>
                 <th style="width:95px;">核定總額</th>
                 <th style="width:80px;">借用筆數</th>
                 <th style="width:80px;">借用中</th>
@@ -475,15 +475,6 @@
                 <table>
                   <thead><tr><th>決議</th><th style="width:90px;">件數</th><th style="width:110px;">獲補助件數</th><th style="width:110px;">通過率</th><th style="width:120px;">核定總額</th></tr></thead>
                   <tbody id="repRvDecisionTbody"></tbody>
-                </table>
-              </div>
-            </div>
-            <div class="subCard" style="grid-column:1/-1;">
-              <h2 style="margin-bottom:6px;">4. 轄區承辦基本資料</h2>
-              <div class="tableWrap" style="max-height:30vh;">
-                <table>
-                  <thead><tr><th>轄區</th><th style="width:90px;">類別</th><th style="width:90px;">承辦人</th><th>mail</th><th style="width:140px;">電話</th></tr></thead>
-                  <tbody id="repRvContactTbody"></tbody>
                 </table>
               </div>
             </div>
@@ -761,6 +752,7 @@
         <button id="tabReviewDisplay">審查會議欄位</button>
         <button id="tabReportPaths">報告路徑</button>
         <button id="tabOwners">主責人</button>
+        <button id="tabAreaContacts">轄區承辦</button>
       </div>
 
       <div id="panelRules">
@@ -874,8 +866,8 @@
         <div class="hint">設定每年度報告資料夾。修改後不會覆蓋舊案件已綁定的路徑快照。</div>
         <div class="grid3">
           <div><label>年度</label><input id="rpYear" placeholder="例如：115" /></div>
-          <div><label>待審查資料夾</label><input id="rpPendingPath" placeholder="\\\\server\\share\\...\\待審閱資料夾" /></div>
-          <div><label>完成資料夾</label><input id="rpDonePath" placeholder="\\\\server\\share\\...\\接案評估表" /></div>
+          <div><label>待審查資料夾</label><input id="rpPendingPath" placeholder="\\server\share\...\待審閱資料夾" /></div>
+          <div><label>完成資料夾</label><input id="rpDonePath" placeholder="\\server\share\...\接案評估表" /></div>
         </div>
         <div class="row" style="justify-content:flex-end;margin-top:10px;">
           <button id="btnSaveReportPath" class="primary">儲存年度路徑</button>
@@ -894,6 +886,7 @@
           </table>
         </div>
       </div>
+
       <div id="panelOwners" hidden>
         <div class="hint">管理主責人名單（顯示姓名、信箱、角色、職稱）。會影響：接案人員清單與報告審閱自動分派。</div>
         <div class="row" style="justify-content:flex-end;margin-top:10px;">
@@ -917,9 +910,32 @@
           </table>
         </div>
       </div>
+
+      <div id="panelAreaContacts" hidden>
+        <div class="hint">轄區承辦基本資料（案件總覽「承辦」欄位可點擊查看這裡的資料）。</div>
+        <div class="row" style="justify-content:flex-end;margin-top:10px;">
+          <button id="btnAddAreaContact">新增承辦資料</button>
+          <button id="btnSaveAreaContacts" class="primary">儲存轄區承辦</button>
+        </div>
+        <div class="tableWrap" style="max-height:40vh;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:120px;">轄區</th>
+                <th style="width:100px;">類別</th>
+                <th style="width:100px;">承辦人</th>
+                <th style="width:220px;">mail</th>
+                <th style="width:140px;">電話</th>
+                <th style="width:80px;">排序</th>
+                <th style="width:80px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="areaContactTbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
-
   <!-- Import modal -->
   <div class="modalBackdrop" id="importModal">
     <div class="modal">
@@ -1411,6 +1427,19 @@
       }));
     }
 
+    
+    function defaultAreaContacts(){
+      return [
+        { area:"高雄", category:"身障", handler:"張世立", email:"lili341341@gmail.com", phone:"", sort:10 },
+        { area:"屏東", category:"身障", handler:"洪錦蓉", email:"a250245@oa.pthg.gov.tw", phone:"", sort:20 },
+        { area:"台東", category:"身障", handler:"廖彥斐", email:"n3116@taitung.gov.tw", phone:"", sort:30 },
+        { area:"澎湖", category:"身障", handler:"蔡秀英", email:"fs30901@mail.penghu.gov.tw", phone:"", sort:40 },
+        { area:"岡山訓就", category:"中高", handler:"顏雅玲", email:"alinyan1975@gmail.com", phone:"07-6228321#222", sort:50 },
+        { area:"高屏澎東銀髮", category:"中高", handler:"林益青", email:"kimlatte@wda.gov.tw", phone:"07-7252586#118", sort:60 },
+        { area:"鳳山訓就", category:"中高", handler:"胡婉祥", email:"papa54928@gmail.com", phone:"", sort:70 },
+        { area:"高屏澎東", category:"分署承辦", handler:"黃弦綺", email:"irichiuang@wda.gov.tw", phone:"", sort:80 }
+      ];
+    }
     function getOwnerProfiles(){
       const arr = settings?.owners?.profiles;
       if(Array.isArray(arr) && arr.length){
@@ -1422,6 +1451,21 @@
     function findOwnerByEmail(email){
       const e = String(email||"").toLowerCase();
       return getOwnerProfiles().find(x=> String(x.email||"").toLowerCase()===e) || null;
+    }
+
+
+    function getAreaContacts(){
+      const arr = settings?.areaContacts?.profiles;
+      if(Array.isArray(arr) && arr.length){
+        return arr.slice().sort((a,b)=>(a.sort??999)-(b.sort??999));
+      }
+      return defaultAreaContacts();
+    }
+
+    function findAreaContactByHandler(handlerName){
+      const n = String(handlerName||"").trim();
+      if(!n) return null;
+      return getAreaContacts().find(x=> String(x.handler||"").trim()===n) || null;
     }
 
     // ===== App init =====
@@ -1635,6 +1679,9 @@
         },
         owners: {
           profiles: defaultOwners()
+        },
+        areaContacts: {
+          profiles: defaultAreaContacts()
         }
       };
     }
@@ -1645,13 +1692,15 @@
       const r3 = await safeGetDoc("settings/reviewDisplay");
       const r4 = await safeGetDoc("settings/reportPaths");
       const r5 = await safeGetDoc("settings/owners");
+      const r6 = await safeGetDoc("settings/areaContacts");
       settings = {
         caseCodeRules: r1 || d.caseCodeRules,
         options: r2 || d.options,
         reviewDisplay: r3 || { meetingDate:true, meetingArea:true, meetingNo:true,
           itemCount:true, appliedAmount:true, approvedAmount:true, meetingDecision:true },
         reportPaths: r4 || d.reportPaths,
-        owners: r5 || d.owners
+        owners: r5 || d.owners,
+        areaContacts: r6 || d.areaContacts
       };
 
       settings.caseCodeRules.caseTypes = settings.caseCodeRules.caseTypes || d.caseCodeRules.caseTypes;
@@ -1686,6 +1735,16 @@
         enabled: x.enabled!==false,
         sort: x.sort ?? ((idx+1)*10)
       })).filter(x=>x.name || x.email).sort((a,b)=>(a.sort??999)-(b.sort??999));
+      settings.areaContacts = settings.areaContacts || d.areaContacts;
+      settings.areaContacts.profiles = Array.isArray(settings.areaContacts.profiles) ? settings.areaContacts.profiles : defaultAreaContacts();
+      settings.areaContacts.profiles = settings.areaContacts.profiles.map((x,idx)=>({
+        area:(x.area||""),
+        category:(x.category||""),
+        handler:(x.handler||""),
+        email:(x.email||""),
+        phone:(x.phone||""),
+        sort:x.sort ?? ((idx+1)*10)
+      })).filter(x=>x.area||x.handler||x.email).sort((a,b)=>(a.sort??999)-(b.sort??999));
     }
     function detectCaseTypeFromCaseNo(caseNo){
       const code = parseCaseCode(caseNo);
@@ -1779,11 +1838,13 @@
       const tabRvDispBtn = $("tabReviewDisplay");
       const tabReportPathsBtn = $("tabReportPaths");
       const tabOwnersBtn = $("tabOwners");
+      const tabAreaContactsBtn = $("tabAreaContacts");
       const panelRules = $("panelRules");
       const panelOptions = $("panelOptions");
       const panelRvDisp = $("panelReviewDisplay");
       const panelReportPaths = $("panelReportPaths");
       const panelOwners = $("panelOwners");
+      const panelAreaContacts = $("panelAreaContacts");
 
       function setTab(which){
         tabRulesBtn.classList.toggle("active", which==="rules");
@@ -1791,20 +1852,24 @@
         tabRvDispBtn.classList.toggle("active", which==="reviewDisplay");
         tabReportPathsBtn.classList.toggle("active", which==="reportPaths");
         tabOwnersBtn.classList.toggle("active", which==="owners");
+        tabAreaContactsBtn.classList.toggle("active", which==="areaContacts");
         panelRules.hidden = which!=="rules";
         panelOptions.hidden = which!=="options";
         panelRvDisp.hidden = which!=="reviewDisplay";
         panelReportPaths.hidden = which!=="reportPaths";
         panelOwners.hidden = which!=="owners";
+        panelAreaContacts.hidden = which!=="areaContacts";
         if(which==="reviewDisplay") loadReviewDisplaySettings();
         if(which==="reportPaths" && !$("rpYear").value) $("rpYear").value = String(new Date().getFullYear()-1911);
         if(which==="owners") renderSettingsModal();
+        if(which==="areaContacts") renderSettingsModal();
       }
       tabRulesBtn.addEventListener("click", ()=>setTab("rules"));
       tabOptionsBtn.addEventListener("click", ()=>{ setTab("options"); showOptSection("case"); });
       tabRvDispBtn.addEventListener("click", ()=>setTab("reviewDisplay"));
       tabReportPathsBtn.addEventListener("click", ()=>setTab("reportPaths"));
       tabOwnersBtn.addEventListener("click", ()=>setTab("owners"));
+      tabAreaContactsBtn.addEventListener("click", ()=>setTab("areaContacts"));
       $("rpYear")?.addEventListener("change", ()=>{
         const y = ($("rpYear")?.value||"").trim();
         const r = (settings.reportPaths?.byYear||{})[y] || {};
@@ -1908,6 +1973,48 @@
         tbody.appendChild(tr);
       });
 
+      $("btnAddAreaContact")?.addEventListener("click", ()=>{
+        const tbody = $("areaContactTbody");
+        if(!tbody) return;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input data-k="area" value="" placeholder="轄區" /></td>
+          <td><input data-k="category" value="" placeholder="類別" /></td>
+          <td><input data-k="handler" value="" placeholder="承辦人" /></td>
+          <td><input data-k="email" value="" placeholder="mail" /></td>
+          <td><input data-k="phone" value="" placeholder="電話" /></td>
+          <td><input data-k="sort" type="number" value="999" /></td>
+          <td><button class="danger" data-act="delAreaContact">刪除</button></td>
+        `;
+        tr.querySelector("button[data-act=delAreaContact]")?.addEventListener("click", ()=> tr.remove());
+        tbody.appendChild(tr);
+      });
+
+      $("btnSaveAreaContacts")?.addEventListener("click", async ()=>{
+        const rows = Array.from($("areaContactTbody")?.querySelectorAll("tr") || []);
+        const profiles = [];
+        for(const r of rows){
+          const area = (r.querySelector('[data-k="area"]')?.value || "").trim();
+          const category = (r.querySelector('[data-k="category"]')?.value || "").trim();
+          const handler = (r.querySelector('[data-k="handler"]')?.value || "").trim();
+          const email = (r.querySelector('[data-k="email"]')?.value || "").trim();
+          const phone = (r.querySelector('[data-k="phone"]')?.value || "").trim();
+          const sort = Number(r.querySelector('[data-k="sort"]')?.value || 999);
+          if(!area && !handler && !email) continue;
+          profiles.push({ area, category, handler, email, phone, sort });
+        }
+        settings.areaContacts = { profiles: profiles.sort((a,b)=>(a.sort??999)-(b.sort??999)) };
+        try{
+          await safeSetDoc("settings/areaContacts", settings.areaContacts, true);
+          await loadSettings();
+          await renderSettingsModal();
+          toast("轄區承辦資料已儲存。");
+          refreshAllViewsLight();
+        }catch(e){
+          console.error(e);
+          toast("儲存失敗：" + (e?.message||e));
+        }
+      });
       $("btnSaveOwners")?.addEventListener("click", async ()=>{
         const rows = Array.from($("ownerTbody")?.querySelectorAll("tr") || []);
         const profiles = [];
@@ -2023,6 +2130,7 @@
           await safeSetDoc("settings/options", d.options, true);
           await safeSetDoc("settings/reportPaths", d.reportPaths, true);
           await safeSetDoc("settings/owners", d.owners, true);
+          await safeSetDoc("settings/areaContacts", d.areaContacts, true);
           await loadSettings();
           toast("已初始化設定。");
           await renderSettingsModal();
@@ -2111,6 +2219,25 @@
         }
       }
 
+
+      const areaContactTbody = $("areaContactTbody");
+      if(areaContactTbody){
+        areaContactTbody.innerHTML = "";
+        for(const a of getAreaContacts()){
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><input data-k="area" value="${escapeHtml(a.area||"")}" /></td>
+            <td><input data-k="category" value="${escapeHtml(a.category||"")}" /></td>
+            <td><input data-k="handler" value="${escapeHtml(a.handler||"")}" /></td>
+            <td><input data-k="email" value="${escapeHtml(a.email||"")}" /></td>
+            <td><input data-k="phone" value="${escapeHtml(a.phone||"")}" /></td>
+            <td><input data-k="sort" type="number" value="${escapeHtml(a.sort ?? 999)}" /></td>
+            <td><button class="danger" data-act="delAreaContact">刪除</button></td>
+          `;
+          tr.querySelector("button[data-act=delAreaContact]")?.addEventListener("click", ()=> tr.remove());
+          areaContactTbody.appendChild(tr);
+        }
+      }
       const rpTbody = $("reportPathTbody");
       if(rpTbody){
         const byYear = settings.reportPaths?.byYear || {};
@@ -2405,6 +2532,15 @@
       }
     }
 
+    
+    function showAreaContactInfo(handlerName){
+      const rec = findAreaContactByHandler(handlerName);
+      if(!rec){
+        toast(`找不到承辦「${handlerName||""}」的基本資料。`);
+        return;
+      }
+      alert(`承辦人：${rec.handler||""}\n轄區：${rec.area||""}\n類別：${rec.category||""}\nmail：${rec.email||""}\n電話：${rec.phone||""}`);
+    }
     function ensureCaseOverviewHeader(){
       const tr = document.querySelector("#viewCases thead tr");
       if(!tr) return;
@@ -2498,7 +2634,7 @@
           <td>${escapeHtml(b.disabilityDegree||"")}</td>
           <td>${escapeHtml(b.referralSource||"")}</td>
           <td>${escapeHtml(b.assignedStaff||"")}</td>
-          <td>${escapeHtml(b.handler||"")}</td>
+          <td>${(b.handler||"") ? `<button class="caseHandlerBtn" data-handler="${escapeHtml(b.handler||"")}" title="查看承辦基本資料">${escapeHtml(b.handler||"")}</button>` : ""}</td>
           <td>${escapeHtml(b.visitCommittee||"")}</td>
           <td>${escapeHtml(b.contactPerson1||"")}</td>
           <td>${escapeHtml(b.contactPhone1||"")}</td>
@@ -2519,6 +2655,14 @@
             e.preventDefault();
             e.stopPropagation();
             ck.checked = !ck.checked;
+          });
+        }
+        const handlerBtn = tr.querySelector(".caseHandlerBtn");
+        if(handlerBtn){
+          handlerBtn.addEventListener("click", (e)=>{
+            e.preventDefault();
+            e.stopPropagation();
+            showAreaContactInfo(handlerBtn.dataset.handler || "");
           });
         }
         const clipBtn = tr.querySelector(".caseClipBtn");
@@ -2659,6 +2803,12 @@
       if(!m) return raw.replace(/[^A-Z0-9]/g,"");
       return `${m[1]}${Number(m[2])}`;
     }
+    function pvMoney(v){
+      const s = String(v ?? "").replace(/[,\s]/g,"");
+      const n = Number(s);
+      return Number.isFinite(n) ? n : 0;
+    }
+
 
     function initPreviewFilters(){
       const types = settings?.caseCodeRules?.caseTypes || [];
@@ -2672,7 +2822,11 @@
         const key = pvCaseKey(c.caseNo);
         const meetings = (pvMeetings||[]).filter(r=> pvCaseKey(r.caseNo)===key);
         const mtItems = meetings.flatMap(m=>m.items||[]);
-        const totalApproved = mtItems.reduce((s,i)=>s+(Number(i.approvedAmount||0)||0),0);
+        const totalApproved = mtItems.reduce((s,i)=> s + pvMoney(i.approvedAmount), 0);
+        const meetingText = meetings
+          .map(m=> [m.meetingArea, m.meetingDate, m.meetingNo].filter(Boolean).join(" "))
+          .filter(Boolean)
+          .join("；");
         const loans = (pvLoans||[]).filter(l=>
           (l.linkedCaseId && l.linkedCaseId===c.id) ||
           (Array.isArray(l.linkedCaseIds) && l.linkedCaseIds.includes(c.id)) ||
@@ -2694,6 +2848,7 @@
           reviewerName: report.reviewerName||"",
           sentDate: report.sentDate||"",
           meetingCount: meetings.length,
+          meetingText,
           totalApproved,
           loanCount: loans.length,
           loanActive,
@@ -2756,7 +2911,7 @@
           <td>${escapeHtml(r.reviewStatus)}</td>
           <td>${escapeHtml(r.reviewerName)}</td>
           <td>${escapeHtml(r.sentDate)}</td>
-          <td>${r.meetingCount}</td>
+          <td title="${escapeHtml(r.meetingText||"")}">${escapeHtml(r.meetingText || (r.meetingCount ? `共${r.meetingCount}筆` : ""))}</td>
           <td>${r.totalApproved ? r.totalApproved.toLocaleString() : ""}</td>
           <td>${r.loanCount}</td>
           <td>${r.loanActive}</td>
@@ -2786,8 +2941,8 @@
       const meetings = row.meetings || [];
       const loans = row.loans || [];
       const mtItems = meetings.flatMap(m=>m.items||[]);
-      const mtApplied = mtItems.reduce((s,i)=>s+(Number(i.appliedAmount||0)||0),0);
-      const mtApproved = mtItems.reduce((s,i)=>s+(Number(i.approvedAmount||0)||0),0);
+      const mtApplied = mtItems.reduce((s,i)=> s + pvMoney(i.appliedAmount), 0);
+      const mtApproved = mtItems.reduce((s,i)=> s + pvMoney(i.approvedAmount), 0);
 
       $("pvDetail").innerHTML = `
         <div class="row" style="justify-content:space-between;align-items:flex-start;">
@@ -2842,6 +2997,7 @@
           報告審查: r.reviewStatus||"",
           審閱者: r.reviewerName||"",
           寄出時間: r.sentDate||"",
+          審查會: r.meetingText||"",
           審查會議筆數: r.meetingCount||0,
           核定總額: r.totalApproved||0,
           借用筆數: r.loanCount||0,
@@ -2962,7 +3118,17 @@
         vocTrainEnd: guess(["職訓案結訓日期"]),
         openDate: guess(["開案日期"]),
         visitDate1: guess(["訪視評估日期(一)","訪視評估日期一"]),
-        visitDate2: guess(["訪視評估日期(二)","訪視評估日期二"])
+        visitDate2: guess(["訪視評估日期(二)","訪視評估日期二"]),
+        reviewDate1: guess(["審查會日期(一)","審查會日期一","審查會日期"]),
+        reviewDate2: guess(["審查會日期(二)","審查會日期二"]),
+        reportStatus: guess(["報告狀態"]),
+        reportReviewStatus: guess(["審查流程狀態","審查狀態","報告審查"]),
+        reportReviewerName: guess(["審查人","審閱者","審查人(姓名)"]),
+        reportSentDate: guess(["報告完成日","報告完成日期","寄出時間","報告完成(寄給承辦)日期"]),
+        reportMeetingDate: guess(["審查會議日期","審查會日期"]),
+        reportReviewComment: guess(["審查備註","退回修改原因","審查意見"]),
+        reportNote: guess(["一般備註","報告備註"]),
+        reportLocalFilePath: guess(["報告檔案路徑","檔案路徑"])
       };
     }
 
@@ -2974,7 +3140,10 @@
         ["gender","性別(選)"],["age","年齡(選)"],["birthDate","生日(選)"],["disabilityType","障別(選)"],["disabilityDegree","障度(選)"],["referralSource","轉介來源(選)"],
         ["assignedStaff","接案人員(選)"],["handler","承辦(選)"],["visitCommittee","訪視委員(選)"],["contactPerson1","主要聯絡人(選)"],["contactPhone1","連絡電話(一)(選)"],["contactPerson2","次要聯絡人(選)"],["contactPhone2","連絡電話(二)(選)"],
         ["industryType","行業類別(選)"],["startDate","到職日(選)"],["salary","本職位的工作月資(選)"],["jobTitle","職稱(選)"],["occupationType","職業類別(選)"],
-        ["vocTrainEnd","職訓案結訓日期(選)"],["openDate","開案日期(選)"],["visitDate1","訪視評估日期(一)(選)"],["visitDate2","訪視評估日期(二)(選)"]
+        ["vocTrainEnd","職訓案結訓日期(選)"],["openDate","開案日期(選)"],["visitDate1","訪視評估日期(一)(選)"],["visitDate2","訪視評估日期(二)(選)"],
+        ["reviewDate1","審查會日期(一)(選)"],["reviewDate2","審查會日期(二)(選)"],
+        ["reportStatus","報告狀態(選)"],["reportReviewStatus","審查流程狀態(選)"],["reportReviewerName","審查人(選)"],
+        ["reportSentDate","報告完成日(選)"],["reportMeetingDate","審查會議日期(選)"],["reportReviewComment","審查備註(選)"],["reportNote","一般備註(選)"],["reportLocalFilePath","報告檔案路徑(選)"]
       ];
       for(const [k,label] of fields){
         const div = document.createElement("div");
@@ -2994,6 +3163,25 @@
       if(!colName) return "";
       return row[colName] ?? "";
     }
+    function normDateInput(v){
+      if(v===null || v===undefined) return "";
+      if(typeof v === "number" && Number.isFinite(v)){
+        const ms = Math.round((v - 25569) * 86400 * 1000);
+        const d = new Date(ms);
+        if(!Number.isNaN(d.getTime())) return d.toISOString().slice(0,10);
+      }
+      const s = String(v).trim();
+      if(!s) return "";
+      const m = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+      if(m){
+        const yy = m[1], mm = String(Number(m[2])).padStart(2,"0"), dd = String(Number(m[3])).padStart(2,"0");
+        return `${yy}-${mm}-${dd}`;
+      }
+      const d = new Date(s);
+      if(!Number.isNaN(d.getTime())) return d.toISOString().slice(0,10);
+      return "";
+    }
+
 
     function parseSheetWithDetectedHeader(sheet){
       const rows = XLSX.utils.sheet_to_json(sheet, { header:1, defval:"" });
@@ -3045,7 +3233,7 @@
         const basic = {
           gender: String(rowVal(r, mapping.gender)||"").trim(),
           age: String(rowVal(r, mapping.age)||"").trim(),
-          birthDate: String(rowVal(r, mapping.birthDate)||"").trim(),
+          birthDate: normDateInput(rowVal(r, mapping.birthDate)),
           disabilityType: String(rowVal(r, mapping.disabilityType)||"").trim(),
           disabilityDegree: String(rowVal(r, mapping.disabilityDegree)||"").trim(),
           referralSource: String(rowVal(r, mapping.referralSource)||"").trim(),
@@ -3060,20 +3248,36 @@
 
         const employment = {
           industryType: String(rowVal(r, mapping.industryType)||"").trim(),
-          startDate: String(rowVal(r, mapping.startDate)||"").trim(),
+          startDate: normDateInput(rowVal(r, mapping.startDate)),
           salary: String(rowVal(r, mapping.salary)||"").trim(),
           jobTitle: String(rowVal(r, mapping.jobTitle)||"").trim(),
           occupationType: String(rowVal(r, mapping.occupationType)||"").trim(),
         };
 
+        const reportMeetingDate = normDateInput(rowVal(r, mapping.reportMeetingDate));
         const timeline = {
-          openDate: String(rowVal(r, mapping.openDate)||"").trim(),
-          visitDate1: String(rowVal(r, mapping.visitDate1)||"").trim(),
-          visitDate2: String(rowVal(r, mapping.visitDate2)||"").trim(),
+          openDate: normDateInput(rowVal(r, mapping.openDate)),
+          visitDate1: normDateInput(rowVal(r, mapping.visitDate1)),
+          visitDate2: normDateInput(rowVal(r, mapping.visitDate2)),
+          reviewDate1: normDateInput(rowVal(r, mapping.reviewDate1)) || reportMeetingDate || "",
+          reviewDate2: normDateInput(rowVal(r, mapping.reviewDate2)),
         };
 
         const jobRedesign = {
-          vocTrainEnd: String(rowVal(r, mapping.vocTrainEnd)||"").trim(),
+          vocTrainEnd: normDateInput(rowVal(r, mapping.vocTrainEnd)),
+        };
+
+        const reportSentDate = normDateInput(rowVal(r, mapping.reportSentDate));
+        const reportStatus = String(rowVal(r, mapping.reportStatus)||"").trim();
+        const report = {
+          status: mapping.reportStatus ? (reportStatus || (reportSentDate ? "完成寄件" : "")) : "",
+          reviewStatus: mapping.reportReviewStatus ? String(rowVal(r, mapping.reportReviewStatus)||"").trim() : "",
+          reviewerName: mapping.reportReviewerName ? String(rowVal(r, mapping.reportReviewerName)||"").trim() : "",
+          sentDate: mapping.reportSentDate ? reportSentDate : "",
+          meetingDate: mapping.reportMeetingDate ? reportMeetingDate : "",
+          reviewComment: mapping.reportReviewComment ? String(rowVal(r, mapping.reportReviewComment)||"").trim() : "",
+          note: mapping.reportNote ? String(rowVal(r, mapping.reportNote)||"").trim() : "",
+          localFilePath: mapping.reportLocalFilePath ? String(rowVal(r, mapping.reportLocalFilePath)||"").trim() : ""
         };
 
         const errors = [];
@@ -3082,7 +3286,11 @@
         if(!orgName && !clientName) errors.push("需單位或個案");
         if(kpiStage && !(settings.options.kpiStages||[]).includes(kpiStage)) errors.push("KPI 不在選單");
 
-        return { _idx:idx, _ok:errors.length===0, _errors:errors, year, caseNo, orgName, clientName, caseType, kpiStage, basic, employment, timeline, jobRedesign };
+        return {
+          _idx:idx, _ok:errors.length===0, _errors:errors,
+          year, caseNo, orgName, clientName, caseType, kpiStage,
+          basic, employment, timeline, jobRedesign, report
+        };
       });
       renderPreviewTable();
     }
@@ -3137,29 +3345,53 @@
             const id = `${r.year}_${r.caseNo}`;
             const ref = doc(db,"cases", id);
             const snap = await getDoc(ref);
-            if(snap.exists()) continue;
+            const old = snap.exists() ? (snap.data() || {}) : {};
 
             const { caseCode, caseType } = detectCaseTypeFromCaseNo(r.caseNo);
+            const ownerUid = old.ownerUid || currentUser.uid;
+            const ownerName = old.ownerName || currentName;
+            const nonEmpty = (obj)=> Object.fromEntries(Object.entries(obj || {}).filter(([,v])=> v!=="" && v!==null && v!==undefined));
+            const basicPatch = nonEmpty(r.basic);
+            const employmentPatch = nonEmpty(r.employment);
+            const timelinePatch = nonEmpty(r.timeline);
+            const jobRedesignPatch = nonEmpty(r.jobRedesign);
+            const reportPatch = nonEmpty(r.report);
+
+            const baseReport = normalizeReport(old.report || {}, r.year);
+            const mergedReport = Object.keys(reportPatch).length
+              ? normalizeReport({ ...baseReport, ...reportPatch }, r.year)
+              : baseReport;
+            const reportFinal = assignReviewerAuto(mergedReport, { year:String(r.year), caseNo:r.caseNo, ownerName });
 
             batch.set(ref, {
               year: String(r.year),
               caseNo: r.caseNo,
               caseCode,
               caseType,
-              kpiStage: r.kpiStage,
-              casePhase: "",
-              caseStatus: "進行中",
-              ownerUid: currentUser.uid,
-              ownerName: currentName,
-              orgName: r.orgName || "",
-              clientName: r.clientName || "",
-              basic: { orgName: r.orgName || "", clientName: r.clientName || "", ...(r.basic||{}) },
-              employment: r.employment || {}, timeline: r.timeline || {},
-              deviceTrial: {}, deviceTraining: {}, jobRedesign: r.jobRedesign || {},
-              progress: {}, report: assignReviewerAuto(normalizeReport({}, r.year), { year:String(r.year), caseNo:r.caseNo, ownerName:currentName }),
-              remarks: "",
-              caseDevices: [], consults: [],
-              createdAt: new Date(),
+              kpiStage: r.kpiStage || old.kpiStage || "待訪視",
+              casePhase: old.casePhase ?? "",
+              caseStatus: old.caseStatus ?? "進行中",
+              ownerUid,
+              ownerName,
+              orgName: r.orgName || old.orgName || old.basic?.orgName || "",
+              clientName: r.clientName || old.clientName || old.basic?.clientName || "",
+              basic: {
+                ...(old.basic || {}),
+                orgName: r.orgName || old.orgName || old.basic?.orgName || "",
+                clientName: r.clientName || old.clientName || old.basic?.clientName || "",
+                ...basicPatch
+              },
+              employment: { ...(old.employment || {}), ...employmentPatch },
+              timeline: { ...(old.timeline || {}), ...timelinePatch },
+              deviceTrial: old.deviceTrial || {},
+              deviceTraining: old.deviceTraining || {},
+              jobRedesign: { ...(old.jobRedesign || {}), ...jobRedesignPatch },
+              progress: old.progress || {},
+              report: reportFinal,
+              remarks: old.remarks || "",
+              caseDevices: old.caseDevices || [],
+              consults: old.consults || [],
+              createdAt: old.createdAt || new Date(),
               updatedAt: new Date()
             }, { merge:true });
           }
@@ -3190,18 +3422,7 @@
     let repRowsF1 = [];
     let repRowsF2 = [];
     let repRowsF3 = [];
-    let repRowsF4 = [];
 
-    const repAreaContacts = [
-      { 轄區:"高雄", 類別:"身障", 承辦人:"張世立", mail:"lili341341@gmail.com", 電話:"" },
-      { 轄區:"屏東", 類別:"身障", 承辦人:"洪錦蓉", mail:"a250245@oa.pthg.gov.tw", 電話:"" },
-      { 轄區:"台東", 類別:"身障", 承辦人:"廖彥斐", mail:"n3116@taitung.gov.tw", 電話:"" },
-      { 轄區:"澎湖", 類別:"身障", 承辦人:"蔡秀英", mail:"fs30901@mail.penghu.gov.tw", 電話:"" },
-      { 轄區:"岡山訓就", 類別:"中高", 承辦人:"顏雅玲", mail:"alinyan1975@gmail.com", 電話:"07-6228321#222" },
-      { 轄區:"高屏澎東銀髮", 類別:"中高", 承辦人:"林益青", mail:"kimlatte@wda.gov.tw", 電話:"07-7252586#118" },
-      { 轄區:"鳳山訓就", 類別:"中高", 承辦人:"胡婉祥", mail:"papa54928@gmail.com", 電話:"" },
-      { 轄區:"高屏澎東", 類別:"分署承辦", 承辦人:"黃弦綺", mail:"irichiuang@wda.gov.tw", 電話:"" }
-    ];
 
     $("btnRepRefresh").addEventListener("click", ()=> refreshReports(true));
     $("repYear").addEventListener("change", ()=> refreshReports(true));
@@ -3401,14 +3622,7 @@
         }
         if(!repRowsF3.length) rvDecTb.innerHTML = `<tr><td colspan="5" class="muted">本年度尚無資料。</td></tr>`;
       }
-      repRowsF4 = repAreaContacts.map(x=>({ ...x }));
-      const rvContactTb = $("repRvContactTbody");
-      if(rvContactTb){
-        rvContactTb.innerHTML = "";
-        for(const r of repRowsF4){
-          rvContactTb.innerHTML += `<tr><td>${escapeHtml(r.轄區)}</td><td>${escapeHtml(r.類別)}</td><td>${escapeHtml(r.承辦人)}</td><td>${escapeHtml(r.mail)}</td><td>${escapeHtml(r.電話)}</td></tr>`;
-        }
-      }
+
 
     }
 
@@ -3537,7 +3751,6 @@
           XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF1), "F1_轄區案件統計");
           XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF2), "F2_轄區策略統計");
           XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF3), "F3_決議通過率");
-          XL.utils.book_append_sheet(wb, XL.utils.json_to_sheet(repRowsF4), "F4_轄區承辦");
         }
 
         XL.writeFile(wb, `統計分析_${panel}_${$("repYear")?.value||"all"}_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -4295,8 +4508,10 @@
           <div><label>障礙程度</label><select id="cdb_disabilityDegree">${selOpts(settings.options.disabilityDegrees||[], basic.disabilityDegree||"")}</select></div>
           <div><label>轉介來源</label><select id="cdb_referralSource"><option value="">請選擇</option>${selOpts(settings.options.referralSources||[], basic.referralSource||"")}</select></div>
           <div><label>接案人員</label><input id="cdb_assignedStaff" value="${escapeHtml(basic.assignedStaff||"")}" list="staffList" /></div>
+          <div><label>承辦</label><input id="cdb_handler" value="${escapeHtml(basic.handler||"")}" list="handlerList" /></div>
           <div><label>訪視委員</label><input id="cdb_visitCommittee" value="${escapeHtml(basic.visitCommittee||"")}" /></div>
           <datalist id="staffList">${getOwnerProfiles().map(x=>`<option value="${escapeHtml(x.name||"")}"/>`).join("")}</datalist>
+          <datalist id="handlerList">${getAreaContacts().map(x=>x.handler).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).map(n=>`<option value="${escapeHtml(n)}"/>`).join("")}</datalist>
         </div>
         <div class="grid2">
           <div><label>聯絡人1</label><input id="cdb_contactPerson1" value="${escapeHtml(basic.contactPerson1||"")}" /></div>
@@ -4320,7 +4535,7 @@
           </div>
           <div><label>報告審閱者（同步報告管理）</label><input id="cdb_reportReviewer" value="${escapeHtml(report.reviewerName||"")}" /></div>
           <div><label>報告寄出時間（同步報告管理）</label><input id="cdb_reportSentDate" type="date" value="${escapeHtml(report.sentDate||"")}" /></div>
-          <div><label>報告檔案路徑（同步報告管理）</label><input id="cdb_reportPath" value="${escapeHtml(report.localFilePath||"")}" /></div>
+          <div><label>報告檔案路徑（同步報告管理）</label><input id="cdb_reportPath" value="${escapeHtml(report.localFilePath||"")}" readonly style="background:#f8fafc;" /></div>
         </div>
       `);
 
@@ -4637,7 +4852,7 @@
         <div class="grid2">
           <div><label>報告狀態</label><select id="cdr_status"></select></div>
           <div><label>審查流程狀態</label><select id="cdr_reviewStatus"></select></div>
-          <div><label>報告檔案路徑（本機/網路磁碟）</label><input id="cdr_localFilePath" value="${escapeHtml(reportNorm.localFilePath||"")}" placeholder="\\\\server\\share\\...\\JA001_報告.docx" /></div>
+          <div><label>報告檔案路徑（自動掃描）</label><input id="cdr_localFilePath" value="${escapeHtml(reportNorm.localFilePath||"")}" placeholder="由掃描代理自動帶入" readonly style="background:#f8fafc;" /></div>
           <div><label>審查人（姓名）</label><input id="cdr_reviewerName" value="${escapeHtml(reportNorm.reviewerName||"")}" placeholder="例如：蔡凱宇" /></div>
           <div><label>檔案放置時間（自動記錄）</label><input id="cdr_detectedAt" value="${escapeHtml(fmtDT(reportNorm.lastDetectedAt)||"")}" readonly /></div>
           <div>
@@ -4656,7 +4871,7 @@
           <div style="grid-column:1/-1;"><label>審查備註（退回修改原因）</label><textarea id="cdr_reviewComment">${escapeHtml(reportNorm.reviewComment||"")}</textarea></div>
         </div>
         <div class="row" style="justify-content:flex-end;margin-top:10px;gap:8px;">
-          <button id="btnReportOpenFile">📎 開啟報告</button>
+          <button id="btnReportSyncPath">🔄 重新同步路徑</button><button id="btnReportOpenFile">📎 開啟報告</button>
           <button id="btnReportToReview">送審</button>
           <button id="btnReportNeedFix" class="danger">退回修改</button>
           <button id="btnReportResubmit">通知複審</button>
@@ -4698,6 +4913,21 @@
       bindSync("cdb_reportReviewer", "cdr_reviewerName");
       bindSync("cdb_reportSentDate", "cdr_sentDate");
       bindSync("cdb_reportPath", "cdr_localFilePath");
+      pReport.querySelector("#btnReportSyncPath")?.addEventListener("click", async ()=>{
+        if(!cdId){ toast("請先儲存案件後再同步。") ; return; }
+        try{
+          const snap = await getDoc(doc(db,"cases", cdId));
+          if(!snap.exists()){ toast("找不到案件資料。"); return; }
+          const latest = normalizeReport(snap.data()?.report||{}, snap.data()?.year||"");
+          if($("cdr_localFilePath")) $("cdr_localFilePath").value = latest.localFilePath || "";
+          if($("cdr_detectedAt")) $("cdr_detectedAt").value = fmtDT(latest.lastDetectedAt) || "";
+          if($("cdb_reportPath")) $("cdb_reportPath").value = latest.localFilePath || "";
+          toast(latest.localFilePath ? "已同步最新路徑。" : "目前尚未掃描到報告檔案路徑。");
+        }catch(e){
+          console.error(e);
+          toast("同步失敗：" + (e?.message||e));
+        }
+      });
       pReport.querySelector("#btnReportOpenFile")?.addEventListener("click", ()=>{
         openLocalPath($("cdr_localFilePath")?.value || reportNorm.localFilePath || "");
       });
@@ -5009,6 +5239,7 @@
           disabilityDegree: gv("cdb_disabilityDegree")   || "",
           referralSource:   gv("cdb_referralSource")     || "",
           assignedStaff:    gvt("cdb_assignedStaff")     || "",
+          handler:          gvt("cdb_handler")           || "",
           visitCommittee:   gvt("cdb_visitCommittee")    || "",
           contactPerson1:   gvt("cdb_contactPerson1")    || "",
           contactPhone1:    gvt("cdb_contactPhone1")     || "",
@@ -6616,6 +6847,34 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
