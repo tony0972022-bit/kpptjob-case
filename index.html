@@ -1671,7 +1671,8 @@
           genders: ["男","女","其他/未填"],
           disabilityTypes: ["肢體","視覺","聽覺","智能","精神","多重","其他/未填"],
           disabilityDegrees: ["輕度","中度","重度","極重度","未填"],
-          referralSources: ["勞動力發展署","社會局","醫院","雇主","個案自行申請","其他"]
+          referralSources: ["勞動力發展署","社會局","醫院","雇主","個案自行申請","其他"],
+          tagColors: { referralSource:{}, assignedStaff:{} }
         },
         reportPaths: {
           byYear: {},
@@ -1722,6 +1723,9 @@
       o.disabilityTypes = o.disabilityTypes || d.options.disabilityTypes;
       o.disabilityDegrees = o.disabilityDegrees || d.options.disabilityDegrees;
       o.referralSources = o.referralSources || d.options.referralSources;
+      o.tagColors = o.tagColors || d.options.tagColors || { referralSource:{}, assignedStaff:{} };
+      o.tagColors.referralSource = o.tagColors.referralSource || {};
+      o.tagColors.assignedStaff = o.tagColors.assignedStaff || {};
       settings.reportPaths = settings.reportPaths || d.reportPaths;
       settings.reportPaths.byYear = settings.reportPaths.byYear || {};
       settings.reportPaths.history = Array.isArray(settings.reportPaths.history) ? settings.reportPaths.history : [];
@@ -2103,6 +2107,18 @@
 
       $("btnSaveOptions").addEventListener("click", async ()=>{
         function lines(id){ return $(id).value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); }
+        function parseColorMap(id){
+          const txt = $(id)?.value || "";
+          const out = {};
+          txt.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).forEach(line=>{
+            const parts = line.split("|");
+            if(parts.length<2) return;
+            const name = (parts[0]||"").trim();
+            const color = (parts[1]||"").trim();
+            if(name && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) out[name] = color;
+          });
+          return out;
+        }
         settings.options.kpiStages = lines("opt_kpiStages");
         settings.options.reportStatuses = lines("opt_reportStatuses");
         settings.options.caseStatuses = lines("opt_caseStatuses");
@@ -2111,6 +2127,10 @@
         settings.options.disabilityTypes = lines("opt_disabilityTypes");
         settings.options.disabilityDegrees = lines("opt_disabilityDegrees");
         settings.options.referralSources = lines("opt_referralSources");
+        settings.options.tagColors = {
+          referralSource: parseColorMap("opt_referralColors"),
+          assignedStaff: parseColorMap("opt_assignedColors")
+        };
         try{
           await safeSetDoc("settings/options", settings.options, true);
           toast("已儲存下拉選單。");
@@ -2193,6 +2213,20 @@
       $("opt_disabilityTypes").value = (settings.options.disabilityTypes||[]).join("\n");
       $("opt_disabilityDegrees").value = (settings.options.disabilityDegrees||[]).join("\n");
       $("opt_referralSources").value = (settings.options.referralSources||[]).join("\n");
+      const optCaseSec = $("optSection_case");
+      if(optCaseSec && !$("opt_referralColors")){
+        const colorWrap = document.createElement("div");
+        colorWrap.className = "grid2";
+        colorWrap.style.marginTop = "8px";
+        colorWrap.innerHTML = `
+          <div><label>轉介來源顏色（每行：名稱|#RRGGBB）</label><textarea id="opt_referralColors" class="mono" placeholder="例如：醫院|#FDE68A"></textarea></div>
+          <div><label>接案人員顏色（每行：名稱|#RRGGBB）</label><textarea id="opt_assignedColors" class="mono" placeholder="例如：蔡凱宇|#BFDBFE"></textarea></div>
+        `;
+        optCaseSec.appendChild(colorWrap);
+      }
+      const mapToLines = (m)=> Object.entries(m||{}).map(([k,v])=>`${k}|${v}`).join("\n");
+      if($("opt_referralColors")) $("opt_referralColors").value = mapToLines(settings.options.tagColors?.referralSource || {});
+      if($("opt_assignedColors")) $("opt_assignedColors").value = mapToLines(settings.options.tagColors?.assignedStaff || {});
 
       const ownerTbody = $("ownerTbody");
       if(ownerTbody){
@@ -2470,19 +2504,20 @@
     let caseAll = [];
     let caseFiltered = [];
     $("btnCaseRefresh").addEventListener("click", ()=> refreshCases(true));
+    let caseShowExtra = false;
     $("caseYear").addEventListener("change", ()=> refreshCases(true));
     $("btnCaseExport").addEventListener("click", exportCasesCsv);
     $("btnCaseNew").addEventListener("click", ()=> go("case"));
     $("btnCaseImport").addEventListener("click", openImportModal);
-    ["caseKpi","caseType","casePhase","caseStatus"].forEach(id=> $(id).addEventListener("change", renderCases));
+    ["caseKpi","caseType"].forEach(id=> $(id).addEventListener("change", renderCases));
     $("caseQ").addEventListener("input", renderCases);
     $("caseCarryOnly").addEventListener("change", renderCases);
 
     function initCasesFilters(){
       $("caseKpi").innerHTML = `<option value="">全部</option>` + (settings.options.kpiStages||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
       $("caseType").innerHTML = `<option value="">全部</option>` + (settings.caseCodeRules.caseTypes||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
-      $("casePhase").innerHTML = `<option value="">全部</option>` + (settings.options.casePhases||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
-      $("caseStatus").innerHTML = `<option value="">全部</option>` + (settings.options.caseStatuses||[]).map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+      if($("casePhase")?.parentElement) $("casePhase").parentElement.style.display = "none";
+      if($("caseStatus")?.parentElement) $("caseStatus").parentElement.style.display = "none";
       ensureCaseOverviewHeader();
       ensureCaseBulkUi();
     }
@@ -2502,6 +2537,17 @@
           if($("caseCheckAll")) $("caseCheckAll").checked = !allChecked;
         });
         actionRow.insertBefore(btnT, $("btnCaseRefresh"));
+      }
+      if(!$("btnCaseToggleExtra")){
+        const btnX = document.createElement("button");
+        btnX.id = "btnCaseToggleExtra";
+        btnX.textContent = "展開次要欄位";
+        btnX.addEventListener("click", ()=>{
+          caseShowExtra = !caseShowExtra;
+          btnX.textContent = caseShowExtra ? "收合次要欄位" : "展開次要欄位";
+          renderCases();
+        });
+        actionRow.insertBefore(btnX, $("btnCaseRefresh"));
       }
       if(!$("btnCaseDeleteSelected")){
         const btnD = document.createElement("button");
@@ -2531,46 +2577,38 @@
         toast("批次刪除失敗：" + (e?.message||e));
       }
     }
-
-    
-    function showAreaContactInfo(handlerName){
-      const rec = findAreaContactByHandler(handlerName);
-      if(!rec){
-        toast(`找不到承辦「${handlerName||""}」的基本資料。`);
-        return;
-      }
-      alert(`承辦人：${rec.handler||""}\n轄區：${rec.area||""}\n類別：${rec.category||""}\nmail：${rec.email||""}\n電話：${rec.phone||""}`);
-    }
     function ensureCaseOverviewHeader(){
       const tr = document.querySelector("#viewCases thead tr");
       if(!tr) return;
       tr.innerHTML = `
         <th style="width:44px;"><input id="caseCheckAll" type="checkbox" style="width:auto;cursor:pointer;" title="全選" /></th>
-        <th style="width:80px;">年度</th>
+        <th style="width:70px;">年度</th>
         <th style="width:90px;">類別</th>
-        <th style="width:110px;">編號</th>
-        <th style="width:130px;">單位</th>
-        <th style="width:100px;">個案姓名</th>
-        <th style="width:70px;">性別</th>
-        <th style="width:70px;">年齡</th>
-        <th style="width:110px;">生日</th>
-        <th style="width:90px;">障礙類別</th>
-        <th style="width:90px;">障礙程度</th>
-        <th style="width:110px;">轉介來源</th>
-        <th style="width:90px;">接案人員</th>
+        <th style="width:100px;">編號</th>
+        <th style="width:120px;">單位名稱</th>
+        <th style="width:90px;">障別</th>
+        <th style="width:90px;">障度</th>
+        <th style="width:100px;">接案人員</th>
+        <th style="width:100px;">轉介來源</th>
         <th style="width:90px;">承辦</th>
         <th style="width:90px;">訪視委員</th>
-        <th style="width:90px;">聯絡人1</th>
-        <th style="width:100px;">聯絡電話1</th>
-        <th style="width:90px;">聯絡人2</th>
-        <th style="width:100px;">聯絡電話2</th>
-        <th style="width:110px;">KPI</th>
-        <th style="width:90px;">分群</th>
-        <th style="width:90px;">狀態</th>
+        <th style="width:130px;">行業類別</th>
+        <th style="width:100px;">主要聯絡人</th>
+        <th style="width:110px;">連絡電話(一)</th>
+        <th class="caseExtraCol" style="width:100px;">次要聯絡人</th>
+        <th class="caseExtraCol" style="width:110px;">連絡電話(二)</th>
+        <th class="caseExtraCol" style="width:110px;">生日</th>
+        <th style="width:110px;">到職日</th>
+        <th style="width:120px;">本職位工作月資</th>
+        <th style="width:90px;">職稱</th>
+        <th style="width:120px;">職業類別</th>
+        <th style="width:120px;">職訓案結訓日期</th>
+        <th style="width:100px;">開案日期</th>
+        <th style="width:100px;">訪視日1</th>
+        <th style="width:100px;">訪視日2</th>
+        <th style="width:100px;">KPI狀態</th>
         <th style="width:90px;">報告審查</th>
         <th style="width:90px;">審閱者</th>
-        <th style="width:90px;">主責人</th>
-        <th style="width:60px;">附件</th>
         <th style="width:130px;">更新</th>
       `;
       const all = $("caseCheckAll");
@@ -2582,11 +2620,21 @@
       }
     }
 
+    function getTagColor(group, name){
+      const m = settings?.options?.tagColors?.[group] || {};
+      return m[String(name||"").trim()] || "";
+    }
+    function renderColorTag(group, val){
+      const t = String(val||"").trim();
+      if(!t) return "";
+      const c = getTagColor(group, t);
+      if(!c) return escapeHtml(t);
+      return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${escapeHtml(c)};color:#111827;font-size:12px;">${escapeHtml(t)}</span>`;
+    }
+
     function renderCases(){
       const kpi = $("caseKpi").value;
       const type = $("caseType").value;
-      const phase = $("casePhase").value;
-      const status = $("caseStatus").value;
       const q = normalize($("caseQ").value);
 
       const carryOnly = $("caseCarryOnly")?.checked;
@@ -2594,15 +2642,16 @@
         if(currentRole!=="admin" && c.ownerUid!==currentUser.uid) return false;
         if(kpi && (c.kpiStage||"")!==kpi) return false;
         if(type && (c.caseType||"")!==type) return false;
-        if(phase && (c.casePhase||"")!==phase) return false;
-        if(status && (c.caseStatus||"")!==status) return false;
         if(carryOnly && !c.isCarryOver) return false;
         if(q){
           const b = c.basic||{};
+          const e = c.employment||{};
+          const t = c.timeline||{};
           const hay = normalize([
-            c.caseNo,c.caseType,c.orgName,b.orgName,c.clientName,b.clientName,c.ownerName,
-            b.gender,b.age,b.birthDate,b.disabilityType,b.disabilityDegree,b.referralSource,b.assignedStaff,b.visitCommittee,
-            b.contactPerson1,b.contactPhone1,b.contactPerson2,b.contactPhone2
+            c.caseNo,c.caseType,c.orgName,b.orgName,c.clientName,b.clientName,
+            b.disabilityType,b.disabilityDegree,b.assignedStaff,b.referralSource,b.handler,b.visitCommittee,
+            e.industryType,b.contactPerson1,b.contactPhone1,b.contactPerson2,b.contactPhone2,b.birthDate,
+            e.startDate,e.salary,e.jobTitle,e.occupationType,c.jobRedesign?.vocTrainEnd,t.openDate,t.visitDate1,t.visitDate2
           ].filter(Boolean).join(" "));
           if(!hay.includes(q)) return false;
         }
@@ -2615,40 +2664,44 @@
       tbody.innerHTML = "";
       for(const c of caseFiltered){
         const b = c.basic || {};
+        const e = c.employment || {};
+        const t = c.timeline || {};
         const report = normalizeReport(c.report||{}, c.year||"");
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
         tr.addEventListener("click", ()=> go("case", { id: c.id }));
-        const hasFile = !!(report.localFilePath||"").trim();
         tr.innerHTML = `
           <td><input type="checkbox" class="caseRowCheck" data-id="${escapeHtml(c.id)}" style="width:auto;cursor:pointer;" /></td>
           <td>${escapeHtml(c.year||"")}</td>
           <td>${escapeHtml(c.caseType||"")}</td>
-          <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?'<span title="跨年追蹤" style="color:var(--warn);margin-left:4px;">🔄</span>':''}</td>
+          <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?"<span title=\"跨年追蹤\" style=\"color:var(--warn);margin-left:4px;\">🔄</span>":""}</td>
           <td>${escapeHtml(c.orgName || b.orgName || "")}</td>
-          <td>${escapeHtml(c.clientName || b.clientName || "")}</td>
-          <td>${escapeHtml(b.gender||"")}</td>
-          <td>${escapeHtml(b.age||"")}</td>
-          <td>${escapeHtml(b.birthDate||"")}</td>
           <td>${escapeHtml(b.disabilityType||"")}</td>
           <td>${escapeHtml(b.disabilityDegree||"")}</td>
-          <td>${escapeHtml(b.referralSource||"")}</td>
-          <td>${escapeHtml(b.assignedStaff||"")}</td>
+          <td>${renderColorTag("assignedStaff", b.assignedStaff||"")}</td>
+          <td>${renderColorTag("referralSource", b.referralSource||"")}</td>
           <td>${(b.handler||"") ? `<button class="caseHandlerBtn" data-handler="${escapeHtml(b.handler||"")}" title="查看承辦基本資料">${escapeHtml(b.handler||"")}</button>` : ""}</td>
           <td>${escapeHtml(b.visitCommittee||"")}</td>
+          <td>${escapeHtml(e.industryType||"")}</td>
           <td>${escapeHtml(b.contactPerson1||"")}</td>
           <td>${escapeHtml(b.contactPhone1||"")}</td>
-          <td>${escapeHtml(b.contactPerson2||"")}</td>
-          <td>${escapeHtml(b.contactPhone2||"")}</td>
+          <td class="caseExtraCol">${escapeHtml(b.contactPerson2||"")}</td>
+          <td class="caseExtraCol">${escapeHtml(b.contactPhone2||"")}</td>
+          <td class="caseExtraCol">${escapeHtml(b.birthDate||"")}</td>
+          <td>${escapeHtml(e.startDate||"")}</td>
+          <td>${escapeHtml(e.salary||"")}</td>
+          <td>${escapeHtml(e.jobTitle||"")}</td>
+          <td>${escapeHtml(e.occupationType||"")}</td>
+          <td>${escapeHtml(c.jobRedesign?.vocTrainEnd||"")}</td>
+          <td>${escapeHtml(t.openDate||"")}</td>
+          <td>${escapeHtml(t.visitDate1||"")}</td>
+          <td>${escapeHtml(t.visitDate2||"")}</td>
           <td>${escapeHtml(c.kpiStage||"")}</td>
-          <td>${escapeHtml(c.casePhase||"")}</td>
-          <td>${escapeHtml(c.caseStatus||"")}</td>
           <td>${escapeHtml(report.reviewStatus||"未送審")}</td>
           <td>${escapeHtml(report.reviewerName||"")}</td>
-          <td>${escapeHtml(c.ownerName||"")}</td>
-          <td>${hasFile ? '<button class="caseClipBtn" title="開啟報告" data-path="'+escapeHtml(report.localFilePath||'')+'">📎</button>' : '<span class="muted">—</span>'}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
         `;
+        tr.querySelectorAll(".caseExtraCol").forEach(td=> td.style.display = caseShowExtra ? "table-cell" : "none");
         const ck = tr.querySelector(".caseRowCheck");
         if(ck){
           ck.addEventListener("click", (e)=>{
@@ -2665,18 +2718,11 @@
             showAreaContactInfo(handlerBtn.dataset.handler || "");
           });
         }
-        const clipBtn = tr.querySelector(".caseClipBtn");
-        if(clipBtn){
-          clipBtn.addEventListener("click", (e)=>{
-            e.preventDefault();
-            e.stopPropagation();
-            openLocalPath(clipBtn.dataset.path || "");
-          });
-        }
         tbody.appendChild(tr);
       }
+      document.querySelectorAll("#viewCases thead .caseExtraCol").forEach(th=> th.style.display = caseShowExtra ? "table-cell" : "none");
       if(!caseFiltered.length){
-        tbody.innerHTML = `<tr><td colspan="27" class="muted">沒有符合條件的資料。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="29" class="muted">沒有符合條件的資料。</td></tr>`;
       }
       if($("caseCheckAll")) $("caseCheckAll").checked = false;
     }
@@ -2718,8 +2764,8 @@
         const csvSafe = (v)=> `"${String(v??"").replaceAll('"','""')}"`;
 
         const head = [
-          "年度","類別","編號","案件ID","單位","個案姓名","性別","年齡","障礙類別","障礙程度","轉介來源","主責人",
-          "KPI","分群","案件狀態",
+          "年度","類別","編號","案件ID","單位","個案姓名","性別","年齡","障礙類別","障礙程度","轉介來源",
+          "KPI",
           "報告審查狀態","報告審閱者","報告寄出時間","報告截止日","報告檔案路徑","報告偵測時間",
           "審查會議筆數","審查日期","審查決議","補助項目","申請總額","核定總額",
           "試用總次數","試用總件數","試用項目","訓練總次數","訓練總件數","訓練項目",
@@ -2761,8 +2807,8 @@
           rows.push([
             c.year||"", c.caseType||"", c.caseNo||"", c.id||"",
             (c.orgName || basic.orgName || ""), (c.clientName || basic.clientName || ""),
-            basic.gender||"", basic.age||"", basic.disabilityType||"", basic.disabilityDegree||"", basic.referralSource||"", c.ownerName||"",
-            c.kpiStage||"", c.casePhase||"", c.caseStatus||"",
+            basic.gender||"", basic.age||"", basic.disabilityType||"", basic.disabilityDegree||"", basic.referralSource||"",
+            c.kpiStage||"",
             report.reviewStatus||"", report.reviewerName||"", report.sentDate||"", report.dueDate||"", report.localFilePath||"", fmtDT(report.lastDetectedAt)||"",
             meetings.length, meetingDates, meetingDecisions, meetingItemNames, totalApplied||"", totalApproved||"",
             dt.totalCount||"", dt.totalItems||"", [dt.trialItem1,dt.trialItem2,dt.trialItem3].filter(Boolean).join("、"),
@@ -6847,6 +6893,12 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 
