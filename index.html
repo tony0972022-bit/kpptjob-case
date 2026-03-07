@@ -63,7 +63,7 @@
     .toast.show{opacity:1;transform:translateY(0)}
     .modalBackdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
     .modalBackdrop.show{display:flex}
-    .modal{background:#fff;border-radius:18px;max-width:1100px;width:100%;border:1px solid var(--b);box-shadow:0 20px 70px rgba(0,0,0,.25);padding:14px}
+    .modal{background:#fff;border-radius:18px;max-width:1100px;width:100%;max-height:90vh;overflow:auto;border:1px solid var(--b);box-shadow:0 20px 70px rgba(0,0,0,.25);padding:14px}
     .modal h3{margin:0 0 6px 0;font-size:14px}
     .modalTabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px 0}
     .modalTabs button{padding:6px 10px}
@@ -76,6 +76,14 @@
     .tabs button{padding:6px 10px}
     .tabs button.active{background:#111827;color:#fff;border-color:#111827}
     .subCard{border:1px solid var(--b);border-radius:16px;padding:12px;background:#fff}
+    .colorPickerCircle{
+      -webkit-appearance:none;appearance:none;
+      width:30px;height:30px;padding:0;border:0;background:none;cursor:pointer;
+      border-radius:999px;overflow:hidden;
+    }
+    .colorPickerCircle::-webkit-color-swatch-wrapper{padding:0;border-radius:999px}
+    .colorPickerCircle::-webkit-color-swatch{border:1px solid var(--b);border-radius:999px}
+    .colorPickerCircle::-moz-color-swatch{border:1px solid var(--b);border-radius:999px}
     .right{margin-left:auto}
     .small{font-size:12px}
     #qrVideo{display:block;border:2px solid var(--b);background:#000;}
@@ -2224,14 +2232,14 @@
       if($("optReferralColorList")){
         $("optReferralColorList").innerHTML = referralAreas.map(n=>{
           const v = /^#([0-9a-fA-F]{6})$/.test(String(rc[n]||"")) ? rc[n] : "#e2e8f0";
-          return `<label class="row" style="justify-content:space-between;"><span>${escapeHtml(n)}</span><input type="color" data-color-group="referralSource" data-color-name="${escapeHtml(n)}" value="${escapeHtml(v)}" /></label>`;
+          return `<label class="row" style="justify-content:space-between;"><span>${escapeHtml(n)}</span><input class="colorPickerCircle" type="color" data-color-group="referralSource" data-color-name="${escapeHtml(n)}" value="${escapeHtml(v)}" title="點此選擇顏色" /></label>`;
         }).join("");
       }
       const staffNames = getAssignedStaffOptions();
       if($("optAssignedColorList")){
         $("optAssignedColorList").innerHTML = staffNames.map(n=>{
           const v = /^#([0-9a-fA-F]{6})$/.test(String(ac[n]||"")) ? ac[n] : "#e2e8f0";
-          return `<label class="row" style="justify-content:space-between;"><span>${escapeHtml(n)}</span><input type="color" data-color-group="assignedStaff" data-color-name="${escapeHtml(n)}" value="${escapeHtml(v)}" /></label>`;
+          return `<label class="row" style="justify-content:space-between;"><span>${escapeHtml(n)}</span><input class="colorPickerCircle" type="color" data-color-group="assignedStaff" data-color-name="${escapeHtml(n)}" value="${escapeHtml(v)}" title="點此選擇顏色" /></label>`;
         }).join("");
       }
 
@@ -2634,9 +2642,21 @@
       }
     }
 
+    function normalizeAreaName(v){
+      return String(v||"").trim().replace(/(縣|市)$/,"").trim();
+    }
     function getTagColor(group, name){
       const m = settings?.options?.tagColors?.[group] || {};
-      return m[String(name||"").trim()] || "";
+      const raw = String(name||"").trim();
+      if(!raw) return "";
+      if(m[raw]) return m[raw];
+      if(group==="referralSource"){
+        const target = normalizeAreaName(raw);
+        for(const [k,v] of Object.entries(m)){
+          if(normalizeAreaName(k)===target) return v;
+        }
+      }
+      return "";
     }
     function renderColorTag(group, val){
       const t = String(val||"").trim();
@@ -6925,6 +6945,11 @@
   </script>
 </body>
 </html>
+
+
+
+
+
 
 
 
