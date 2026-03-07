@@ -2687,6 +2687,15 @@
       return `<span style="color:${escapeHtml(c)};font-weight:600;">${escapeHtml(t)}</span>`;
     }
 
+    function renderHandlerTag(handler, referralSource){
+      const h = String(handler||"").trim();
+      if(!h) return "";
+      const area = String(referralSource||"").trim() || (findAreaContactByHandler(h)?.area || "");
+      const c = getTagColor("referralSource", area);
+      const style = c ? `color:${escapeHtml(c)};font-weight:600;` : "color:var(--text);";
+      return `<button class="caseHandlerBtn" data-handler="${escapeHtml(h)}" title="查看承辦基本資料" style="border:0;background:none;padding:0;margin:0;line-height:1.35;cursor:pointer;${style}">${escapeHtml(h)}</button>`;
+    }
+
     function renderCases(){
       const kpi = $("caseKpi").value;
       const type = $("caseType").value;
@@ -2737,7 +2746,7 @@
           <td>${escapeHtml(b.disabilityDegree||"")}</td>
           <td>${renderColorTag("assignedStaff", b.assignedStaff||"")}</td>
           <td>${renderColorTag("referralSource", b.referralSource||"")}</td>
-          <td>${(b.handler||"") ? `<button class="caseHandlerBtn" data-handler="${escapeHtml(b.handler||"")}" title="查看承辦基本資料">${escapeHtml(b.handler||"")}</button>` : ""}</td>
+          <td>${renderHandlerTag(b.handler||"", b.referralSource||"")}</td>
           <td>${escapeHtml(b.visitCommittee||"")}</td>
           <td>${escapeHtml(e.industryType||"")}</td>
           <td>${escapeHtml(b.contactPerson1||"")}</td>
@@ -6967,6 +6976,7 @@
   </script>
 </body>
 </html>
+
 
 
 
