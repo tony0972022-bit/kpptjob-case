@@ -86,6 +86,8 @@
     .colorPickerCircle::-moz-color-swatch{border:1px solid var(--b);border-radius:999px}
     .right{margin-left:auto}
     .small{font-size:12px}
+    #viewCases.dense th,#viewCases.dense td{font-size:11px;padding:5px 6px;line-height:1.25}
+    #viewCases.dense .pill{padding:2px 8px}
     #qrVideo{display:block;border:2px solid var(--b);background:#000;}
     .grid3{display:grid;gap:10px;grid-template-columns:1fr 1fr 1fr}
     @media(max-width:700px){.grid3{grid-template-columns:1fr}}
@@ -1554,10 +1556,10 @@
     }
 
     function parseCaseCode(caseNo){
-      const raw = (caseNo || "").trim();
+      const raw = String(caseNo || "").trim().toUpperCase();
       if(!raw) return "";
-      const beforeDash = raw.split("-")[0];
-      return (beforeDash || raw.substring(0,2)).toUpperCase();
+      const m = raw.match(/^([A-Z]{2})/);
+      return m ? m[1] : "";
     }
     async function safeGetDoc(path){
       const ref = doc(db, ...path.split("/"));
@@ -1771,6 +1773,11 @@
       const code = parseCaseCode(caseNo);
       const rule = (settings?.caseCodeRules?.prefixes || []).find(p=>p.enabled && p.code === code);
       return { caseCode: code, caseType: rule?.caseType || "其他" };
+    }
+    function resolveCaseType(caseObj){
+      const current = String(caseObj?.caseType || "").trim();
+      if(current && current !== "其他") return current;
+      return detectCaseTypeFromCaseNo(caseObj?.caseNo || "").caseType || current || "其他";
     }
 
     // ===== Auth state =====
@@ -2438,7 +2445,7 @@
         tr.addEventListener("click", ()=> go("case", { id: c.id }));
         tr.innerHTML = `
           <td><span class="mono">${escapeHtml(c.caseNo||"")}</span></td>
-          <td>${escapeHtml(c.caseType||"")}</td>
+          <td>${escapeHtml(resolveCaseType(c))}</td>
           <td>${escapeHtml(c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || "")}</td>
           <td>${escapeHtml(c.kpiStage||"")}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
@@ -2526,6 +2533,7 @@
     let caseFiltered = [];
     $("btnCaseRefresh").addEventListener("click", ()=> refreshCases(true));
     let caseShowExtra = false;
+    let caseDense = true;
     $("caseYear").addEventListener("change", ()=> refreshCases(true));
     $("btnCaseExport").addEventListener("click", exportCasesCsv);
     $("btnCaseNew").addEventListener("click", ()=> go("case"));
@@ -2570,6 +2578,18 @@
         });
         actionRow.insertBefore(btnX, $("btnCaseRefresh"));
       }
+      if(!$("btnCaseDense")){
+        const btnDense = document.createElement("button");
+        btnDense.id = "btnCaseDense";
+        btnDense.textContent = caseDense ? "舒適" : "緊湊";
+        btnDense.title = "切換表格密度";
+        btnDense.addEventListener("click", ()=>{
+          caseDense = !caseDense;
+          btnDense.textContent = caseDense ? "舒適" : "緊湊";
+          renderCases();
+        });
+        actionRow.insertBefore(btnDense, $("btnCaseRefresh"));
+      }
       if(!$("btnCaseDeleteSelected")){
         const btnD = document.createElement("button");
         btnD.id = "btnCaseDeleteSelected";
@@ -2579,6 +2599,7 @@
         actionRow.insertBefore(btnD, $("btnCaseRefresh"));
       }
       if($("btnCaseDeleteSelected")) $("btnCaseDeleteSelected").disabled = (currentRole!=="admin");
+      if($("btnCaseDense")) $("btnCaseDense").textContent = caseDense ? "舒適" : "緊湊";
     }
 
     async function deleteSelectedCases(){
@@ -2663,7 +2684,7 @@
       if(!t) return "";
       const c = getTagColor(group, t);
       if(!c) return escapeHtml(t);
-      return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${escapeHtml(c)};color:#111827;font-size:12px;">${escapeHtml(t)}</span>`;
+      return `<span style="color:${escapeHtml(c)};font-weight:600;">${escapeHtml(t)}</span>`;
     }
 
     function renderCases(){
@@ -2675,14 +2696,14 @@
       caseFiltered = caseAll.filter(c=>{
         if(currentRole!=="admin" && c.ownerUid!==currentUser.uid) return false;
         if(kpi && (c.kpiStage||"")!==kpi) return false;
-        if(type && (c.caseType||"")!==type) return false;
+        if(type && resolveCaseType(c)!==type) return false;
         if(carryOnly && !c.isCarryOver) return false;
         if(q){
           const b = c.basic||{};
           const e = c.employment||{};
           const t = c.timeline||{};
           const hay = normalize([
-            c.caseNo,c.caseType,c.orgName,b.orgName,c.clientName,b.clientName,
+            c.caseNo,resolveCaseType(c),c.orgName,b.orgName,c.clientName,b.clientName,
             b.disabilityType,b.disabilityDegree,b.assignedStaff,b.referralSource,b.handler,b.visitCommittee,
             e.industryType,b.contactPerson1,b.contactPhone1,b.contactPerson2,b.contactPhone2,b.birthDate,
             e.startDate,e.salary,e.jobTitle,e.occupationType,c.jobRedesign?.vocTrainEnd,t.openDate,t.visitDate1,t.visitDate2
@@ -2709,7 +2730,7 @@
         tr.innerHTML = `
           <td><input type="checkbox" class="caseRowCheck" data-id="${escapeHtml(c.id)}" style="width:auto;cursor:pointer;" /></td>
           <td>${escapeHtml(c.year||"")}</td>
-          <td>${escapeHtml(c.caseType||"")}</td>
+          <td>${escapeHtml(resolveCaseType(c))}</td>
           <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?"<span title=\"跨年追蹤\" style=\"color:var(--warn);margin-left:4px;\">🔄</span>":""}</td>
           <td>${escapeHtml(c.orgName || b.orgName || "")}</td>
           <td>${escapeHtml(b.disabilityType||"")}</td>
@@ -2770,6 +2791,7 @@
         tbody.appendChild(tr);
       }
       document.querySelectorAll("#viewCases thead .caseExtraCol").forEach(th=> th.style.display = caseShowExtra ? "table-cell" : "none");
+      $("viewCases")?.classList.toggle("dense", !!caseDense);
       if(!caseFiltered.length){
         tbody.innerHTML = `<tr><td colspan="30" class="muted">沒有符合條件的資料。</td></tr>`;
       }
@@ -2936,7 +2958,7 @@
           meetings,
           loans,
           caseNo: c.caseNo||"",
-          caseType: c.caseType||"",
+          caseType: resolveCaseType(c),
           name: c.orgName||basic.orgName||c.clientName||basic.clientName||"",
           ownerName: basic.assignedStaff||c.ownerName||"",
           referralSource: basic.referralSource||"",
@@ -6945,6 +6967,20 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
