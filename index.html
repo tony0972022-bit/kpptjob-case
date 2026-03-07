@@ -86,8 +86,10 @@
     .colorPickerCircle::-moz-color-swatch{border:1px solid var(--b);border-radius:999px}
     .right{margin-left:auto}
     .small{font-size:12px}
-    #viewCases.dense th,#viewCases.dense td{font-size:11px;padding:5px 6px;line-height:1.25}
+    #viewCases.dense th,#viewCases.dense td{font-size:12px;padding:5px 6px;line-height:1.25}
     #viewCases.dense .pill{padding:2px 8px}
+    .clip4{display:inline-block;max-width:4.2em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+    .caseColorText{font-size:inherit;line-height:inherit}
     #qrVideo{display:block;border:2px solid var(--b);background:#000;}
     .grid3{display:grid;gap:10px;grid-template-columns:1fr 1fr 1fr}
     @media(max-width:700px){.grid3{grid-template-columns:1fr}}
@@ -2445,9 +2447,9 @@
         tr.addEventListener("click", ()=> go("case", { id: c.id }));
         tr.innerHTML = `
           <td><span class="mono">${escapeHtml(c.caseNo||"")}</span></td>
-          <td>${escapeHtml(resolveCaseType(c))}</td>
+          <td>${renderClip(resolveCaseType(c),4)}</td>
           <td>${escapeHtml(c.orgName || c.basic?.orgName || c.clientName || c.basic?.clientName || "")}</td>
-          <td>${escapeHtml(c.kpiStage||"")}</td>
+          <td>${renderClip(c.kpiStage||"",4)}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
         `;
         tbody.appendChild(tr);
@@ -2506,7 +2508,7 @@
           <td>${escapeHtml(c.year||"")}</td>
           <td class="mono">${escapeHtml(c.caseNo||"")}</td>
           <td>${escapeHtml(c.orgName||c.basic?.orgName||c.clientName||c.basic?.clientName||"")}</td>
-          <td>${escapeHtml(c.kpiStage||"")}</td>
+          <td>${renderClip(c.kpiStage||"",4)}</td>
           <td>${escapeHtml(c.ownerName||"")}</td>
         </tr>`).join("");
     }
@@ -2683,17 +2685,22 @@
       const t = String(val||"").trim();
       if(!t) return "";
       const c = getTagColor(group, t);
-      if(!c) return escapeHtml(t);
-      return `<span style="color:${escapeHtml(c)};font-weight:600;">${escapeHtml(t)}</span>`;
+      if(!c) return `<span class="caseColorText">${escapeHtml(t)}</span>`;
+      return `<span class="caseColorText" style="color:${escapeHtml(c)};font-weight:600;">${escapeHtml(t)}</span>`;
     }
-
     function renderHandlerTag(handler, referralSource){
       const h = String(handler||"").trim();
       if(!h) return "";
       const area = String(referralSource||"").trim() || (findAreaContactByHandler(h)?.area || "");
       const c = getTagColor("referralSource", area);
-      const style = c ? `color:${escapeHtml(c)};font-weight:600;` : "color:var(--text);";
-      return `<button class="caseHandlerBtn" data-handler="${escapeHtml(h)}" title="查看承辦基本資料" style="border:0;background:none;padding:0;margin:0;line-height:1.35;cursor:pointer;${style}">${escapeHtml(h)}</button>`;
+      if(!c) return `<span class="caseColorText">${escapeHtml(h)}</span>`;
+      return `<span class="caseColorText" style="color:${escapeHtml(c)};font-weight:600;">${escapeHtml(h)}</span>`;
+    }
+    function renderClip(val, n=4){
+      const s = String(val||"").trim();
+      if(!s) return "";
+      if(s.length<=n) return escapeHtml(s);
+      return `<span class="clip4" title="${escapeHtml(s)}">${escapeHtml(s)}</span>`;
     }
 
     function renderCases(){
@@ -2739,32 +2746,32 @@
         tr.innerHTML = `
           <td><input type="checkbox" class="caseRowCheck" data-id="${escapeHtml(c.id)}" style="width:auto;cursor:pointer;" /></td>
           <td>${escapeHtml(c.year||"")}</td>
-          <td>${escapeHtml(resolveCaseType(c))}</td>
+          <td>${renderClip(resolveCaseType(c),4)}</td>
           <td class="mono">${escapeHtml(c.caseNo||"")}${c.isCarryOver?"<span title=\"跨年追蹤\" style=\"color:var(--warn);margin-left:4px;\">🔄</span>":""}</td>
-          <td>${escapeHtml(c.orgName || b.orgName || "")}</td>
-          <td>${escapeHtml(b.disabilityType||"")}</td>
-          <td>${escapeHtml(b.disabilityDegree||"")}</td>
+          <td>${renderClip(c.orgName || b.orgName || "", 8)}</td>
+          <td>${renderClip(b.disabilityType||"",4)}</td>
+          <td>${renderClip(b.disabilityDegree||"",4)}</td>
           <td>${renderColorTag("assignedStaff", b.assignedStaff||"")}</td>
           <td>${renderColorTag("referralSource", b.referralSource||"")}</td>
           <td>${renderHandlerTag(b.handler||"", b.referralSource||"")}</td>
-          <td>${escapeHtml(b.visitCommittee||"")}</td>
-          <td>${escapeHtml(e.industryType||"")}</td>
-          <td>${escapeHtml(b.contactPerson1||"")}</td>
-          <td>${escapeHtml(b.contactPhone1||"")}</td>
-          <td class="caseExtraCol">${escapeHtml(b.contactPerson2||"")}</td>
-          <td class="caseExtraCol">${escapeHtml(b.contactPhone2||"")}</td>
+          <td>${renderClip(b.visitCommittee||"",4)}</td>
+          <td>${renderClip(e.industryType||"",6)}</td>
+          <td>${renderClip(b.contactPerson1||"",4)}</td>
+          <td>${renderClip(b.contactPhone1||"",8)}</td>
+          <td class="caseExtraCol">${renderClip(b.contactPerson2||"",4)}</td>
+          <td class="caseExtraCol">${renderClip(b.contactPhone2||"",8)}</td>
           <td class="caseExtraCol">${escapeHtml(b.birthDate||"")}</td>
           <td>${escapeHtml(e.startDate||"")}</td>
           <td>${escapeHtml(e.salary||"")}</td>
-          <td>${escapeHtml(e.jobTitle||"")}</td>
-          <td>${escapeHtml(e.occupationType||"")}</td>
+          <td>${renderClip(e.jobTitle||"",4)}</td>
+          <td>${renderClip(e.occupationType||"",6)}</td>
           <td>${escapeHtml(c.jobRedesign?.vocTrainEnd||"")}</td>
           <td>${escapeHtml(t.openDate||"")}</td>
           <td>${escapeHtml(t.visitDate1||"")}</td>
           <td>${escapeHtml(t.visitDate2||"")}</td>
-          <td>${escapeHtml(c.kpiStage||"")}</td>
-          <td>${escapeHtml(report.reviewStatus||"未送審")}</td>
-          <td>${escapeHtml(report.reviewerName||"")}</td>
+          <td>${renderClip(c.kpiStage||"",4)}</td>
+          <td>${renderClip(report.reviewStatus||"未送審",4)}</td>
+          <td>${renderClip(report.reviewerName||"",4)}</td>
           <td>${hasFile ? '<button class="caseClipBtn" title="開啟報告檔案" data-path="'+escapeHtml(report.localFilePath||'')+'">📎</button>' : '<span class="muted">—</span>'}</td>
           <td class="muted">${escapeHtml(fmtDT(c.updatedAt))}</td>
         `;
@@ -2779,14 +2786,6 @@
           });
         }
 
-        const handlerBtn = tr.querySelector(".caseHandlerBtn");
-        if(handlerBtn){
-          handlerBtn.addEventListener("click", (e)=>{
-            e.preventDefault();
-            e.stopPropagation();
-            showAreaContactInfo(handlerBtn.dataset.handler || "");
-          });
-        }
 
         const clipBtn = tr.querySelector(".caseClipBtn");
         if(clipBtn){
@@ -6976,6 +6975,9 @@
   </script>
 </body>
 </html>
+
+
+
 
 
 
